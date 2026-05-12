@@ -54,6 +54,7 @@ import {
     DialogDescription,
     DialogFooter,
 } from "@/shared/components/ui/dialog"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -1196,22 +1197,19 @@ const ReimbursementsPage = () => {
                     </div>
                 </div>
 
-                {/* ── Add / Edit Claim Dialog ─────────── */}
-                <Dialog open={formOpen} onOpenChange={setFormOpen}>
-                    <DialogContent className="max-w-2xl bg-white rounded-2xl p-0 font-sans max-h-[90vh] overflow-hidden flex flex-col">
-                        <DialogHeader className="p-6 border-b border-slate-100 space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                {editingClaim ? <Edit size={20} /> : <Plus size={20} />}
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                {editingClaim ? "Edit claim" : "New reimbursement claim"}
-                            </DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                {editingClaim ? "Update the claim details below." : "Submit on behalf of an employee or for off-cycle expense."}
-                            </DialogDescription>
-                        </DialogHeader>
-                        <ScrollArea className="flex-1 p-6">
-                            <div className="space-y-5">
+                {/* Add / Edit Claim Sheet */}
+                <SideFormSheet
+                    open={formOpen}
+                    onOpenChange={setFormOpen}
+                    title={editingClaim ? "Edit claim" : "New reimbursement claim"}
+                    description={editingClaim ? "Update the claim details below." : "Submit on behalf of an employee or for off-cycle expense."}
+                    icon={editingClaim ? <Edit size={20} /> : <Wallet size={20} />}
+                    accentColor={editingClaim ? "#7c3aed" : "#4f46e5"}
+                    width="xl"
+                    submitLabel={editingClaim ? "Save changes" : "Submit claim"}
+                    onSubmit={(e) => { e.preventDefault(); handleSubmitForm(); }}
+                >
+                    <div className="space-y-5">
                                 <section className="space-y-3">
                                     <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Employee</h4>
                                     <div className="grid grid-cols-2 gap-3">
@@ -1292,16 +1290,8 @@ const ReimbursementsPage = () => {
                                         </Button>
                                     )}
                                 </section>
-                            </div>
-                        </ScrollArea>
-                        <DialogFooter className="p-4 border-t border-slate-100 bg-slate-50/50 gap-2">
-                            <Button variant="ghost" onClick={() => setFormOpen(false)} className="h-10 px-5 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleSubmitForm} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-6 font-bold text-xs border-none">
-                                {editingClaim ? "Save changes" : "Submit claim"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── Detail Sheet ────────────────────── */}
                 <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
@@ -1495,93 +1485,74 @@ const ReimbursementsPage = () => {
                     </SheetContent>
                 </Sheet>
 
-                {/* ── Reject Dialog ──────────────────── */}
-                <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-500 mb-2">
-                                <XCircle size={20} />
+                {/* Reject Sheet */}
+                <SideFormSheet
+                    open={rejectOpen}
+                    onOpenChange={setRejectOpen}
+                    title={`Reject ${rejectTargetIds.length > 1 ? `${rejectTargetIds.length} claims` : "claim"}`}
+                    description="Provide a reason so the employee knows what to correct."
+                    icon={<XCircle size={20} />}
+                    accentColor="#e11d48"
+                    width="md"
+                    submitLabel="Confirm reject"
+                    onSubmit={(e) => { e.preventDefault(); handleRejectConfirm(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Reason">
+                            <Textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="e.g., Receipt is illegible / amount exceeds category limit" />
+                        </Field>
+                        <Field label="Tags (optional)">
+                            <div className="flex flex-wrap gap-1.5">
+                                {REJECTION_TAGS.map((tag) => {
+                                    const active = rejectionTags.includes(tag)
+                                    return (
+                                        <Badge
+                                            key={tag}
+                                            onClick={() => setRejectionTags((prev) => active ? prev.filter((t) => t !== tag) : [...prev, tag])}
+                                            className={cn("cursor-pointer text-[10px] font-semibold px-2 py-1 border",
+                                                active ? "bg-rose-100 text-rose-700 border-rose-200" : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-100")}
+                                        >
+                                            {tag}
+                                        </Badge>
+                                    )
+                                })}
                             </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                Reject {rejectTargetIds.length > 1 ? `${rejectTargetIds.length} claims` : "claim"}
-                            </DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Provide a reason so the employee knows what to correct.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <FormField label="Reason">
-                                <Textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="e.g., Receipt is illegible / amount exceeds category limit" className="min-h-[80px] text-xs font-medium" />
-                            </FormField>
-                            <div className="space-y-1.5">
-                                <Label className="text-[11px] font-semibold text-slate-600">Tags (optional)</Label>
-                                <div className="flex flex-wrap gap-1.5">
-                                    {REJECTION_TAGS.map((tag) => {
-                                        const active = rejectionTags.includes(tag)
-                                        return (
-                                            <Badge
-                                                key={tag}
-                                                onClick={() => setRejectionTags((prev) => active ? prev.filter((t) => t !== tag) : [...prev, tag])}
-                                                className={cn("cursor-pointer text-[10px] font-semibold px-2 py-1 border",
-                                                    active ? "bg-rose-100 text-rose-700 border-rose-200" : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-100")}
-                                            >
-                                                {tag}
-                                            </Badge>
-                                        )
-                                    })}
-                                </div>
-                            </div>
-                        </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setRejectOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleRejectConfirm} className="bg-rose-500 hover:bg-rose-600 text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                Confirm reject
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                        </Field>
+                    </div>
+                </SideFormSheet>
 
-                {/* ── Mark Paid Dialog ───────────────── */}
-                <Dialog open={paidOpen} onOpenChange={setPaidOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <Banknote size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                Mark {paidTargetIds.length > 1 ? `${paidTargetIds.length} claims` : "claim"} as paid
-                            </DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Optionally link to a pay run cycle for audit trail.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <FormField label="Link to pay run (optional)">
-                                <Select value={paidRunId || "none"} onValueChange={(v) => setPaidRunId(v === "none" ? "" : v)}>
-                                    <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="none">Standalone payout (no run)</SelectItem>
-                                        {payRuns.map((r) => (
-                                            <SelectItem key={r.id} value={r.id}>{r.month} • {r.status}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </FormField>
-                            <div className="flex items-start gap-3 p-3 bg-[#8B5CF6]/5 rounded-lg border border-[#8B5CF6]/10">
-                                <AlertCircle size={16} className="text-[#8B5CF6] shrink-0 mt-0.5" />
-                                <p className="text-xs font-semibold text-[#8B5CF6]">
-                                    Paid claims are locked — they can still be viewed and commented but not edited.
-                                </p>
-                            </div>
+                {/* Mark Paid Sheet */}
+                <SideFormSheet
+                    open={paidOpen}
+                    onOpenChange={setPaidOpen}
+                    title={`Mark ${paidTargetIds.length > 1 ? `${paidTargetIds.length} claims` : "claim"} as paid`}
+                    description="Optionally link to a pay run cycle for audit trail."
+                    icon={<Banknote size={20} />}
+                    accentColor="#059669"
+                    width="md"
+                    submitLabel="Mark paid"
+                    onSubmit={(e) => { e.preventDefault(); handleMarkPaidConfirm(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Link to pay run (optional)">
+                            <Select value={paidRunId || "none"} onValueChange={(v) => setPaidRunId(v === "none" ? "" : v)}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="none">Standalone payout (no run)</SelectItem>
+                                    {payRuns.map((r) => (
+                                        <SelectItem key={r.id} value={r.id}>{r.month} • {r.status}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <div className="flex items-start gap-3 p-3 bg-[#8B5CF6]/5 rounded-lg border border-[#8B5CF6]/10">
+                            <AlertCircle size={16} className="text-[#8B5CF6] shrink-0 mt-0.5" />
+                            <p className="text-xs font-semibold text-[#8B5CF6]">
+                                Paid claims are locked — they can still be viewed and commented but not edited.
+                            </p>
                         </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setPaidOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleMarkPaidConfirm} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                <Banknote size={13} className="mr-1.5" /> Mark paid
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── Bulk Delete Confirm ────────────── */}
                 <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
@@ -1701,61 +1672,52 @@ const ReimbursementsPage = () => {
                     </SheetContent>
                 </Sheet>
 
-                {/* ── Category Add/Edit ─────────────── */}
-                <Dialog open={categoryFormOpen} onOpenChange={setCategoryFormOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                {editingCategory ? <Edit size={20} /> : <Plus size={20} />}
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                {editingCategory ? "Edit category" : "New category"}
-                            </DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Define a reimbursement category with monthly cap and taxability.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <FormField label="Name" required>
-                                <Input value={categoryForm.name} onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })} className="h-10 text-sm font-medium" placeholder="Education, Books, etc." />
-                            </FormField>
-                            <FormField label="Description">
-                                <Textarea value={categoryForm.description ?? ""} onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })} className="min-h-[60px] text-xs font-medium" placeholder="What kinds of expenses fall here?" />
-                            </FormField>
-                            <div className="grid grid-cols-2 gap-3">
-                                <FormField label="Monthly limit (₹)" required>
-                                    <Input type="number" value={categoryForm.monthlyLimit || ""} onChange={(e) => setCategoryForm({ ...categoryForm, monthlyLimit: parseFloat(e.target.value) || 0 })} className="h-10 text-sm font-semibold tabular-nums" />
-                                </FormField>
-                                <FormField label="Colour">
-                                    <div className="flex gap-2 items-center">
-                                        <Input type="color" value={categoryForm.color} onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })} className="h-10 w-14 p-1 cursor-pointer" />
-                                        <Input value={categoryForm.color} onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })} className="h-10 text-sm font-mono" />
-                                    </div>
-                                </FormField>
-                            </div>
-                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
-                                <div>
-                                    <Label className="text-xs font-bold text-slate-700">Taxable category</Label>
-                                    <p className="text-[11px] font-medium text-slate-500 mt-0.5">Reimbursements in this category will be added to taxable income.</p>
+                {/* Category Add/Edit Sheet */}
+                <SideFormSheet
+                    open={categoryFormOpen}
+                    onOpenChange={setCategoryFormOpen}
+                    title={editingCategory ? "Edit category" : "New category"}
+                    description="Define a reimbursement category with monthly cap and taxability."
+                    icon={editingCategory ? <Edit size={20} /> : <Receipt size={20} />}
+                    accentColor={editingCategory ? "#7c3aed" : "#4f46e5"}
+                    width="md"
+                    submitLabel={editingCategory ? "Save" : "Create category"}
+                    onSubmit={(e) => { e.preventDefault(); handleSaveCategory(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Name" required>
+                            <Input value={categoryForm.name} onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })} placeholder="Education, Books, etc." />
+                        </Field>
+                        <Field label="Description">
+                            <Textarea value={categoryForm.description ?? ""} onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })} placeholder="What kinds of expenses fall here?" />
+                        </Field>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Monthly limit (₹)" required>
+                                <Input type="number" className="tabular-nums" value={categoryForm.monthlyLimit || ""} onChange={(e) => setCategoryForm({ ...categoryForm, monthlyLimit: parseFloat(e.target.value) || 0 })} />
+                            </Field>
+                            <Field label="Colour">
+                                <div className="flex gap-2 items-center">
+                                    <Input type="color" value={categoryForm.color} onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })} className="h-10 w-14 p-1 cursor-pointer" />
+                                    <Input value={categoryForm.color} onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })} className="font-mono" />
                                 </div>
-                                <Switch checked={categoryForm.taxable} onCheckedChange={(v) => setCategoryForm({ ...categoryForm, taxable: v })} className="data-[state=checked]:bg-[#8B5CF6]" />
-                            </div>
-                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
-                                <div>
-                                    <Label className="text-xs font-bold text-slate-700">Active</Label>
-                                    <p className="text-[11px] font-medium text-slate-500 mt-0.5">Inactive categories can't be selected for new claims.</p>
-                                </div>
-                                <Switch checked={categoryForm.active} onCheckedChange={(v) => setCategoryForm({ ...categoryForm, active: v })} className="data-[state=checked]:bg-[#8B5CF6]" />
-                            </div>
+                            </Field>
                         </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setCategoryFormOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleSaveCategory} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                {editingCategory ? "Save" : "Create category"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
+                            <div>
+                                <Label className="text-xs font-bold text-slate-700">Taxable category</Label>
+                                <p className="text-[11px] font-medium text-slate-500 mt-0.5">Reimbursements in this category will be added to taxable income.</p>
+                            </div>
+                            <Switch checked={categoryForm.taxable} onCheckedChange={(v) => setCategoryForm({ ...categoryForm, taxable: v })} className="data-[state=checked]:bg-[#8B5CF6]" />
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
+                            <div>
+                                <Label className="text-xs font-bold text-slate-700">Active</Label>
+                                <p className="text-[11px] font-medium text-slate-500 mt-0.5">Inactive categories can&apos;t be selected for new claims.</p>
+                            </div>
+                            <Switch checked={categoryForm.active} onCheckedChange={(v) => setCategoryForm({ ...categoryForm, active: v })} className="data-[state=checked]:bg-[#8B5CF6]" />
+                        </div>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── Category Delete Confirm ──────── */}
                 <Dialog open={categoryDeleteOpen} onOpenChange={setCategoryDeleteOpen}>
@@ -1936,104 +1898,87 @@ const ReimbursementsPage = () => {
                     </DialogContent>
                 </Dialog>
 
-                {/* ── Mileage Calculator ─────────── */}
-                <Dialog open={mileageOpen} onOpenChange={setMileageOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <Route size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Mileage calculator</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Rates pulled from active policy rules. Default ₹10 per km.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <FormField label="Category" required>
-                                <Select value={mileageCategory} onValueChange={setMileageCategory}>
-                                    <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Pick category" /></SelectTrigger>
-                                    <SelectContent>
-                                        {reimbursementPolicyRules.filter((r) => r.active).map((r) => (
-                                            <SelectItem key={r.id} value={r.category}>
-                                                {r.category} · ₹{r.mileageRatePerKm ?? 10}/km
-                                            </SelectItem>
-                                        ))}
-                                        {reimbursementPolicyRules.filter((r) => r.active).length === 0 && activeCategories.map((c) => (
-                                            <SelectItem key={c.id} value={c.name}>{c.name} · ₹10/km</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </FormField>
-                            <FormField label="Distance (km)" required>
-                                <Input
-                                    type="number"
-                                    value={mileageKm || ""}
-                                    onChange={(e) => setMileageKm(parseFloat(e.target.value) || 0)}
-                                    placeholder="0"
-                                    className="h-10 text-sm font-semibold tabular-nums"
-                                />
-                            </FormField>
-                            <div className="p-4 bg-[#8B5CF6]/5 border border-[#8B5CF6]/10 rounded-xl">
-                                <div className="flex justify-between items-baseline">
-                                    <div>
-                                        <div className="text-[10px] font-bold text-[#8B5CF6] uppercase tracking-wider">Computed amount</div>
-                                        <div className="text-2xl font-bold text-[#8B5CF6] tabular-nums">{formatINR(mileageResult.amount)}</div>
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Rate</div>
-                                        <div className="text-sm font-bold text-slate-800 tabular-nums">₹{mileageResult.rate}/km</div>
-                                    </div>
+                {/* Mileage Calculator Sheet */}
+                <SideFormSheet
+                    open={mileageOpen}
+                    onOpenChange={setMileageOpen}
+                    title="Mileage calculator"
+                    description="Rates pulled from active policy rules. Default ₹10 per km."
+                    icon={<Route size={20} />}
+                    accentColor="#4f46e5"
+                    width="md"
+                    submitLabel="Create claim"
+                    submitDisabled={mileageKm <= 0 || !mileageCategory}
+                    onSubmit={(e) => { e.preventDefault(); handleMileageCreateClaim(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Category" required>
+                            <Select value={mileageCategory} onValueChange={setMileageCategory}>
+                                <SelectTrigger><SelectValue placeholder="Pick category" /></SelectTrigger>
+                                <SelectContent>
+                                    {reimbursementPolicyRules.filter((r) => r.active).map((r) => (
+                                        <SelectItem key={r.id} value={r.category}>
+                                            {r.category} · ₹{r.mileageRatePerKm ?? 10}/km
+                                        </SelectItem>
+                                    ))}
+                                    {reimbursementPolicyRules.filter((r) => r.active).length === 0 && activeCategories.map((c) => (
+                                        <SelectItem key={c.id} value={c.name}>{c.name} · ₹10/km</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Distance (km)" required>
+                            <Input
+                                type="number"
+                                className="tabular-nums"
+                                value={mileageKm || ""}
+                                onChange={(e) => setMileageKm(parseFloat(e.target.value) || 0)}
+                                placeholder="0"
+                            />
+                        </Field>
+                        <div className="p-4 bg-[#8B5CF6]/5 border border-[#8B5CF6]/10 rounded-xl">
+                            <div className="flex justify-between items-baseline">
+                                <div>
+                                    <div className="text-[10px] font-bold text-[#8B5CF6] uppercase tracking-wider">Computed amount</div>
+                                    <div className="text-2xl font-bold text-[#8B5CF6] tabular-nums">{formatINR(mileageResult.amount)}</div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Rate</div>
+                                    <div className="text-sm font-bold text-slate-800 tabular-nums">₹{mileageResult.rate}/km</div>
                                 </div>
                             </div>
                         </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setMileageOpen(false)} className="h-10 font-semibold text-xs">Close</Button>
-                            <Button
-                                onClick={handleMileageCreateClaim}
-                                disabled={mileageKm <= 0 || !mileageCategory}
-                                className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none gap-2 disabled:opacity-50"
-                            >
-                                <Plus size={13} /> Create claim
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                    </div>
+                </SideFormSheet>
 
-                {/* ── Link Duplicate Dialog ─────────── */}
-                <Dialog open={linkDupOpen} onOpenChange={setLinkDupOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600 mb-2">
-                                <Link2 size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Link duplicate</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Manually mark this claim as a duplicate of another.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <FormField label="Original claim">
-                                <Select value={linkDupSelectedId || "none"} onValueChange={(v) => setLinkDupSelectedId(v === "none" ? "" : v)}>
-                                    <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="none">— No link —</SelectItem>
-                                        {claims
-                                            .filter((c) => c.id !== linkDupTarget?.id && c.employeeId === linkDupTarget?.employeeId)
-                                            .map((c) => (
-                                                <SelectItem key={c.id} value={c.id}>
-                                                    {c.category} · {formatINR(c.amount)} · {c.submittedDate}
-                                                </SelectItem>
-                                            ))}
-                                    </SelectContent>
-                                </Select>
-                            </FormField>
-                        </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setLinkDupOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleConfirmLinkDup} className="bg-rose-500 hover:bg-rose-600 text-white rounded-lg h-10 px-5 font-bold text-xs border-none">Save</Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                {/* Link Duplicate Sheet */}
+                <SideFormSheet
+                    open={linkDupOpen}
+                    onOpenChange={setLinkDupOpen}
+                    title="Link duplicate"
+                    description="Manually mark this claim as a duplicate of another."
+                    icon={<Link2 size={20} />}
+                    accentColor="#e11d48"
+                    width="md"
+                    submitLabel="Save"
+                    onSubmit={(e) => { e.preventDefault(); handleConfirmLinkDup(); }}
+                >
+                    <Field label="Original claim">
+                        <Select value={linkDupSelectedId || "none"} onValueChange={(v) => setLinkDupSelectedId(v === "none" ? "" : v)}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">— No link —</SelectItem>
+                                {claims
+                                    .filter((c) => c.id !== linkDupTarget?.id && c.employeeId === linkDupTarget?.employeeId)
+                                    .map((c) => (
+                                        <SelectItem key={c.id} value={c.id}>
+                                            {c.category} · {formatINR(c.amount)} · {c.submittedDate}
+                                        </SelectItem>
+                                    ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                </SideFormSheet>
 
                 {/* ── Policy Rules Editor ─────────── */}
                 <Dialog open={policyOpen} onOpenChange={setPolicyOpen}>

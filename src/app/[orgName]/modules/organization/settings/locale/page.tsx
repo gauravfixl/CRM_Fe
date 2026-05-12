@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState, useEffect } from "react"
 import {
@@ -39,7 +39,7 @@ interface LocaleOptionProps {
 }
 
 const LocaleOption = ({ label, description, icon: Icon, value, options, onChange }: LocaleOptionProps) => (
-    <div className="flex flex-col md:flex-row md:items-center justify-between p-6 bg-white border border-slate-200 rounded-2xl shadow-sm gap-4 transition-all hover:border-blue-200">
+    <div className="flex flex-col md:flex-row md:items-center justify-between p-6 bg-white border border-slate-200 rounded-none shadow-sm gap-4 transition-all hover:border-blue-200">
         <div className="flex items-start gap-4">
             <div className="h-10 w-10 bg-blue-50 flex items-center justify-center rounded-xl text-blue-600 shrink-0">
                 <Icon className="w-5 h-5" />
@@ -143,7 +143,7 @@ export default function LocalizationPage() {
             </div>
 
             {/* SUMMARY INFO */}
-            <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-2xl flex items-start gap-3 shadow-sm">
+            <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-none flex items-start gap-3 shadow-sm">
                 <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                 <p className="text-xs font-medium text-blue-700 leading-relaxed">
                     Regional settings defined here will serve as the <span className="font-bold">Global Baseline</span>.
@@ -190,9 +190,9 @@ export default function LocalizationPage() {
                     onChange={(v) => setLocale(p => ({ ...p, currency: v }))}
                     options={[
                         { label: "USD - United States Dollar ($)", value: "USD" },
-                        { label: "INR - Indian Rupee (₹)", value: "INR" },
-                        { label: "EUR - Euro (€)", value: "EUR" },
-                        { label: "GBP - British Pound (£)", value: "GBP" },
+                        { label: "INR - Indian Rupee (â‚¹)", value: "INR" },
+                        { label: "EUR - Euro (â‚¬)", value: "EUR" },
+                        { label: "GBP - British Pound (Â£)", value: "GBP" },
                     ]}
                 />
 
@@ -211,7 +211,7 @@ export default function LocalizationPage() {
             </div>
 
             {/* PREVIEW CARD */}
-            <Card className="bg-slate-900 text-white border-none rounded-3xl p-8 relative overflow-hidden group shadow-2xl mt-4">
+            <Card className="bg-slate-900 text-white border-none rounded-none p-8 relative overflow-hidden group shadow-2xl mt-4">
                 <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform duration-700">
                     <Globe className="w-40 h-40 text-white" />
                 </div>
@@ -225,11 +225,11 @@ export default function LocalizationPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         <div className="space-y-1">
                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Financial Records</p>
-                            <p className="text-2xl font-black text-white">{locale.currency === 'USD' ? '$' : locale.currency === 'INR' ? '₹' : '€'} 1,245.00</p>
+                            <p className="text-2xl font-black text-white">{locale.currency === 'USD' ? '$' : locale.currency === 'INR' ? 'â‚¹' : 'â‚¬'} 1,245.00</p>
                         </div>
                         <div className="space-y-1">
                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Date & Time</p>
-                            <p className="text-lg font-bold text-white">Mar 24, 2024 • 14:30</p>
+                            <p className="text-lg font-bold text-white">Mar 24, 2024 â€¢ 14:30</p>
                         </div>
                         <div className="space-y-1">
                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Location Context</p>

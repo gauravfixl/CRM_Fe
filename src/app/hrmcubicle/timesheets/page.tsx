@@ -19,7 +19,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
-import { Label } from "@/shared/components/ui/label";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     Clock,
     Plus,
@@ -976,61 +976,55 @@ const TimesheetsPage = () => {
                 </div>
             </div>
 
-            {/* Notes Dialog */}
-            <Dialog open={notesOpen} onOpenChange={setNotesOpen}>
-                <DialogContent className="sm:max-w-[480px]">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                            <StickyNote size={18} className="text-[#8B5CF6]" /> Entry Notes
-                        </DialogTitle>
-                        <DialogDescription>Add context, comments, or explanations for this time entry.</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-2">
-                        <Label htmlFor="notes" className="text-xs font-bold uppercase text-slate-500">Notes</Label>
+            {/* Notes Side Sheet */}
+            <SideFormSheet
+                open={notesOpen}
+                onOpenChange={setNotesOpen}
+                title="Entry Notes"
+                description="Add context, comments, or explanations for this time entry."
+                icon={<StickyNote size={20} />}
+                accentColor="#7c3aed"
+                width="md"
+                submitLabel="Save Notes"
+                onSubmit={(e) => { e.preventDefault(); saveNotes(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Notes">
                         <Textarea
                             id="notes"
                             value={notesDraft}
                             onChange={e => setNotesDraft(e.target.value)}
                             placeholder="What did you work on? Any blockers or context..."
-                            className="mt-2 min-h-[120px] border-slate-200"
+                            className="min-h-[140px]"
                         />
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setNotesOpen(false)} className="font-bold">Cancel</Button>
-                        <Button onClick={saveNotes} className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold">Save Notes</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-            {/* Reject Dialog */}
-            <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
-                <DialogContent className="sm:max-w-[480px]">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2 text-rose-600">
-                            <XCircle size={18} /> Reject Timesheet
-                        </DialogTitle>
-                        <DialogDescription>
-                            Rejecting <span className="font-bold">{rejectTarget?.employee}</span>'s timesheet for {rejectTarget?.week}. Please provide a reason.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-2">
-                        <Label htmlFor="reason" className="text-xs font-bold uppercase text-slate-500">Reason for Rejection</Label>
+            {/* Reject Side Sheet */}
+            <SideFormSheet
+                open={rejectOpen}
+                onOpenChange={setRejectOpen}
+                title="Reject Timesheet"
+                description={rejectTarget ? `Rejecting ${rejectTarget.employee}'s timesheet for ${rejectTarget.week}. Please provide a reason.` : "Please provide a reason."}
+                icon={<XCircle size={20} />}
+                accentColor="#e11d48"
+                width="md"
+                submitLabel="Confirm Reject"
+                onSubmit={(e) => { e.preventDefault(); confirmReject(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Reason for Rejection" required>
                         <Textarea
                             id="reason"
                             value={rejectReason}
                             onChange={e => setRejectReason(e.target.value)}
                             placeholder="Explain why this timesheet is being rejected..."
-                            className="mt-2 min-h-[120px] border-slate-200"
+                            className="min-h-[140px]"
                         />
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setRejectOpen(false)} className="font-bold">Cancel</Button>
-                        <Button onClick={confirmReject} className="bg-rose-500 hover:bg-rose-600 text-white font-bold">
-                            <XCircle size={14} className="mr-1.5" /> Confirm Reject
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             {/* Detail Dialog */}
             <Dialog open={detailOpen} onOpenChange={setDetailOpen}>

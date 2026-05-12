@@ -53,6 +53,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     Select,
     SelectContent,
@@ -221,81 +222,9 @@ const AcknowledgementsPage = () => {
                         }}>
                             <Mail className="w-4 h-4 mr-2" /> {remindersSent ? "Reminders Sent" : "Send Reminders"}
                         </Button>
-                        <Dialog open={isRequestOpen} onOpenChange={setIsRequestOpen}>
-                            <DialogTrigger asChild>
-                                <Button className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-11 px-6 font-bold shadow-lg shadow-indigo-100 transition-all gap-2 text-[10px] tracking-wide border-none">
-                                    <Plus className="w-4 h-4" /> New Request
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-xl bg-white rounded-[2rem] border border-slate-200 p-8 shadow-3xl font-sans" style={{ zoom: "80%" }}>
-                                <DialogHeader>
-                                    <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">Request Acknowledgement</DialogTitle>
-                                    <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-tight mt-2">
-                                        Compliance Monitoring Portal v2.1
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div className="space-y-6 py-8">
-                                    <div className="space-y-3 text-start">
-                                        <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Select Document</label>
-                                        <Select
-                                            value={newRequest.documentId}
-                                            onValueChange={(val) => setNewRequest({ ...newRequest, documentId: val })}
-                                        >
-                                            <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm">
-                                                <SelectValue placeholder="Identify Policy/Document" />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs font-sans">
-                                                {policies.map(p => (
-                                                    <SelectItem key={p.id} value={p.id} className="rounded-xl h-10">{p.title}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-6">
-                                        <div className="space-y-3 text-start">
-                                            <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Employee Name</label>
-                                            <Input
-                                                placeholder="Jane Doe"
-                                                value={newRequest.employeeName}
-                                                onChange={(e) => setNewRequest({ ...newRequest, employeeName: e.target.value })}
-                                                className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
-                                            />
-                                        </div>
-                                        <div className="space-y-3 text-start">
-                                            <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Employee Id</label>
-                                            <Input
-                                                placeholder="EMP-102"
-                                                value={newRequest.employeeId}
-                                                onChange={(e) => setNewRequest({ ...newRequest, employeeId: e.target.value })}
-                                                className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-3 text-start">
-                                        <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Due Date (Optional, defaults to +7 days)</label>
-                                        <Input
-                                            type="date"
-                                            value={newRequest.dueDate}
-                                            onChange={(e) => setNewRequest({ ...newRequest, dueDate: e.target.value })}
-                                            className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
-                                        />
-                                    </div>
-                                    <div className="col-span-2 p-6 rounded-[2rem] bg-indigo-50/50 border border-indigo-100 flex items-start gap-4 mt-2">
-                                        <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0">
-                                            <Bell size={20} className="text-indigo-600" />
-                                        </div>
-                                        <div className="text-start">
-                                            <p className="text-[11px] font-bold tracking-wide text-indigo-900 mb-1 leading-tight">Priority Notification</p>
-                                            <p className="text-[10px] font-medium text-indigo-600/70 leading-relaxed tracking-tight">This will send a priority notification and email to the employee. They will be required to provide an e-signature or confirmation.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <DialogFooter className="gap-3">
-                                    <Button variant="ghost" onClick={() => setIsRequestOpen(false)} className="h-12 rounded-xl font-bold text-[10px] tracking-wide transition-all px-6">Cancel</Button>
-                                    <Button className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 px-10 font-bold shadow-lg shadow-indigo-100 transition-all text-[10px] tracking-wide border-none" onClick={handleRequest}>Send Request</Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
+                        <Button onClick={() => setIsRequestOpen(true)} className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-11 px-6 font-bold shadow-lg shadow-indigo-100 transition-all gap-2 text-[10px] tracking-wide border-none">
+                            <Plus className="w-4 h-4" /> New Request
+                        </Button>
                     </div>
                 </div>
             </header>
@@ -619,96 +548,147 @@ const AcknowledgementsPage = () => {
                 </DialogContent>
             </Dialog>
 
-            {/* Edit Acknowledgement Dialog */}
-            <Dialog open={!!editingAck} onOpenChange={(open) => !open && setEditingAck(null)}>
-                <DialogContent className="max-w-xl bg-white rounded-[2rem] border border-slate-200 p-8 shadow-3xl font-sans" style={{ zoom: "80%" }}>
-                    <DialogHeader>
-                        <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">Edit Acknowledgement</DialogTitle>
-                        <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-tight mt-2">
-                            Update acknowledgement request details.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-6 py-6">
-                        <div className="space-y-3 text-start">
-                            <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Document</label>
-                            <Select
-                                value={editingAck?.documentId}
-                                onValueChange={(val) => {
-                                    const doc = policies.find(p => p.id === val);
-                                    setEditingAck(prev => prev ? { ...prev, documentId: val, documentTitle: doc?.title || prev.documentTitle } : null);
-                                }}
-                            >
-                                <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs font-sans">
-                                    {policies.map(p => (
-                                        <SelectItem key={p.id} value={p.id} className="rounded-xl h-10">{p.title}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-3 text-start">
-                                <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Employee Name</label>
-                                <Input
-                                    value={editingAck?.employeeName || ""}
-                                    onChange={(e) => setEditingAck(prev => prev ? { ...prev, employeeName: e.target.value } : null)}
-                                    className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
-                                />
-                            </div>
-                            <div className="space-y-3 text-start">
-                                <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Employee Id</label>
-                                <Input
-                                    value={editingAck?.employeeId || ""}
-                                    onChange={(e) => setEditingAck(prev => prev ? { ...prev, employeeId: e.target.value } : null)}
-                                    className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
-                                />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-3 text-start">
-                                <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Status</label>
-                                <Select
-                                    value={editingAck?.status}
-                                    onValueChange={(val: Acknowledgement['status']) => setEditingAck(prev => prev ? { ...prev, status: val, signedAt: val === 'Signed' ? (prev.signedAt || new Date().toISOString().split('T')[0]) : prev.signedAt } : null)}
-                                >
-                                    <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs font-sans">
-                                        <SelectItem value="Pending" className="rounded-xl h-10">Pending</SelectItem>
-                                        <SelectItem value="Viewed" className="rounded-xl h-10">Viewed</SelectItem>
-                                        <SelectItem value="Signed" className="rounded-xl h-10">Signed</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-3 text-start">
-                                <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Due Date</label>
-                                <Input
-                                    type="date"
-                                    value={editingAck?.dueDate || ""}
-                                    onChange={(e) => setEditingAck(prev => prev ? { ...prev, dueDate: e.target.value } : null)}
-                                    className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
-                                />
-                            </div>
-                        </div>
-                        <div className="space-y-3 text-start">
-                            <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Comments</label>
+            {/* Request Acknowledgement Sheet */}
+            <SideFormSheet
+                open={isRequestOpen}
+                onOpenChange={(o) => { setIsRequestOpen(o); if (!o) setNewRequest({ documentId: "", documentTitle: "", employeeId: "", employeeName: "", dueDate: "" }); }}
+                title="Request Acknowledgement"
+                description="Compliance Monitoring Portal v2.1"
+                icon={<Bell size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                submitLabel="Send Request"
+                onSubmit={(e) => { e.preventDefault(); handleRequest(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Select Document" required>
+                        <Select
+                            value={newRequest.documentId}
+                            onValueChange={(val) => setNewRequest({ ...newRequest, documentId: val })}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Identify Policy/Document" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {policies.map(p => (
+                                    <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Employee Name" required>
                             <Input
-                                placeholder="Optional notes"
-                                value={editingAck?.comments || ""}
-                                onChange={(e) => setEditingAck(prev => prev ? { ...prev, comments: e.target.value } : null)}
-                                className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
+                                placeholder="Jane Doe"
+                                value={newRequest.employeeName}
+                                onChange={(e) => setNewRequest({ ...newRequest, employeeName: e.target.value })}
                             />
+                        </Field>
+                        <Field label="Employee Id" required>
+                            <Input
+                                placeholder="EMP-102"
+                                value={newRequest.employeeId}
+                                onChange={(e) => setNewRequest({ ...newRequest, employeeId: e.target.value })}
+                            />
+                        </Field>
+                    </div>
+                    <Field label="Due Date" hint="Optional, defaults to +7 days">
+                        <Input
+                            type="date"
+                            value={newRequest.dueDate}
+                            onChange={(e) => setNewRequest({ ...newRequest, dueDate: e.target.value })}
+                        />
+                    </Field>
+                    <div className="p-4 rounded-xl bg-indigo-50/50 border border-indigo-100 flex items-start gap-3">
+                        <div className="h-9 w-9 bg-white rounded-lg flex items-center justify-center shadow-sm shrink-0">
+                            <Bell size={18} className="text-indigo-600" />
+                        </div>
+                        <div className="text-start">
+                            <p className="text-[12px] font-bold text-indigo-900 mb-1 leading-tight">Priority Notification</p>
+                            <p className="text-[11px] font-medium text-indigo-600/70 leading-relaxed">This will send a priority notification and email to the employee. They will be required to provide an e-signature or confirmation.</p>
                         </div>
                     </div>
-                    <DialogFooter className="gap-3">
-                        <Button variant="ghost" onClick={() => setEditingAck(null)} className="h-12 rounded-xl font-bold text-[10px] tracking-wide px-6">Cancel</Button>
-                        <Button className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 px-8 font-bold shadow-lg text-[10px] tracking-wide border-none" onClick={handleSaveEdit}>Save Changes</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                </div>
+            </SideFormSheet>
+
+            {/* Edit Acknowledgement Sheet */}
+            <SideFormSheet
+                open={!!editingAck}
+                onOpenChange={(o) => { if (!o) setEditingAck(null); }}
+                title="Edit Acknowledgement"
+                description="Update acknowledgement request details."
+                icon={<FileText size={20} />}
+                accentColor="#7c3aed"
+                width="md"
+                submitLabel="Save Changes"
+                onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Document" required>
+                        <Select
+                            value={editingAck?.documentId}
+                            onValueChange={(val) => {
+                                const doc = policies.find(p => p.id === val);
+                                setEditingAck(prev => prev ? { ...prev, documentId: val, documentTitle: doc?.title || prev.documentTitle } : null);
+                            }}
+                        >
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {policies.map(p => (
+                                    <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Employee Name" required>
+                            <Input
+                                value={editingAck?.employeeName || ""}
+                                onChange={(e) => setEditingAck(prev => prev ? { ...prev, employeeName: e.target.value } : null)}
+                            />
+                        </Field>
+                        <Field label="Employee Id" required>
+                            <Input
+                                value={editingAck?.employeeId || ""}
+                                onChange={(e) => setEditingAck(prev => prev ? { ...prev, employeeId: e.target.value } : null)}
+                            />
+                        </Field>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Status" required>
+                            <Select
+                                value={editingAck?.status}
+                                onValueChange={(val: Acknowledgement['status']) => setEditingAck(prev => prev ? { ...prev, status: val, signedAt: val === 'Signed' ? (prev.signedAt || new Date().toISOString().split('T')[0]) : prev.signedAt } : null)}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Pending">Pending</SelectItem>
+                                    <SelectItem value="Viewed">Viewed</SelectItem>
+                                    <SelectItem value="Signed">Signed</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Due Date">
+                            <Input
+                                type="date"
+                                value={editingAck?.dueDate || ""}
+                                onChange={(e) => setEditingAck(prev => prev ? { ...prev, dueDate: e.target.value } : null)}
+                            />
+                        </Field>
+                    </div>
+                    <Field label="Comments">
+                        <Input
+                            placeholder="Optional notes"
+                            value={editingAck?.comments || ""}
+                            onChange={(e) => setEditingAck(prev => prev ? { ...prev, comments: e.target.value } : null)}
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             {/* Priority Remind Confirm */}
             <Dialog open={!!priorityAck} onOpenChange={(open) => !open && setPriorityAck(null)}>

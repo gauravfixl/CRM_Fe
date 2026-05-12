@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -218,21 +218,21 @@ export default function ProductsPage() {
                                     </div>
 
                                     <div className="col-span-2 flex items-center justify-end gap-3">
-                                        <CustomButton variant="outline" className="h-12 w-12 rounded-2xl border-zinc-100 font-bold p-0">
+                                        <CustomButton variant="outline" className="h-12 w-12 rounded-none border-zinc-100 font-bold p-0">
                                             <Archive size={20} className="text-zinc-300 group-hover:text-blue-500" />
                                         </CustomButton>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <CustomButton variant="ghost" className="h-12 w-12 p-0 rounded-2xl bg-white/50 border border-zinc-100 group-hover:shadow-lg transition-all">
+                                                <CustomButton variant="ghost" className="h-12 w-12 p-0 rounded-none bg-white/50 border border-zinc-100 group-hover:shadow-lg transition-all">
                                                     <MoreVertical size={20} className="text-zinc-400" />
                                                 </CustomButton>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="rounded-[40px] w-64 p-3 shadow-4xl bg-white dark:bg-zinc-900 border-zinc-100">
-                                                <DropdownMenuItem className="rounded-3xl gap-4 font-bold px-10 py-6 text-sm italic uppercase tracking-tighter"><Edit3 size={20} /> Modify Asset</DropdownMenuItem>
-                                                <DropdownMenuItem className="rounded-3xl gap-4 font-bold px-10 py-6 text-sm italic uppercase tracking-tighter"><BarChart3 size={20} /> View Analytics</DropdownMenuItem>
-                                                <DropdownMenuItem className="rounded-3xl gap-4 font-bold px-10 py-6 text-sm italic uppercase tracking-tighter"><Copy size={20} /> Clone SKU</DropdownMenuItem>
+                                                <DropdownMenuItem className="rounded-none gap-4 font-bold px-10 py-6 text-sm italic uppercase tracking-tighter"><Edit3 size={20} /> Modify Asset</DropdownMenuItem>
+                                                <DropdownMenuItem className="rounded-none gap-4 font-bold px-10 py-6 text-sm italic uppercase tracking-tighter"><BarChart3 size={20} /> View Analytics</DropdownMenuItem>
+                                                <DropdownMenuItem className="rounded-none gap-4 font-bold px-10 py-6 text-sm italic uppercase tracking-tighter"><Copy size={20} /> Clone SKU</DropdownMenuItem>
                                                 <DropdownMenuSeparator />
-                                                <DropdownMenuItem onClick={() => handleDelete(prd.id)} className="rounded-3xl gap-4 font-bold px-10 py-6 text-sm text-red-600 focus:bg-red-600 focus:text-white font-black italic uppercase"><Trash2 size={20} /> expunge asset</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleDelete(prd.id)} className="rounded-none gap-4 font-bold px-10 py-6 text-sm text-red-600 focus:bg-red-600 focus:text-white font-black italic uppercase"><Trash2 size={20} /> expunge asset</DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Laptop,
   Smartphone,
@@ -21,7 +21,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
-import { showSuccess, showWarning } from "@/utils/toast";
+import { showSuccess, showWarning, showError } from "@/utils/toast";
+import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks";
 
 interface Device {
   id: string;
@@ -55,9 +56,41 @@ function getHealthBg(health: number) {
 
 export default function DeviceTrustPage() {
   const [strictMode, setStrictMode] = useState(false);
+  const [savingStrict, setSavingStrict] = useState(false);
   const [devices, setDevices] = useState<Device[]>(initialDevices);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"All" | "Managed" | "Unmanaged">("All");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await getOrgAdminSettings();
+        const data: any = res?.data?.data || res?.data || {};
+        const enabled = data?.security?.trustedDevicePolicy?.enabled;
+        if (typeof enabled === "boolean") setStrictMode(enabled);
+      } catch {
+        // Silent fallback
+      }
+    })();
+  }, []);
+
+  const handleStrictModeChange = async (newValue: boolean) => {
+    if (savingStrict) return;
+    const previous = strictMode;
+    setStrictMode(newValue);
+    setSavingStrict(true);
+    try {
+      await updateOrgAdminSettings({
+        security: { trustedDevicePolicy: { enabled: newValue } },
+      });
+      showSuccess(newValue ? "Strict mode enabled" : "Strict mode disabled");
+    } catch (err: any) {
+      setStrictMode(previous);
+      showError(err?.response?.data?.message || "Failed to update strict mode");
+    } finally {
+      setSavingStrict(false);
+    }
+  };
 
   const filteredDevices = useMemo(() => {
     return devices.filter((device) => {
@@ -97,7 +130,7 @@ export default function DeviceTrustPage() {
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-gray-600">Strict mode</span>
-          <Switch checked={strictMode} onCheckedChange={setStrictMode} />
+          <Switch checked={strictMode} onCheckedChange={handleStrictModeChange} disabled={savingStrict} />
         </div>
       </div>
 

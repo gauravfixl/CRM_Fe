@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import {
     Database,
     Save,
@@ -22,6 +22,7 @@ import {
     CardTitle,
 } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
+import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks"
 
 export default function EmployeeRetentionPage() {
     const [isLoading, setIsLoading] = useState(false)
@@ -32,12 +33,34 @@ export default function EmployeeRetentionPage() {
         retainPayroll: 10,
     })
 
-    const handleSave = () => {
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await getOrgAdminSettings()
+                const s: any = res?.data?.settings || res?.data?.data || res?.data || {}
+                const days = s?.organizationPolicies?.retentionDays
+                if (typeof days === "number" && days > 0) {
+                    setSettings((p) => ({ ...p, retainProfiles: Math.max(1, Math.round(days / 365)) }))
+                }
+            } catch {
+                // Silent — fall back to defaults
+            }
+        })()
+    }, [])
+
+    const handleSave = async () => {
         setIsLoading(true)
-        setTimeout(() => {
-            setIsLoading(false)
+        try {
+            const days = Math.min(3650, Math.max(1, Math.round(settings.retainProfiles * 365)))
+            await updateOrgAdminSettings({
+                organizationPolicies: { retentionDays: days },
+            })
             toast.success("Retention policy saved successfully")
-        }, 800)
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to save retention policy")
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     return (

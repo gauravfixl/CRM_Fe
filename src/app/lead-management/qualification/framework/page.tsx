@@ -16,7 +16,8 @@ import {
     LayoutGrid,
     Target,
     Zap,
-    Scale
+    Scale,
+    Search
 } from "lucide-react"
 
 import { Button } from "@/shared/components/ui/button"
@@ -31,18 +32,11 @@ import {
     SelectTrigger,
     SelectValue
 } from "@/shared/components/ui/select"
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/shared/components/ui/dialog"
 import { Switch } from "@/shared/components/ui/switch"
 import { Label } from "@/shared/components/ui/label"
 import { Progress } from "@/shared/components/ui/progress"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 
-// --- Mock Data: Qualification Criteria ---
 const INITIAL_CRITERIA = [
     { id: "1", name: "Budget Availability", type: "BANT", weight: 25, requiredAt: "SQL", fieldType: "Currency" },
     { id: "2", name: "Authority Level", type: "BANT", weight: 20, requiredAt: "SQL", fieldType: "Dropdown" },
@@ -52,21 +46,58 @@ const INITIAL_CRITERIA = [
     { id: "6", name: "Industry Relevance", type: "Firmographic", weight: 5, requiredAt: "Discovery", fieldType: "Dropdown" },
 ]
 
+type CriteriaItem = {
+    id: string
+    name: string
+    type: string
+    weight: number
+    requiredAt: string
+    fieldType: string
+}
+
+type FormErrors = {
+    name?: string
+    type?: string
+    weight?: string
+    requiredAt?: string
+    fieldType?: string
+}
+
 export default function QualificationFrameworkPage() {
     const { toast } = useToast()
     const router = useRouter()
     const [isClient, setIsClient] = useState(false)
-    const [criteria, setCriteria] = useState(INITIAL_CRITERIA)
+    const [criteria, setCriteria] = useState<CriteriaItem[]>(INITIAL_CRITERIA)
     const [isSaving, setIsSaving] = useState(false)
     const [isAddOpen, setIsAddOpen] = useState(false)
-    const [editingItem, setEditingItem] = useState<any>(null)
+    const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
+    const [searchTerm, setSearchTerm] = useState("")
+    const [filterCategory, setFilterCategory] = useState("all")
+    const [editingItem, setEditingItem] = useState<CriteriaItem | null>(null)
     const [newItem, setNewItem] = useState({ name: "", type: "BANT", weight: 0, requiredAt: "SQL", fieldType: "Text" })
+    const [errors, setErrors] = useState<FormErrors>({})
+    const [stageEnforcement, setStageEnforcement] = useState([
+        { stage: "MQL Movement", desc: "Require Need & Fit scores", active: true },
+        { stage: "SQL Movement", desc: "Require Budget & Authority", active: true },
+        { stage: "Discovery Done", desc: "Require Company Profile", active: false },
+    ])
 
     useEffect(() => {
         setIsClient(true)
     }, [])
 
     const totalWeight = criteria.reduce((sum, item) => sum + item.weight, 0)
+    const bantWeight = criteria.filter(c => c.type === "BANT").reduce((s, c) => s + c.weight, 0)
+    const firmoWeight = criteria.filter(c => c.type === "Firmographic").reduce((s, c) => s + c.weight, 0)
+    const behavWeight = criteria.filter(c => c.type === "Behavioral").reduce((s, c) => s + c.weight, 0)
+
+    const filteredCriteria = criteria.filter(c => {
+        const matchSearch = !searchTerm ||
+            c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            c.type.toLowerCase().includes(searchTerm.toLowerCase())
+        const matchCat = filterCategory === "all" || c.type === filterCategory
+        return matchSearch && matchCat
+    })
 
     const handleUpdateWeight = (id: string, newWeight: number) => {
         setCriteria(prev => prev.map(c => c.id === id ? { ...c, weight: Math.min(100, Math.max(0, newWeight)) } : c))
@@ -77,9 +108,29 @@ export default function QualificationFrameworkPage() {
         toast({ title: "Field Removed", description: "Qualification criteria has been deleted." })
     }
 
-    const handleAddOrUpdate = () => {
-        if (!newItem.name || newItem.weight <= 0) {
-            toast({ title: "Incomplete Data", description: "Please provide a name and weight.", variant: "destructive" })
+    const validateForm = (): boolean => {
+        const e: FormErrors = {}
+        if (!newItem.name.trim()) e.name = "Field name is required"
+        else if (newItem.name.trim().length < 2) e.name = "Field name must be at least 2 characters"
+        else if (newItem.name.trim().length > 60) e.name = "Field name must be under 60 characters"
+
+        if (!newItem.type) e.type = "Category is required"
+
+        if (newItem.weight === undefined || newItem.weight === null || isNaN(newItem.weight)) e.weight = "Weight is required"
+        else if (newItem.weight <= 0) e.weight = "Weight must be greater than 0"
+        else if (newItem.weight > 100) e.weight = "Weight cannot exceed 100"
+
+        if (!newItem.requiredAt) e.requiredAt = "Required stage must be selected"
+        if (!newItem.fieldType) e.fieldType = "Field type is required"
+
+        setErrors(e)
+        return Object.keys(e).length === 0
+    }
+
+    const handleAddOrUpdate = (e?: React.FormEvent) => {
+        if (e) e.preventDefault()
+        if (!validateForm()) {
+            toast({ title: "Validation Failed", description: "Please fix the highlighted errors.", variant: "destructive" })
             return
         }
         if (editingItem) {
@@ -91,12 +142,21 @@ export default function QualificationFrameworkPage() {
         }
         setIsAddOpen(false)
         setEditingItem(null)
+        setErrors({})
         setNewItem({ name: "", type: "BANT", weight: 0, requiredAt: "SQL", fieldType: "Text" })
     }
 
-    const startEdit = (item: any) => {
+    const startEdit = (item: CriteriaItem) => {
         setEditingItem(item)
         setNewItem({ ...item })
+        setErrors({})
+        setIsAddOpen(true)
+    }
+
+    const openCreate = () => {
+        setEditingItem(null)
+        setErrors({})
+        setNewItem({ name: "", type: "BANT", weight: 0, requiredAt: "SQL", fieldType: "Text" })
         setIsAddOpen(true)
     }
 
@@ -119,13 +179,17 @@ export default function QualificationFrameworkPage() {
         }, 1200)
     }
 
+    const toggleStageEnforcement = (idx: number) => {
+        setStageEnforcement(prev => prev.map((s, i) => i === idx ? { ...s, active: !s.active } : s))
+    }
+
     if (!isClient) return null
 
     return (
-        <div className="space-y-6 pb-12 max-w-[1600px] mx-auto animate-in fade-in duration-500">
+        <div style={{ zoom: 0.9 }} className="space-y-6 pb-12 max-w-[1600px] mx-auto animate-in fade-in duration-500">
 
-            {/* Structural Header */}
-            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+            {/* Structural Header — colorful light fill */}
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 bg-emerald-50 p-6 border border-emerald-100 shadow-sm">
                 <div className="space-y-3">
                     <Button
                         variant="ghost"
@@ -137,21 +201,25 @@ export default function QualificationFrameworkPage() {
                     </Button>
                     <div className="space-y-1">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-sm">
+                            <div className="p-2 rounded-lg bg-white text-emerald-600 border border-emerald-100 shadow-sm">
                                 <ShieldCheck className="h-5 w-5" />
                             </div>
                             <h1 className="text-[22px] font-semibold tracking-tight text-slate-900">
                                 Qualification Framework
                             </h1>
                         </div>
-                        <p className="text-[13px] text-slate-500 font-medium max-w-xl">
+                        <p className="text-[13px] text-slate-600 font-medium max-w-xl">
                             Standardize how leads are evaluated. Configure BANT fields and weighted criteria for MQL/SQL governance.
                         </p>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <Button variant="outline" className="h-10 border-slate-100 bg-white shadow-sm text-slate-600 font-semibold text-[12px] px-5">
+                    <Button
+                        variant="outline"
+                        onClick={() => setIsAdvancedOpen(true)}
+                        className="h-10 border-slate-200 bg-white shadow-sm text-slate-600 font-semibold text-[12px] px-5"
+                    >
                         <Settings2 className="h-4 w-4 mr-2 text-slate-400" /> Advanced Config
                     </Button>
                     <Button
@@ -168,7 +236,7 @@ export default function QualificationFrameworkPage() {
 
                 {/* Weightage Analytics */}
                 <div className="lg:col-span-12">
-                    <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl bg-white overflow-hidden">
+                    <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-none bg-white overflow-hidden">
                         <CardContent className="p-0">
                             <div className="flex flex-col md:flex-row items-stretch min-h-[100px]">
                                 <div className="p-6 md:w-64 bg-indigo-50 flex flex-col justify-center border-r border-slate-100">
@@ -182,23 +250,30 @@ export default function QualificationFrameworkPage() {
                                 </div>
                                 <div className="flex-1 p-6 flex flex-col justify-center gap-4">
                                     <div className="flex items-center justify-between px-1">
-                                        <div className="flex items-center gap-6">
+                                        <div className="flex items-center gap-6 flex-wrap">
                                             <div className="flex items-center gap-2">
                                                 <div className="w-3 h-3 rounded-full bg-indigo-500" />
-                                                <span className="text-[12px] font-semibold text-slate-600">BANT (90%)</span>
+                                                <span className="text-[12px] font-semibold text-slate-600">BANT ({bantWeight}%)</span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <div className="w-3 h-3 rounded-full bg-blue-400" />
-                                                <span className="text-[12px] font-semibold text-slate-600">Firmographic (10%)</span>
+                                                <span className="text-[12px] font-semibold text-slate-600">Firmographic ({firmoWeight}%)</span>
                                             </div>
+                                            {behavWeight > 0 && (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-3 h-3 rounded-full bg-pink-400" />
+                                                    <span className="text-[12px] font-semibold text-slate-600">Behavioral ({behavWeight}%)</span>
+                                                </div>
+                                            )}
                                         </div>
-                                        <Badge variant="outline" className="h-6 border-slate-100 text-slate-400 font-semibold text-[10px]">
+                                        <Badge variant="outline" className="h-6 border-slate-100 text-slate-500 font-semibold text-[10px]">
                                             Status: {totalWeight === 100 ? 'Balanced' : 'Imbalanced - Action Required'}
                                         </Badge>
                                     </div>
                                     <div className="h-3 w-full bg-slate-50 rounded-full overflow-hidden flex border border-slate-100">
-                                        <div className="h-full bg-indigo-500 transition-all duration-500" style={{ width: '90%' }} />
-                                        <div className="h-full bg-blue-400 transition-all duration-500" style={{ width: '10%' }} />
+                                        <div className="h-full bg-indigo-500 transition-all duration-500" style={{ width: `${bantWeight}%` }} />
+                                        <div className="h-full bg-blue-400 transition-all duration-500" style={{ width: `${firmoWeight}%` }} />
+                                        <div className="h-full bg-pink-400 transition-all duration-500" style={{ width: `${behavWeight}%` }} />
                                     </div>
                                 </div>
                             </div>
@@ -210,87 +285,49 @@ export default function QualificationFrameworkPage() {
                 <div className="lg:col-span-8 space-y-4">
                     <div className="flex items-center justify-between px-2">
                         <h2 className="text-[16px] font-semibold text-slate-900 flex items-center gap-2">
-                            Criteria Definition <Badge className="bg-slate-100 text-slate-600 hover:bg-slate-100 border-none font-semibold text-[10px] h-5">{criteria.length}</Badge>
+                            Criteria Definition <Badge className="bg-slate-100 text-slate-600 hover:bg-slate-100 border-none font-semibold text-[10px] h-5">{filteredCriteria.length}</Badge>
                         </h2>
-                        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-                            <DialogTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    className="h-8 text-indigo-600 font-semibold text-[12px] hover:bg-indigo-50"
-                                    onClick={() => { setEditingItem(null); setNewItem({ name: "", type: "BANT", weight: 0, requiredAt: "SQL", fieldType: "Text" }) }}
-                                >
-                                    <Plus size={14} className="mr-1.5" /> Add New Field
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent className="bg-white rounded-3xl p-6">
-                                <DialogHeader>
-                                    <DialogTitle>{editingItem ? 'Edit Criteria' : 'Add New Criteria'}</DialogTitle>
-                                </DialogHeader>
-                                <div className="grid gap-4 py-4">
-                                    <div className="space-y-2">
-                                        <Label className="text-[12px] font-semibold">Field Name</Label>
-                                        <Input value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} placeholder="e.g., Implementation Timeline" className="h-11 rounded-xl" />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label className="text-[12px] font-semibold">Category</Label>
-                                            <Select value={newItem.type} onValueChange={v => setNewItem({ ...newItem, type: v })}>
-                                                <SelectTrigger className="h-11 rounded-xl">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent className="rounded-xl">
-                                                    <SelectItem value="BANT">BANT</SelectItem>
-                                                    <SelectItem value="Firmographic">Firmographic</SelectItem>
-                                                    <SelectItem value="Behavioral">Behavioral</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-[12px] font-semibold">Weight (%)</Label>
-                                            <Input type="number" value={newItem.weight} onChange={e => setNewItem({ ...newItem, weight: parseInt(e.target.value) || 0 })} className="h-11 rounded-xl" />
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label className="text-[12px] font-semibold">Required at</Label>
-                                            <Select value={newItem.requiredAt} onValueChange={v => setNewItem({ ...newItem, requiredAt: v })}>
-                                                <SelectTrigger className="h-11 rounded-xl">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent className="rounded-xl">
-                                                    <SelectItem value="Discovery">Discovery</SelectItem>
-                                                    <SelectItem value="MQL">MQL</SelectItem>
-                                                    <SelectItem value="SQL">SQL</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-[12px] font-semibold">Field Type</Label>
-                                            <Select value={newItem.fieldType} onValueChange={v => setNewItem({ ...newItem, fieldType: v })}>
-                                                <SelectTrigger className="h-11 rounded-xl">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent className="rounded-xl">
-                                                    <SelectItem value="Text">Text</SelectItem>
-                                                    <SelectItem value="Dropdown">Dropdown</SelectItem>
-                                                    <SelectItem value="Number">Number</SelectItem>
-                                                    <SelectItem value="Date">Date</SelectItem>
-                                                    <SelectItem value="Currency">Currency</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </div>
-                                </div>
-                                <Button className="h-11 w-full bg-indigo-600 font-semibold rounded-xl" onClick={handleAddOrUpdate}>
-                                    {editingItem ? 'Update Field' : 'Add to Framework'}
-                                </Button>
-                            </DialogContent>
-                        </Dialog>
+                        <Button
+                            variant="ghost"
+                            className="h-8 text-indigo-600 font-semibold text-[12px] hover:bg-indigo-50"
+                            onClick={openCreate}
+                        >
+                            <Plus size={14} className="mr-1.5" /> Add New Field
+                        </Button>
+                    </div>
+
+                    {/* Filter / Search */}
+                    <div className="flex items-center gap-3 bg-slate-50/50 p-2 border border-slate-100">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                            <Input
+                                placeholder="Search criteria by name or category..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-9 h-10 border-slate-100 bg-white text-[13px] rounded-lg focus-visible:ring-indigo-500"
+                            />
+                        </div>
+                        <Select value={filterCategory} onValueChange={setFilterCategory}>
+                            <SelectTrigger className="w-[180px] h-10 border-slate-100 bg-white font-semibold text-[12px] rounded-lg">
+                                <Filter className="h-3.5 w-3.5 mr-2 text-slate-400" />
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Categories</SelectItem>
+                                <SelectItem value="BANT">BANT</SelectItem>
+                                <SelectItem value="Firmographic">Firmographic</SelectItem>
+                                <SelectItem value="Behavioral">Behavioral</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     <div className="space-y-3">
-                        {criteria.map((item) => (
-                            <Card key={item.id} className="border-none shadow-sm ring-1 ring-slate-100 rounded-2xl group hover:ring-indigo-100 transition-all bg-white overflow-hidden">
+                        {filteredCriteria.length === 0 ? (
+                            <div className="p-10 border-2 border-dashed border-slate-200 text-center">
+                                <p className="text-[13px] font-semibold text-slate-400">No criteria match your filters.</p>
+                            </div>
+                        ) : filteredCriteria.map((item) => (
+                            <Card key={item.id} className="border-none shadow-sm ring-1 ring-slate-100 rounded-none group hover:ring-indigo-100 transition-all bg-white overflow-hidden">
                                 <CardContent className="p-0">
                                     <div className="flex items-stretch">
                                         <div className="w-10 flex flex-col items-center justify-center border-r border-slate-50 group-hover:bg-indigo-50/30 transition-colors">
@@ -343,45 +380,45 @@ export default function QualificationFrameworkPage() {
 
                 {/* Governance Sidebar */}
                 <div className="lg:col-span-4 space-y-6">
-                    <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl bg-white overflow-hidden">
-                        <CardHeader className="p-6 border-b border-slate-50">
+                    <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-none bg-blue-50 overflow-hidden">
+                        <CardHeader className="p-6 border-b border-blue-100">
                             <CardTitle className="text-[16px] font-semibold text-slate-900">Stage Enforcement</CardTitle>
                             <CardDescription className="text-[11px] font-medium text-slate-500">Automatically block stage movement if fields are missing.</CardDescription>
                         </CardHeader>
-                        <CardContent className="p-6 space-y-5">
-                            {[
-                                { stage: "MQL Movement", desc: "Require Need & Fit scores", active: true },
-                                { stage: "SQL Movement", desc: "Require Budget & Authority", active: true },
-                                { stage: "Discovery Done", desc: "Require Company Profile", active: false },
-                            ].map((s, i) => (
-                                <div key={i} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/50 border border-slate-100/50">
+                        <CardContent className="p-6 space-y-5 bg-white">
+                            {stageEnforcement.map((s, i) => (
+                                <div key={i} className="flex items-center justify-between p-3 bg-slate-50/50 border border-slate-100/50">
                                     <div className="space-y-1">
                                         <p className="text-[13px] font-semibold text-slate-700">{s.stage}</p>
                                         <p className="text-[10px] font-medium text-slate-400">{s.desc}</p>
                                     </div>
-                                    <Switch checked={s.active} className="data-[state=checked]:bg-indigo-600" />
+                                    <Switch
+                                        checked={s.active}
+                                        onCheckedChange={() => toggleStageEnforcement(i)}
+                                        className="data-[state=checked]:bg-indigo-600"
+                                    />
                                 </div>
                             ))}
                         </CardContent>
                     </Card>
 
-                    <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl bg-slate-50 text-slate-900 border border-slate-100 p-1">
+                    <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-none bg-amber-50 text-slate-900 border border-amber-100 p-1">
                         <CardContent className="p-6 space-y-4">
-                            <div className="p-2.5 rounded-xl bg-white border border-slate-100 text-indigo-600 shadow-sm w-fit">
+                            <div className="p-2.5 rounded-xl bg-white border border-amber-100 text-indigo-600 shadow-sm w-fit">
                                 <Target size={20} />
                             </div>
                             <div className="space-y-1">
                                 <h4 className="text-[16px] font-semibold text-slate-900">Predictive Model Active</h4>
-                                <p className="text-[12px] text-slate-500 leading-relaxed font-medium">
+                                <p className="text-[12px] text-slate-600 leading-relaxed font-medium">
                                     System is currently weighting historical wins (3.2k deals) to validate your criteria weights.
                                 </p>
                             </div>
                             <div className="pt-2">
-                                <div className="flex items-center justify-between text-[11px] font-semibold mb-1.5 text-slate-400 tracking-wider">
+                                <div className="flex items-center justify-between text-[11px] font-semibold mb-1.5 text-slate-500 tracking-wider">
                                     <span>Model Confidence</span>
-                                    <span className="text-emerald-500">94%</span>
+                                    <span className="text-emerald-600">94%</span>
                                 </div>
-                                <div className="h-1.5 w-full bg-white rounded-full overflow-hidden border border-slate-100">
+                                <div className="h-1.5 w-full bg-white rounded-full overflow-hidden border border-amber-100">
                                     <div className="h-full bg-emerald-500 w-[94%]" />
                                 </div>
                             </div>
@@ -390,6 +427,107 @@ export default function QualificationFrameworkPage() {
                 </div>
 
             </div>
+
+            {/* Side-drawer Form */}
+            <SideFormSheet
+                open={isAddOpen}
+                onOpenChange={(o) => { setIsAddOpen(o); if (!o) setErrors({}) }}
+                title={editingItem ? 'Edit Criteria' : 'Add New Criteria'}
+                description={editingItem ? 'Update qualification field configuration.' : 'Define a new BANT or Firmographic field.'}
+                icon={<ShieldCheck size={18} />}
+                onSubmit={handleAddOrUpdate}
+                submitLabel={editingItem ? 'Update Field' : 'Add to Framework'}
+                accentColor="#4f46e5"
+            >
+                <div className="space-y-5">
+                    <Field label="Field Name" required error={errors.name}>
+                        <Input
+                            value={newItem.name}
+                            onChange={e => { setNewItem({ ...newItem, name: e.target.value }); if (errors.name) setErrors({ ...errors, name: undefined }) }}
+                            placeholder="e.g., Implementation Timeline"
+                            className="h-11 rounded-lg"
+                        />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <Field label="Category" required error={errors.type}>
+                            <Select value={newItem.type} onValueChange={v => { setNewItem({ ...newItem, type: v }); if (errors.type) setErrors({ ...errors, type: undefined }) }}>
+                                <SelectTrigger className="h-11 rounded-lg">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="BANT">BANT</SelectItem>
+                                    <SelectItem value="Firmographic">Firmographic</SelectItem>
+                                    <SelectItem value="Behavioral">Behavioral</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Weight (%)" required error={errors.weight} hint="Range: 1-100">
+                            <Input
+                                type="number"
+                                min={1}
+                                max={100}
+                                value={newItem.weight}
+                                onChange={e => { setNewItem({ ...newItem, weight: parseInt(e.target.value) || 0 }); if (errors.weight) setErrors({ ...errors, weight: undefined }) }}
+                                className="h-11 rounded-lg"
+                            />
+                        </Field>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <Field label="Required At" required error={errors.requiredAt}>
+                            <Select value={newItem.requiredAt} onValueChange={v => { setNewItem({ ...newItem, requiredAt: v }); if (errors.requiredAt) setErrors({ ...errors, requiredAt: undefined }) }}>
+                                <SelectTrigger className="h-11 rounded-lg">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Discovery">Discovery</SelectItem>
+                                    <SelectItem value="MQL">MQL</SelectItem>
+                                    <SelectItem value="SQL">SQL</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Field Type" required error={errors.fieldType}>
+                            <Select value={newItem.fieldType} onValueChange={v => { setNewItem({ ...newItem, fieldType: v }); if (errors.fieldType) setErrors({ ...errors, fieldType: undefined }) }}>
+                                <SelectTrigger className="h-11 rounded-lg">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Text">Text</SelectItem>
+                                    <SelectItem value="Dropdown">Dropdown</SelectItem>
+                                    <SelectItem value="Number">Number</SelectItem>
+                                    <SelectItem value="Date">Date</SelectItem>
+                                    <SelectItem value="Currency">Currency</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                    </div>
+                </div>
+            </SideFormSheet>
+
+            {/* Advanced Config side-drawer */}
+            <SideFormSheet
+                open={isAdvancedOpen}
+                onOpenChange={setIsAdvancedOpen}
+                title="Advanced Configuration"
+                description="Tune system-level scoring behaviour."
+                icon={<Settings2 size={18} />}
+                hideFooter
+                accentColor="#0ea5e9"
+            >
+                <div className="space-y-5">
+                    <div className="p-4 bg-slate-50 border border-slate-100 space-y-2">
+                        <p className="text-[12px] font-semibold text-slate-700">Auto-rebalance weights</p>
+                        <p className="text-[11px] text-slate-500">When enabled, system normalizes weights to total 100% on save.</p>
+                        <Switch defaultChecked className="data-[state=checked]:bg-indigo-600" />
+                    </div>
+                    <div className="p-4 bg-slate-50 border border-slate-100 space-y-2">
+                        <p className="text-[12px] font-semibold text-slate-700">Strict mode</p>
+                        <p className="text-[11px] text-slate-500">Block lead movement if any required criterion has no value.</p>
+                        <Switch defaultChecked className="data-[state=checked]:bg-indigo-600" />
+                    </div>
+                </div>
+            </SideFormSheet>
 
         </div>
     )

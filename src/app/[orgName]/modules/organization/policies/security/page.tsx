@@ -1,6 +1,6 @@
-"use client"
+﻿"use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import {
     ShieldCheck,
     Lock,
@@ -24,8 +24,9 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { SmallCard, SmallCardHeader, SmallCardContent } from "@/shared/components/custom/SmallCard"
 import { toast } from "sonner"
+import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks"
 
-const institutionalPolicies = [
+const initialPolicies = [
     { id: 1, name: "Multi-Factor Authentication (MFA)", desc: "Enforce biometrics, TOTP, or Security Keys for all administrative and staff identities.", enabled: true, severity: "Critical", icon: Fingerprint, scope: "Identity" },
     { id: 2, name: "IP Pinning & Binding", desc: "Instantly invalidate sessions if a user's IP address changes during an active authentication window.", enabled: true, severity: "High", icon: Globe, scope: "Network" },
     { id: 3, name: "Session Concurrent Limit", desc: "Restrict identities to a maximum of 2 active concurrent sessions across all device types.", enabled: false, severity: "Medium", icon: ShieldBan, scope: "Identity" },
@@ -34,12 +35,56 @@ const institutionalPolicies = [
 ]
 
 export default function SecurityPoliciesPage() {
-    const handleDeploy = () => {
-        toast.promise(new Promise(res => setTimeout(res, 1500)), {
-            loading: "Propagating security protocols to all edge nodes...",
-            success: "Global Security Baseline successfully deployed.",
-            error: "Failed to sync policies."
-        })
+    const [institutionalPolicies, setInstitutionalPolicies] = useState(initialPolicies)
+    const [saving, setSaving] = useState(false)
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await getOrgAdminSettings()
+                const s = res?.data?.settings || res?.data?.data || res?.data || {}
+                if (typeof s?.security?.enforceMFA === "boolean") {
+                    setInstitutionalPolicies(prev =>
+                        prev.map(p => (p.id === 1 ? { ...p, enabled: s.security.enforceMFA } : p))
+                    )
+                }
+                if (typeof s?.security?.ipRestrictions?.enabled === "boolean") {
+                    setInstitutionalPolicies(prev =>
+                        prev.map(p => (p.id === 2 ? { ...p, enabled: s.security.ipRestrictions.enabled } : p))
+                    )
+                }
+            } catch (err) {
+                // Silent
+            }
+        })()
+    }, [])
+
+    const togglePolicy = (id: number) => {
+        setInstitutionalPolicies(prev =>
+            prev.map(p => (p.id === id ? { ...p, enabled: !p.enabled } : p))
+        )
+        const target = institutionalPolicies.find(p => p.id === id)
+        if (target) toast.success(`Security policy changed for ${target.name}`)
+    }
+
+    const handleDeploy = async () => {
+        try {
+            setSaving(true)
+            const mfaPolicy = institutionalPolicies.find(p => p.id === 1)
+            const ipPolicy = institutionalPolicies.find(p => p.id === 2)
+            await updateOrgAdminSettings({
+                security: {
+                    enforceMFA: !!mfaPolicy?.enabled,
+                    ipRestrictions: { enabled: !!ipPolicy?.enabled },
+                },
+            })
+            toast.success("Global Security Baseline successfully deployed.")
+        } catch (err: any) {
+            console.error("Failed to deploy security policies:", err)
+            toast.error(err?.response?.data?.message || "Failed to sync policies.")
+        } finally {
+            setSaving(false)
+        }
     }
 
     return (
@@ -55,9 +100,9 @@ export default function SecurityPoliciesPage() {
                         <RotateCcw className="w-4 h-4" />
                         Reset
                     </Button>
-                    <Button className="h-9 bg-blue-600 hover:bg-blue-700 text-white gap-2 font-black uppercase text-[10px] tracking-widest shadow-xl px-6" onClick={handleDeploy}>
+                    <Button className="h-9 bg-blue-600 hover:bg-blue-700 text-white gap-2 font-black uppercase text-[10px] tracking-widest shadow-xl px-6" onClick={handleDeploy} disabled={saving}>
                         <ShieldCheck className="w-4 h-4" />
-                        Deploy Protocols
+                        {saving ? "Deploying..." : "Deploy Protocols"}
                     </Button>
                 </div>
             </div>
@@ -118,7 +163,7 @@ export default function SecurityPoliciesPage() {
                         <Card key={policy.id} className="border-slate-200 shadow-sm hover:border-blue-200 transition-all group">
                             <CardContent className="p-5 flex items-center justify-between">
                                 <div className="flex items-center gap-5">
-                                    <div className={`h-12 w-12 rounded-2xl flex items-center justify-center border transition-all ${policy.enabled ?
+                                    <div className={`h-12 w-12 rounded-none flex items-center justify-center border transition-all ${policy.enabled ?
                                             'bg-blue-50 text-blue-600 border-blue-100 group-hover:scale-105' :
                                             'bg-slate-100 text-slate-400 border-slate-200'
                                         }`}>
@@ -144,7 +189,7 @@ export default function SecurityPoliciesPage() {
                                             {policy.enabled ? 'ACTIVE' : 'OFF'}
                                         </p>
                                     </div>
-                                    <Switch checked={policy.enabled} onCheckedChange={() => toast.success(`Security policy changed for ${policy.name}`)} />
+                                    <Switch checked={policy.enabled} onCheckedChange={() => togglePolicy(policy.id)} />
                                 </div>
                             </CardContent>
                         </Card>
@@ -152,7 +197,7 @@ export default function SecurityPoliciesPage() {
                 </div>
 
                 <div className="space-y-6">
-                    <Card className="bg-slate-900 text-white border-none rounded-3xl p-6 shadow-2xl relative overflow-hidden group">
+                    <Card className="bg-slate-900 text-white border-none rounded-none p-6 shadow-2xl relative overflow-hidden group">
                         <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-700">
                             <ShieldAlert className="w-32 h-32 text-red-500" />
                         </div>
@@ -181,7 +226,7 @@ export default function SecurityPoliciesPage() {
                         </Button>
                     </Card>
 
-                    <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-3">
+                    <div className="p-4 bg-amber-50 border border-amber-100 rounded-none flex items-start gap-3">
                         <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                         <p className="text-[11px] font-medium text-amber-800 leading-relaxed italic">
                             Deploying protocols updates the <span className="font-bold">Security Envelope</span> across all 12 Firms. Note: Old browser sessions may be forcibly terminated.

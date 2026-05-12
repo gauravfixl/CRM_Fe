@@ -10,18 +10,13 @@ import {
     Edit,
     Trash2,
     AlertTriangle,
-    ChevronRight
+    ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/shared/components/ui/switch";
-import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-} from "@/shared/components/ui/dialog";
-import { Label } from "@/shared/components/ui/label";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -37,6 +32,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/shared/components/ui/select";
+import { Textarea } from "@/shared/components/ui/textarea";
+import { toast } from "sonner";
+
+const MODULE_OPTIONS = ["All", "Leads", "Contacts", "Deals", "Tasks", "Campaigns"];
 
 export default function AllowedActionsPage() {
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -46,6 +45,66 @@ export default function AllowedActionsPage() {
         { id: "3", name: "Delete Records", category: "Data Modification", risk: "High", modules: ["Leads"], status: "Restricted" },
         { id: "4", name: "Create Tasks", category: "Task Management", risk: "Low", modules: ["All"], status: "Allowed" },
     ]);
+
+    const [form, setForm] = useState({
+        name: "",
+        category: "",
+        risk: "",
+        modules: [] as string[],
+        description: "",
+    });
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [saving, setSaving] = useState(false);
+
+    const resetForm = () => {
+        setForm({ name: "", category: "", risk: "", modules: [], description: "" });
+        setErrors({});
+    };
+
+    const toggleModule = (m: string) => {
+        setForm(prev => {
+            if (m === "All") {
+                return { ...prev, modules: prev.modules.includes("All") ? [] : ["All"] };
+            }
+            const next = prev.modules.includes(m)
+                ? prev.modules.filter(x => x !== m)
+                : [...prev.modules.filter(x => x !== "All"), m];
+            return { ...prev, modules: next };
+        });
+    };
+
+    const validate = () => {
+        const next: Record<string, string> = {};
+        if (!form.name.trim()) next.name = "Action name is required";
+        if (!form.category) next.category = "Choose a category";
+        if (!form.risk) next.risk = "Choose a risk level";
+        if (form.modules.length === 0) next.modules = "Select at least one module";
+        setErrors(next);
+        return Object.keys(next).length === 0;
+    };
+
+    const handleCreate = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!validate()) return;
+        setSaving(true);
+        setTimeout(() => {
+            setActions(prev => [
+                ...prev,
+                {
+                    id: String(Date.now()),
+                    name: form.name.trim(),
+                    category: form.category,
+                    risk: form.risk,
+                    modules: form.modules,
+                    status: "Allowed",
+                },
+            ]);
+            toast.success("Action added to whitelist");
+            setSaving(false);
+            setShowCreateModal(false);
+            resetForm();
+        }, 600);
+    };
 
     const toggleStatus = (id: string) => {
         setActions(prev => prev.map(a =>
@@ -204,62 +263,96 @@ export default function AllowedActionsPage() {
                 </div>
             </div>
 
-            {/* Create Modal */}
-            <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-                <DialogContent className="max-w-2xl rounded-none p-0 overflow-hidden shadow-2xl border-none">
-                    <div className="bg-gradient-to-r from-green-700 to-emerald-800 p-8 text-white relative">
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                            <Shield size={80} />
-                        </div>
-                        <h2 className="text-2xl font-bold flex items-center gap-3">
-                            <Plus size={24} /> Add Allowed Action
-                        </h2>
-                        <p className="text-sm opacity-80 mt-2">Define which automation actions are permitted.</p>
+            {/* Add Allowed Action — side sheet */}
+            <SideFormSheet
+                open={showCreateModal}
+                onOpenChange={(o) => {
+                    setShowCreateModal(o);
+                    if (!o) resetForm();
+                }}
+                title="Add Allowed Action"
+                description="Define which automation actions are permitted across your modules."
+                icon={<Shield className="w-5 h-5" />}
+                accentColor="#059669"
+                width="lg"
+                loading={saving}
+                onSubmit={handleCreate}
+                submitLabel="Add Action"
+            >
+                <div className="space-y-5">
+                    <Field label="Action Name" required error={errors.name}>
+                        <Input
+                            placeholder="e.g., Send Email"
+                            value={form.name}
+                            onChange={(e) => setForm(p => ({ ...p, name: e.target.value }))}
+                            className="h-11 rounded-lg bg-white border-slate-200 focus:border-primary"
+                            maxLength={80}
+                        />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Category" required error={errors.category}>
+                            <Select
+                                value={form.category}
+                                onValueChange={(v) => setForm(p => ({ ...p, category: v }))}
+                            >
+                                <SelectTrigger className="h-11 rounded-lg border-slate-200">
+                                    <SelectValue placeholder="Select category" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Communication">Communication</SelectItem>
+                                    <SelectItem value="Data Modification">Data Modification</SelectItem>
+                                    <SelectItem value="Task Management">Task Management</SelectItem>
+                                    <SelectItem value="Integration">Integration</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Risk Level" required error={errors.risk}>
+                            <Select
+                                value={form.risk}
+                                onValueChange={(v) => setForm(p => ({ ...p, risk: v }))}
+                            >
+                                <SelectTrigger className="h-11 rounded-lg border-slate-200">
+                                    <SelectValue placeholder="Select risk" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Low">Low</SelectItem>
+                                    <SelectItem value="Medium">Medium</SelectItem>
+                                    <SelectItem value="High">High</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
                     </div>
-                    <div className="p-8 space-y-6 bg-white">
-                        <div className="space-y-3">
-                            <Label className="text-xs font-bold text-gray-600">Action Name</Label>
-                            <Input placeholder="e.g., Send Email" className="rounded-none border-zinc-200 h-12 text-sm" />
+
+                    <Field label="Applicable Modules" required error={errors.modules} hint="Pick which modules can use this action.">
+                        <div className="flex flex-wrap gap-2">
+                            {MODULE_OPTIONS.map((m) => {
+                                const active = form.modules.includes(m);
+                                return (
+                                    <button
+                                        key={m}
+                                        type="button"
+                                        onClick={() => toggleModule(m)}
+                                        className={`h-9 px-3 rounded-lg border text-[12px] font-medium transition-colors ${active ? "bg-emerald-600 text-white border-emerald-600" : "bg-white text-slate-700 border-slate-200 hover:border-emerald-400"}`}
+                                    >
+                                        {m}
+                                    </button>
+                                );
+                            })}
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-3">
-                                <Label className="text-xs font-bold text-gray-600">Category</Label>
-                                <Select>
-                                    <SelectTrigger className="rounded-none border-zinc-200 h-12">
-                                        <SelectValue placeholder="Select category" />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-none">
-                                        <SelectItem value="comm">Communication</SelectItem>
-                                        <SelectItem value="data">Data Modification</SelectItem>
-                                        <SelectItem value="task">Task Management</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-3">
-                                <Label className="text-xs font-bold text-gray-600">Risk Level</Label>
-                                <Select>
-                                    <SelectTrigger className="rounded-none border-zinc-200 h-12">
-                                        <SelectValue placeholder="Select risk" />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-none">
-                                        <SelectItem value="low">Low</SelectItem>
-                                        <SelectItem value="medium">Medium</SelectItem>
-                                        <SelectItem value="high">High</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                    </div>
-                    <DialogFooter className="p-8 bg-zinc-50 border-t border-zinc-100 gap-4 sm:justify-end">
-                        <Button variant="ghost" onClick={() => setShowCreateModal(false)} className="rounded-none text-sm text-gray-600">
-                            Cancel
-                        </Button>
-                        <Button className="bg-green-600 hover:bg-green-700 rounded-none text-sm px-10 h-12 shadow-xl shadow-green-100">
-                            Add Action
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    </Field>
+
+                    <Field label="Description" hint="Optional. Add context about why this action is allowed/restricted.">
+                        <Textarea
+                            placeholder="Describe usage, scope, and policy notes..."
+                            value={form.description}
+                            onChange={(e) => setForm(p => ({ ...p, description: e.target.value }))}
+                            className="min-h-[100px] rounded-lg bg-white border-slate-200 focus:border-primary text-[13px]"
+                            maxLength={500}
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
         </div>
     );
 }

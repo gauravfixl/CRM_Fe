@@ -36,16 +36,7 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { useMeStore } from "@/shared/data/me-store";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/shared/components/ui/dialog";
-import { Label } from "@/shared/components/ui/label";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Input } from "@/shared/components/ui/input";
 import { Textarea } from "@/shared/components/ui/textarea";
 
@@ -257,81 +248,13 @@ const MyAttendancePage = () => {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <Dialog open={isRegularizeOpen} onOpenChange={setIsRegularizeOpen}>
-                        <DialogTrigger asChild>
-                            <Button variant="outline" className="rounded-xl h-12 px-6 font-bold border-slate-200 transition-all hover:bg-white hover:border-indigo-400 hover:text-indigo-600 shadow-sm">
-                                <FileEdit className="mr-2 h-5 w-5" /> Regularize Attendance
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="bg-white rounded-[2rem] border-0 shadow-2xl p-0 max-w-xl overflow-hidden outline-none ring-1 ring-slate-200">
-                            <div className="p-8 pb-6 bg-slate-900 text-white relative">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl -mr-16 -mt-16" />
-                                <DialogHeader className="relative z-10">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <div className="h-10 w-10 bg-indigo-500/30 rounded-xl flex items-center justify-center backdrop-blur-md border border-white/10">
-                                            <FileEdit size={20} className="text-white" />
-                                        </div>
-                                        <Badge className="bg-indigo-500 text-white border-none text-[10px] font-black tracking-widest px-3 h-5">ADMIN REVIEW REQUIRED</Badge>
-                                    </div>
-                                    <DialogTitle className="text-2xl font-black tracking-tight text-white capitalize">Record Correction</DialogTitle>
-                                    <DialogDescription className="text-slate-400 font-medium">Please provide accurate timestamps and a valid justification.</DialogDescription>
-                                </DialogHeader>
-                            </div>
-
-                            <div className="p-8 grid gap-6 bg-white">
-                                <div className="space-y-2">
-                                    <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Applied Date *</Label>
-                                    <Input
-                                        type="date"
-                                        value={regularizeForm.date}
-                                        onChange={e => setRegularizeForm({ ...regularizeForm, date: e.target.value })}
-                                        className="rounded-xl bg-slate-50 border-slate-200 h-12 font-bold focus:bg-white focus:ring-2 focus:ring-indigo-100 transition-all"
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Shift Start *</Label>
-                                        <div className="relative">
-                                            <LogIn className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                            <Input
-                                                type="time"
-                                                value={regularizeForm.checkIn}
-                                                onChange={e => setRegularizeForm({ ...regularizeForm, checkIn: e.target.value })}
-                                                className="rounded-xl bg-slate-50 border-slate-200 h-12 pl-10 font-bold focus:bg-white focus:ring-2 focus:ring-indigo-100 transition-all"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Shift End *</Label>
-                                        <div className="relative">
-                                            <LogOut className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                            <Input
-                                                type="time"
-                                                value={regularizeForm.checkOut}
-                                                onChange={e => setRegularizeForm({ ...regularizeForm, checkOut: e.target.value })}
-                                                className="rounded-xl bg-slate-50 border-slate-200 h-12 pl-10 font-bold focus:bg-white focus:ring-2 focus:ring-indigo-100 transition-all"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Correction Reason *</Label>
-                                    <Textarea
-                                        placeholder="Detailed explanation for the discrepancy..."
-                                        value={regularizeForm.reason}
-                                        onChange={e => setRegularizeForm({ ...regularizeForm, reason: e.target.value })}
-                                        className="rounded-xl bg-slate-50 border-slate-200 min-h-[120px] font-medium p-4 focus:bg-white focus:ring-2 focus:ring-indigo-100 transition-all resize-none shadow-inner"
-                                    />
-                                </div>
-                            </div>
-                            <DialogFooter className="px-8 py-6 bg-slate-50 border-t border-slate-100 flex gap-3">
-                                <Button variant="ghost" onClick={() => setIsRegularizeOpen(false)} className="rounded-xl h-12 px-6 font-bold text-slate-500 hover:bg-slate-200">Cancel</Button>
-                                <Button className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-12 font-black shadow-xl shadow-indigo-100 uppercase tracking-widest text-xs" onClick={handleRegularizeSubmit}>
-                                    Send for Approval
-                                </Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
+                    <Button
+                        variant="outline"
+                        className="rounded-xl h-12 px-6 font-bold border-slate-200 transition-all hover:bg-white hover:border-indigo-400 hover:text-indigo-600 shadow-sm"
+                        onClick={() => setIsRegularizeOpen(true)}
+                    >
+                        <FileEdit className="mr-2 h-5 w-5" /> Regularize Attendance
+                    </Button>
 
                     <Button
                         onClick={attendance.isCheckedIn ? handleCheckOutAction : handleCheckInAction}
@@ -801,6 +724,60 @@ const MyAttendancePage = () => {
 
                 </div>
             </div>
+
+            <SideFormSheet
+                open={isRegularizeOpen}
+                onOpenChange={setIsRegularizeOpen}
+                title="Record Correction"
+                description="Please provide accurate timestamps and a valid justification."
+                icon={<FileEdit size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                submitLabel="Send for Approval"
+                onSubmit={(e) => { e.preventDefault(); handleRegularizeSubmit(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Applied Date" required>
+                        <Input
+                            type="date"
+                            value={regularizeForm.date}
+                            onChange={e => setRegularizeForm({ ...regularizeForm, date: e.target.value })}
+                        />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Shift Start" required>
+                            <div className="relative">
+                                <LogIn className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10" size={16} />
+                                <Input
+                                    type="time"
+                                    value={regularizeForm.checkIn}
+                                    onChange={e => setRegularizeForm({ ...regularizeForm, checkIn: e.target.value })}
+                                    className="pl-10"
+                                />
+                            </div>
+                        </Field>
+                        <Field label="Shift End">
+                            <div className="relative">
+                                <LogOut className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10" size={16} />
+                                <Input
+                                    type="time"
+                                    value={regularizeForm.checkOut}
+                                    onChange={e => setRegularizeForm({ ...regularizeForm, checkOut: e.target.value })}
+                                    className="pl-10"
+                                />
+                            </div>
+                        </Field>
+                    </div>
+                    <Field label="Correction Reason" required>
+                        <Textarea
+                            placeholder="Detailed explanation for the discrepancy..."
+                            value={regularizeForm.reason}
+                            onChange={e => setRegularizeForm({ ...regularizeForm, reason: e.target.value })}
+                            className="min-h-[120px]"
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
         </div>
     );
 };

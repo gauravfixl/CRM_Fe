@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -188,16 +188,16 @@ export default function IntegrationsPage() {
                                             </div>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <CustomButton variant="ghost" className="h-10 w-10 p-0 rounded-2xl bg-white/50 border border-zinc-100 group-hover:shadow-lg transition-all">
+                                                    <CustomButton variant="ghost" className="h-10 w-10 p-0 rounded-none bg-white/50 border border-zinc-100 group-hover:shadow-lg transition-all">
                                                         <MoreVertical size={20} className="text-zinc-400" />
                                                     </CustomButton>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end" className="rounded-[32px] w-64 p-2 shadow-3xl bg-white dark:bg-zinc-900 border-zinc-100">
-                                                    <DropdownMenuItem className="rounded-2xl gap-3 font-bold px-6 py-4 text-xs italic uppercase italic tracking-tight"><Settings size={18} /> Configure API</DropdownMenuItem>
-                                                    <DropdownMenuItem className="rounded-2xl gap-3 font-bold px-6 py-4 text-xs italic uppercase italic tracking-tight"><RefreshCw size={18} /> Force Sync</DropdownMenuItem>
-                                                    <DropdownMenuItem className="rounded-2xl gap-3 font-bold px-6 py-4 text-xs italic uppercase italic tracking-tight"><Share2 size={18} /> Internal Link</DropdownMenuItem>
+                                                    <DropdownMenuItem className="rounded-none gap-3 font-bold px-6 py-4 text-xs italic uppercase italic tracking-tight"><Settings size={18} /> Configure API</DropdownMenuItem>
+                                                    <DropdownMenuItem className="rounded-none gap-3 font-bold px-6 py-4 text-xs italic uppercase italic tracking-tight"><RefreshCw size={18} /> Force Sync</DropdownMenuItem>
+                                                    <DropdownMenuItem className="rounded-none gap-3 font-bold px-6 py-4 text-xs italic uppercase italic tracking-tight"><Share2 size={18} /> Internal Link</DropdownMenuItem>
                                                     <DropdownMenuSeparator />
-                                                    <DropdownMenuItem onClick={() => handleDelete(int.id)} className="rounded-2xl gap-3 font-bold px-6 py-4 text-xs text-red-600 focus:bg-red-600 focus:text-white font-black italic uppercase"><Trash2 size={18} /> expunge node</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleDelete(int.id)} className="rounded-none gap-3 font-bold px-6 py-4 text-xs text-red-600 focus:bg-red-600 focus:text-white font-black italic uppercase"><Trash2 size={18} /> expunge node</DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </div>

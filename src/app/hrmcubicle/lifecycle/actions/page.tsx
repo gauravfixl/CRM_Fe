@@ -10,7 +10,6 @@ import {
     Search,
     Filter,
     User,
-    ChevronRight,
     ArrowRight,
     History,
     MoreHorizontal,
@@ -33,9 +32,9 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
-import { Label } from "@/shared/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Input } from "@/shared/components/ui/input";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 
 type ActionType = 'Promotion' | 'Transfer' | 'Salary' | 'Exit';
 
@@ -327,76 +326,62 @@ const LifecycleActionsPage = () => {
                 </div>
             </div>
 
-            {/* Unified Action Dialog */}
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="bg-white rounded-2xl border-2 border-slate-200 p-6 max-w-md shadow-2xl">
-                    <DialogHeader>
-                        <div className="flex items-center gap-3 mb-1">
-                            <div className={`h-11 w-11 rounded-xl flex items-center justify-center text-white shadow-md ${actionType === 'Promotion' ? 'bg-[#CB9DF0]' : actionType === 'Transfer' ? 'bg-[#F0C1E1]' : actionType === 'Salary' ? 'bg-amber-500' : 'bg-rose-500'}`}>
-                                {actionType === 'Promotion' && <TrendingUp size={20} />}
-                                {actionType === 'Transfer' && <ArrowRightLeft size={20} />}
-                                {actionType === 'Salary' && <DollarSign size={20} />}
-                                {actionType === 'Exit' && <LogOut size={20} />}
-                            </div>
-                            <div>
-                                <DialogTitle className="text-lg font-bold text-slate-900">Initiate {actionType}</DialogTitle>
-                                <DialogDescription className="text-[10px] font-bold text-slate-400">Personnel management authorization</DialogDescription>
-                            </div>
-                        </div>
-                    </DialogHeader>
-                    <div className="space-y-4 py-3">
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide ml-1">Target Personnel</Label>
-                            <Select onValueChange={setSelectedEmpId} value={selectedEmpId}>
-                                <SelectTrigger className="rounded-xl h-10 bg-slate-50 border border-slate-100 font-bold text-xs"><SelectValue placeholder="Select employee..." /></SelectTrigger>
-                                <SelectContent className="rounded-xl font-bold">
-                                    {employees.filter(e => e.status !== 'Exited' && e.status !== 'Notice Period').length === 0 ? (
-                                        <div className="px-3 py-2 text-xs font-bold text-slate-400">No eligible employees</div>
-                                    ) : employees.filter(e => e.status !== 'Exited' && e.status !== 'Notice Period').map(e => (
-                                        <SelectItem key={e.id} value={e.id} className="font-bold text-xs">
-                                            {e.name} <span className="text-slate-300 mx-1">|</span> <span className="text-slate-400">{e.role}</span>
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {selectedEmployee && actionType !== 'Exit' && (
-                                <p className="text-[10px] font-bold text-slate-400 ml-1">Current: {actionType === 'Promotion' ? selectedEmployee.role : actionType === 'Transfer' ? selectedEmployee.department : 'Salary data'}</p>
-                            )}
-                        </div>
+            {/* Unified Action Side Form */}
+            <SideFormSheet
+                open={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+                title={`Initiate ${actionType}`}
+                description="Personnel management authorization"
+                icon={
+                    actionType === 'Promotion' ? <TrendingUp size={20} /> :
+                        actionType === 'Transfer' ? <ArrowRightLeft size={20} /> :
+                            actionType === 'Salary' ? <DollarSign size={20} /> :
+                                <LogOut size={20} />
+                }
+                accentColor={actionType === 'Exit' ? '#e11d48' : actionType === 'Salary' ? '#d97706' : actionType === 'Transfer' ? '#ec4899' : '#7c3aed'}
+                width="md"
+                submitLabel={`Authorize ${actionType}`}
+                onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Target Personnel" hint={selectedEmployee && actionType !== 'Exit' ? `Current: ${actionType === 'Promotion' ? selectedEmployee.role : actionType === 'Transfer' ? selectedEmployee.department : 'Salary data'}` : undefined}>
+                        <Select onValueChange={setSelectedEmpId} value={selectedEmpId}>
+                            <SelectTrigger><SelectValue placeholder="Select employee..." /></SelectTrigger>
+                            <SelectContent>
+                                {employees.filter(e => e.status !== 'Exited' && e.status !== 'Notice Period').length === 0 ? (
+                                    <div className="px-3 py-2 text-xs font-bold text-slate-400">No eligible employees</div>
+                                ) : employees.filter(e => e.status !== 'Exited' && e.status !== 'Notice Period').map(e => (
+                                    <SelectItem key={e.id} value={e.id} className="text-xs">
+                                        {e.name} <span className="text-slate-300 mx-1">|</span> <span className="text-slate-400">{e.role}</span>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
 
-                        <AnimatePresence mode="wait">
-                            {actionType === 'Exit' ? (
-                                <motion.div key="exit-fields" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide ml-1">Reason for Exit</Label>
-                                        <textarea value={newValue} onChange={e => setNewValue(e.target.value)} rows={3} placeholder="e.g. Personal reasons, better opportunity..." className="w-full rounded-xl bg-slate-50 border border-slate-100 p-3 text-xs font-medium text-slate-700 outline-none focus:border-indigo-200 resize-none" />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide ml-1">Last Working Day</Label>
-                                        <Input type="date" min={new Date().toISOString().split('T')[0]} value={exitLwd} onChange={e => setExitLwd(e.target.value)} className="rounded-xl h-10 bg-slate-50 border border-slate-100 font-bold text-xs" />
-                                    </div>
-                                </motion.div>
-                            ) : (
-                                <motion.div key="normal-fields" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-1.5">
-                                    <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide ml-1">
-                                        {actionType === 'Promotion' ? 'New Designation' : actionType === 'Transfer' ? 'New Department' : 'New Compensation'}
-                                    </Label>
+                    <AnimatePresence mode="wait">
+                        {actionType === 'Exit' ? (
+                            <motion.div key="exit-fields" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
+                                <Field label="Reason for Exit">
+                                    <textarea value={newValue} onChange={e => setNewValue(e.target.value)} rows={3} placeholder="e.g. Personal reasons, better opportunity..." className="w-full rounded-md bg-white border border-[#E5E7EB] p-3 text-sm text-slate-700 outline-none focus:border-indigo-300 resize-none" />
+                                </Field>
+                                <Field label="Last Working Day">
+                                    <Input type="date" min={new Date().toISOString().split('T')[0]} value={exitLwd} onChange={e => setExitLwd(e.target.value)} />
+                                </Field>
+                            </motion.div>
+                        ) : (
+                            <motion.div key="normal-fields" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                                <Field label={actionType === 'Promotion' ? 'New Designation' : actionType === 'Transfer' ? 'New Department' : 'New Compensation'}>
                                     <div className="relative">
-                                        <Input placeholder={actionType === 'Promotion' ? "e.g. Lead Engineer" : actionType === 'Transfer' ? "e.g. Growth / UK" : "e.g. ₹32,00,000"} value={newValue} onChange={e => setNewValue(e.target.value)} className="rounded-xl h-10 bg-slate-50 border border-slate-100 font-bold text-xs pr-10" />
+                                        <Input placeholder={actionType === 'Promotion' ? "e.g. Lead Engineer" : actionType === 'Transfer' ? "e.g. Growth / UK" : "e.g. ₹32,00,000"} value={newValue} onChange={e => setNewValue(e.target.value)} className="pr-10" />
                                         <ArrowRight className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300" size={14} />
                                     </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="rounded-xl h-10 px-6 font-bold border-slate-200 text-xs">Cancel</Button>
-                        <Button className={`flex-1 text-white rounded-xl font-bold h-10 text-xs shadow-lg transition-all flex items-center justify-center gap-2 ${actionType === 'Exit' ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-100' : 'bg-slate-900 hover:bg-slate-800 shadow-slate-200'}`} onClick={handleSubmit}>
-                            Authorize {actionType} <ChevronRight size={14} />
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                                </Field>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            </SideFormSheet>
 
             {/* Reset Confirmation */}
             <Dialog open={isResetOpen} onOpenChange={setIsResetOpen}>

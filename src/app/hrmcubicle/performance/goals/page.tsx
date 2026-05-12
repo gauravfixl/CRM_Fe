@@ -24,14 +24,6 @@ import { Label } from "@/shared/components/ui/label";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { usePerformanceStore, type Goal } from "@/shared/data/performance-store";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/shared/components/ui/dialog";
-import {
     AlertDialog,
     AlertDialogAction,
     AlertDialogCancel,
@@ -43,6 +35,7 @@ import {
 } from "@/shared/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Textarea } from "@/shared/components/ui/textarea";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     createGoal as apiCreateGoal,
     deleteGoal as apiDeleteGoal,
@@ -496,202 +489,147 @@ const GoalsPage = () => {
                 </div>
             </main>
 
-            {/* Config Dialog */}
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="bg-white rounded-[2.5rem] border border-slate-900 p-0 max-w-4xl shadow-3xl overflow-hidden font-sans" style={{ zoom: "80%" }}>
-                    <div className="flex flex-col h-full">
-                        <DialogHeader className="p-10 pb-6 space-y-4 text-start bg-slate-50/50">
-                            <div className="flex items-center gap-5">
-                                <div className="h-14 w-14 bg-white rounded-2xl flex items-center justify-center text-indigo-600 shadow-sm border border-slate-100 flex-shrink-0">
-                                    <Target size={28} />
-                                </div>
-                                <div className="space-y-1">
-                                    <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Goal Configuration</DialogTitle>
-                                    <DialogDescription className="text-slate-500 font-semibold text-sm">Define alignment, importance weightage, and approval status for the performance cycle.</DialogDescription>
-                                </div>
-                            </div>
-                        </DialogHeader>
+            {/* Config SideFormSheet */}
+            <SideFormSheet
+                open={isDialogOpen}
+                onOpenChange={(o) => { setIsDialogOpen(o); if (!o) { setActiveGoal(null); setFormData(emptyGoalForm); setErrors({}); } }}
+                title={activeGoal ? "Edit Goal Configuration" : "Goal Configuration"}
+                description="Define alignment, importance weightage, and approval status for the performance cycle."
+                icon={<Target size={20} />}
+                accentColor={activeGoal ? "#7c3aed" : "#4f46e5"}
+                width="xl"
+                loading={saving}
+                submitLabel={saving ? "Saving..." : "Commit Objective Parameters"}
+                onSubmit={(e) => { e.preventDefault(); handleSave(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Goal Outcome / Title" required error={errors.title || undefined}>
+                        <Input
+                            maxLength={200}
+                            placeholder="e.g. Increase revenue by 20% in Q1"
+                            value={formData.title}
+                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                        />
+                    </Field>
 
-                        <div className="p-10 pt-0">
-                            <div className="rounded-[2rem] bg-white p-8">
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-start">
-                                    <div className="md:col-span-2 lg:col-span-3 space-y-1.5">
-                                        <Label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Goal Outcome / Title *</Label>
-                                        <Input
-                                            maxLength={200}
-                                            className={`rounded-xl h-12 bg-slate-50 border-slate-200 font-bold px-5 focus:bg-white focus:ring-4 focus:ring-indigo-100 transition-all text-sm ${errors.title ? "border-rose-400 focus:border-rose-500" : "focus:border-indigo-500"}`}
-                                            placeholder="e.g. Increase revenue by 20% in Q1"
-                                            value={formData.title}
-                                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                        />
-                                        {errors.title && (
-                                            <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {errors.title}</p>
-                                        )}
-                                    </div>
-
-                                    {!activeGoal && (
-                                        <div className="md:col-span-2 lg:col-span-3 space-y-1.5">
-                                            <Label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Assign Employee *</Label>
-                                            <Select value={formData.employee} onValueChange={(v) => setFormData({ ...formData, employee: v })}>
-                                                <SelectTrigger className={`h-12 rounded-xl bg-slate-50 border-slate-200 font-bold px-5 text-sm ${errors.employee ? "border-rose-400" : ""}`}>
-                                                    <SelectValue placeholder={employees.length ? "Select an employee" : "Loading employees…"} />
-                                                </SelectTrigger>
-                                                <SelectContent className="rounded-xl border-none shadow-2xl p-1.5 font-bold max-h-72 overflow-y-auto">
-                                                    {employees.length === 0 && (
-                                                        <div className="px-3 py-2 text-xs text-slate-400 italic">No employees available</div>
-                                                    )}
-                                                    {employees.map((e) => (
-                                                        <SelectItem key={e.id} value={e.id} className="rounded-lg h-9 text-[11px]">{e.label}</SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            {errors.employee && (
-                                                <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {errors.employee}</p>
-                                            )}
-                                        </div>
+                    {!activeGoal && (
+                        <Field label="Assign Employee" required error={errors.employee || undefined}>
+                            <Select value={formData.employee} onValueChange={(v) => setFormData({ ...formData, employee: v })}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder={employees.length ? "Select an employee" : "Loading employees…"} />
+                                </SelectTrigger>
+                                <SelectContent className="max-h-72 overflow-y-auto">
+                                    {employees.length === 0 && (
+                                        <div className="px-3 py-2 text-xs text-slate-400 italic">No employees available</div>
                                     )}
+                                    {employees.map((e) => (
+                                        <SelectItem key={e.id} value={e.id}>{e.label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                    )}
 
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Alignment Level</Label>
-                                        <Select value={formData.alignment} onValueChange={(v) => setFormData({ ...formData, alignment: v as any })}>
-                                            <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-slate-200 font-bold px-5 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all text-sm">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-xl border-none shadow-2xl p-1.5 font-bold">
-                                                <SelectItem value="Company" className="rounded-lg h-10 text-[11px] tracking-wide">Company Objectives</SelectItem>
-                                                <SelectItem value="Department" className="rounded-lg h-10 text-[11px] tracking-wide">Departmental Goals</SelectItem>
-                                                <SelectItem value="Individual" className="rounded-lg h-10 text-[11px] tracking-wide">Individual Achievements</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Alignment Level">
+                            <Select value={formData.alignment} onValueChange={(v) => setFormData({ ...formData, alignment: v as any })}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Company">Company Objectives</SelectItem>
+                                    <SelectItem value="Department">Departmental Goals</SelectItem>
+                                    <SelectItem value="Individual">Individual Achievements</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
 
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Goal Weightage (%)</Label>
-                                        <Input
-                                            type="number"
-                                            min={0}
-                                            max={100}
-                                            className={`rounded-xl h-12 bg-slate-50 border-slate-200 font-bold px-5 focus:bg-white focus:ring-4 focus:ring-indigo-100 transition-all text-sm ${errors.weightage ? "border-rose-400" : "focus:border-indigo-500"}`}
-                                            value={formData.weightage}
-                                            onChange={(e) => setFormData({ ...formData, weightage: Math.max(0, Math.min(100, parseInt(e.target.value) || 0)) })}
-                                        />
-                                        {errors.weightage && (
-                                            <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {errors.weightage}</p>
-                                        )}
-                                    </div>
+                        <Field label="Goal Weightage (%)" error={errors.weightage || undefined}>
+                            <Input
+                                type="number"
+                                min={0}
+                                max={100}
+                                value={formData.weightage}
+                                onChange={(e) => setFormData({ ...formData, weightage: Math.max(0, Math.min(100, parseInt(e.target.value) || 0)) })}
+                            />
+                        </Field>
 
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Target Due Date *</Label>
-                                        <div className="relative">
-                                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                                            <Input
-                                                type="date"
-                                                min={new Date().toISOString().split("T")[0]}
-                                                className={`rounded-xl h-12 pl-12 bg-slate-50 border-slate-200 font-bold pr-5 focus:bg-white focus:ring-4 focus:ring-indigo-100 transition-all text-sm ${errors.dueDate ? "border-rose-400" : "focus:border-indigo-500"}`}
-                                                value={formData.dueDate}
-                                                onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                                            />
-                                        </div>
-                                        {errors.dueDate && (
-                                            <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {errors.dueDate}</p>
-                                        )}
-                                    </div>
+                        <Field label="Target Due Date" required error={errors.dueDate || undefined}>
+                            <Input
+                                type="date"
+                                min={new Date().toISOString().split("T")[0]}
+                                value={formData.dueDate}
+                                onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                            />
+                        </Field>
 
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Launch Status</Label>
-                                        <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v as any })}>
-                                            <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-slate-200 font-bold px-5 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all text-sm">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-xl border-none shadow-2xl p-1.5 font-bold">
-                                                <SelectItem value="Draft" className="rounded-lg h-10 text-[11px] tracking-wide">Draft Mode</SelectItem>
-                                                <SelectItem value="Awaiting Approval" className="rounded-lg h-10 text-[11px] tracking-wide">Submit for Audit</SelectItem>
-                                                <SelectItem value="On Track" className="rounded-lg h-10 text-[11px] tracking-wide">Live (Effective)</SelectItem>
-                                                <SelectItem value="Ahead" className="rounded-lg h-10 text-[11px] tracking-wide">Ahead</SelectItem>
-                                                <SelectItem value="At Risk" className="rounded-lg h-10 text-[11px] tracking-wide">At Risk</SelectItem>
-                                                <SelectItem value="Behind" className="rounded-lg h-10 text-[11px] tracking-wide">Behind</SelectItem>
-                                                <SelectItem value="Completed" className="rounded-lg h-10 text-[11px] tracking-wide">Completed</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                        <Field label="Launch Status">
+                            <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v as any })}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Draft">Draft Mode</SelectItem>
+                                    <SelectItem value="Awaiting Approval">Submit for Audit</SelectItem>
+                                    <SelectItem value="On Track">Live (Effective)</SelectItem>
+                                    <SelectItem value="Ahead">Ahead</SelectItem>
+                                    <SelectItem value="At Risk">At Risk</SelectItem>
+                                    <SelectItem value="Behind">Behind</SelectItem>
+                                    <SelectItem value="Completed">Completed</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
 
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Priority</Label>
-                                        <Select value={formData.priority} onValueChange={(v) => setFormData({ ...formData, priority: v as any })}>
-                                            <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-slate-200 font-bold px-5 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all text-sm">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-xl border-none shadow-2xl p-1.5 font-bold">
-                                                <SelectItem value="Low" className="rounded-lg h-10 text-[11px] tracking-wide">Low</SelectItem>
-                                                <SelectItem value="Medium" className="rounded-lg h-10 text-[11px] tracking-wide">Medium</SelectItem>
-                                                <SelectItem value="High" className="rounded-lg h-10 text-[11px] tracking-wide">High</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                        <Field label="Priority">
+                            <Select value={formData.priority} onValueChange={(v) => setFormData({ ...formData, priority: v as any })}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Low">Low</SelectItem>
+                                    <SelectItem value="Medium">Medium</SelectItem>
+                                    <SelectItem value="High">High</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
 
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Category</Label>
-                                        <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v as any })}>
-                                            <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-slate-200 font-bold px-5 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all text-sm">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-xl border-none shadow-2xl p-1.5 font-bold">
-                                                <SelectItem value="Technical" className="rounded-lg h-10 text-[11px] tracking-wide">Technical</SelectItem>
-                                                <SelectItem value="Soft Skills" className="rounded-lg h-10 text-[11px] tracking-wide">Soft Skills</SelectItem>
-                                                <SelectItem value="Leadership" className="rounded-lg h-10 text-[11px] tracking-wide">Leadership</SelectItem>
-                                                <SelectItem value="Sales" className="rounded-lg h-10 text-[11px] tracking-wide">Sales</SelectItem>
-                                                <SelectItem value="Operations" className="rounded-lg h-10 text-[11px] tracking-wide">Operations</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                        <Field label="Category">
+                            <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v as any })}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Technical">Technical</SelectItem>
+                                    <SelectItem value="Soft Skills">Soft Skills</SelectItem>
+                                    <SelectItem value="Leadership">Leadership</SelectItem>
+                                    <SelectItem value="Sales">Sales</SelectItem>
+                                    <SelectItem value="Operations">Operations</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
 
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Progress (%)</Label>
-                                        <Input
-                                            type="number"
-                                            min={0}
-                                            max={100}
-                                            className={`rounded-xl h-12 bg-slate-50 border-slate-200 font-bold px-5 focus:bg-white focus:ring-4 focus:ring-indigo-100 transition-all text-sm ${errors.progress ? "border-rose-400" : "focus:border-indigo-500"}`}
-                                            value={formData.progress}
-                                            onChange={(e) => setFormData({ ...formData, progress: Math.max(0, Math.min(100, parseInt(e.target.value) || 0)) })}
-                                        />
-                                        {errors.progress && (
-                                            <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {errors.progress}</p>
-                                        )}
-                                    </div>
-
-                                    <div className="md:col-span-2 lg:col-span-3 space-y-1.5">
-                                        <Label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Operational Description</Label>
-                                        <Textarea
-                                            maxLength={1000}
-                                            className={`rounded-xl bg-slate-50 border-slate-200 font-semibold p-4 min-h-[80px] text-sm focus:bg-white focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner ${errors.description ? "border-rose-400" : "focus:border-indigo-500"}`}
-                                            placeholder="Details on key results and success metrics..."
-                                            value={formData.description}
-                                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                        />
-                                        <p className="text-[10px] text-slate-400 ml-1">{formData.description.length}/1000</p>
-                                        {errors.description && (
-                                            <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {errors.description}</p>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <DialogFooter className="gap-3 mt-8 sm:justify-end">
-                                <Button variant="ghost" className="h-12 px-8 rounded-xl font-bold text-[10px] tracking-widest text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all" onClick={() => setIsDialogOpen(false)} disabled={saving}>Discard</Button>
-                                <Button
-                                    className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 px-10 font-bold text-[11px] tracking-widest shadow-xl shadow-indigo-100 transition-all border-none gap-2"
-                                    onClick={handleSave}
-                                    disabled={saving}
-                                >
-                                    {saving && <Loader2 size={14} className="animate-spin" />}
-                                    {saving ? "Saving..." : "Commit Objective Parameters"}
-                                </Button>
-                            </DialogFooter>
-                        </div>
+                        <Field label="Progress (%)" error={errors.progress || undefined}>
+                            <Input
+                                type="number"
+                                min={0}
+                                max={100}
+                                value={formData.progress}
+                                onChange={(e) => setFormData({ ...formData, progress: Math.max(0, Math.min(100, parseInt(e.target.value) || 0)) })}
+                            />
+                        </Field>
                     </div>
-                </DialogContent>
-            </Dialog>
+
+                    <Field label="Operational Description" error={errors.description || undefined} hint={`${formData.description.length}/1000`}>
+                        <Textarea
+                            maxLength={1000}
+                            className="min-h-[80px]"
+                            placeholder="Details on key results and success metrics..."
+                            value={formData.description}
+                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             {/* Delete Confirmation */}
             <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>

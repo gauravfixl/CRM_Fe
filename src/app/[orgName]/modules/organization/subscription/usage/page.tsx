@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
     BarChart3,
@@ -15,10 +15,47 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { getCurrentPlan } from "@/modules/crm/invoices/hooks/billingHooks";
+import { fetchUsersApi } from "@/modules/crm/organizations/hooks/orgHooks";
 
 export default function UsagePage() {
     const router = useRouter();
     const params = useParams() as { orgName: string };
+
+    const [seatLimit, setSeatLimit] = useState<number>(25);
+    const [seatUsed, setSeatUsed] = useState<number>(18);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const [planRes, usersRes] = await Promise.allSettled([
+                    getCurrentPlan(),
+                    fetchUsersApi(),
+                ]);
+
+                if (planRes.status === "fulfilled") {
+                    const data: any = planRes.value?.data || planRes.value || {};
+                    const plan = data.currentPlan || data.plan || {};
+                    const tpl = data.billingPlanTemplate || plan.billingPlanId || {};
+                    const limit =
+                        plan.userLimit ?? plan.seatsLimit ?? plan.maxUsers ??
+                        tpl.userLimit ?? tpl.seatsLimit ?? tpl.maxUsers;
+                    if (typeof limit === "number" && limit > 0) setSeatLimit(limit);
+                }
+
+                if (usersRes.status === "fulfilled") {
+                    const d: any = usersRes.value?.data || usersRes.value || {};
+                    const arr: any[] = Array.isArray(d) ? d : d.users ? d.users : [];
+                    const activeCount = arr.filter((u: any) => u.orgActive !== false).length;
+                    if (activeCount > 0) setSeatUsed(activeCount);
+                }
+            } catch {
+                // Silent fallback to defaults
+            }
+        })();
+    }, []);
+
+    const seatPercent = seatLimit > 0 ? Math.min(100, Math.round((seatUsed / seatLimit) * 100)) : 0;
 
     const navigateToAddons = () => {
         router.push(`/${params.orgName}/modules/organization/subscription/addons`);
@@ -71,10 +108,10 @@ export default function UsagePage() {
                     </CardHeader>
                     <CardContent className="p-4 space-y-3">
                         <div className="flex justify-between items-end">
-                            <span className="text-xl font-semibold text-slate-900">18<span className="text-xs text-slate-400 font-normal ml-0.5">Users</span></span>
-                            <span className="text-[10px] font-medium text-slate-500">of 25 Seats</span>
+                            <span className="text-xl font-semibold text-slate-900">{seatUsed}<span className="text-xs text-slate-400 font-normal ml-0.5">Users</span></span>
+                            <span className="text-[10px] font-medium text-slate-500">of {seatLimit} Seats</span>
                         </div>
-                        <Progress value={72} className="h-1.5 rounded-full bg-slate-100" indicatorClassName="bg-emerald-600" />
+                        <Progress value={seatPercent} className="h-1.5 rounded-full bg-slate-100" indicatorClassName="bg-emerald-600" />
                         <p className="text-[10px] text-slate-400">Includes Admins, Editors, and Standard users.</p>
                     </CardContent>
                 </Card>

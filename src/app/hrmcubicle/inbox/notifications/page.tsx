@@ -4,51 +4,101 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Bell,
-    CheckCircle2,
-    AlertTriangle,
-    Info,
-    XCircle,
     Trash2,
     Check,
-    ExternalLink,
-    Filter,
-    Calendar,
-    ArrowRight,
-    Zap,
     Clock,
-    MoreVertical,
-    CheckCircle,
     Settings,
     Megaphone,
     FileText,
     CreditCard,
     TrendingUp,
-    Layout
+    Layout,
+    Plus,
+    Send
 } from "lucide-react";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { useToast } from "@/shared/components/ui/use-toast";
-import { useInboxStore, type Notification, type NotificationCategory } from "@/shared/data/inbox-store";
+import { useInboxStore, type Notification, type NotificationCategory, type NotificationType } from "@/shared/data/inbox-store";
 import { useRouter } from "next/navigation";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/shared/components/ui/dropdown-menu";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { Switch } from "@/shared/components/ui/switch";
 import { Label } from "@/shared/components/ui/label";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
+import { Input } from "@/shared/components/ui/input";
+import { Textarea } from "@/shared/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 
 const NotificationsPage = () => {
     const { toast } = useToast();
     const router = useRouter();
-    const { notifications, markAsRead, markAllAsRead, deleteNotification, notificationPreferences, updateNotificationPreferences } = useInboxStore();
+    const { notifications, markAsRead, markAllAsRead, deleteNotification, addNotification } = useInboxStore();
 
     const [view, setView] = useState<'all' | 'preferences'>('all');
     const [filterCategory, setFilterCategory] = useState<NotificationCategory | 'All'>('All');
     const [unreadOnly, setUnreadOnly] = useState(false);
+
+    const [isComposeOpen, setIsComposeOpen] = useState(false);
+    const [composeTitle, setComposeTitle] = useState("");
+    const [composeMessage, setComposeMessage] = useState("");
+    const [composeType, setComposeType] = useState<NotificationType>("Info");
+    const [composeCategory, setComposeCategory] = useState<NotificationCategory>("Announcement");
+
+    const resetCompose = () => {
+        setComposeTitle("");
+        setComposeMessage("");
+        setComposeType("Info");
+        setComposeCategory("Announcement");
+    };
+
+    const composeTitleTrimmed = composeTitle.trim();
+    const composeMessageTrimmed = composeMessage.trim();
+
+    const composeTitleError = composeTitle.length > 0
+        ? composeTitleTrimmed.length < 3
+            ? "Title must be at least 3 characters."
+            : composeTitleTrimmed.length > 100
+                ? "Title cannot exceed 100 characters."
+                : ""
+        : "";
+
+    const composeMessageError = composeMessage.length > 0
+        ? composeMessageTrimmed.length < 10
+            ? "Message must be at least 10 characters."
+            : composeMessageTrimmed.length > 500
+                ? "Message cannot exceed 500 characters."
+                : ""
+        : "";
+
+    const isComposeValid =
+        composeTitleTrimmed.length >= 3 &&
+        composeTitleTrimmed.length <= 100 &&
+        composeMessageTrimmed.length >= 10 &&
+        composeMessageTrimmed.length <= 500;
+
+    const handleBroadcast = () => {
+        if (!isComposeValid) {
+            toast({ title: "Please fix the errors", description: "Title and message must meet the requirements.", variant: "destructive" });
+            return;
+        }
+        addNotification({
+            title: composeTitleTrimmed,
+            message: composeMessageTrimmed,
+            type: composeType,
+            category: composeCategory
+        });
+        toast({ title: "Notification Broadcast", description: `"${composeTitleTrimmed}" has been sent.` });
+        resetCompose();
+        setIsComposeOpen(false);
+    };
 
     const defaultPrefs = [
         { category: 'Announcement', inApp: true, email: true },
@@ -57,16 +107,14 @@ const NotificationsPage = () => {
         { category: 'Performance', inApp: true, email: false },
         { category: 'System', inApp: true, email: false },
     ];
-    const [preferences, setPreferences] = useState(notificationPreferences || defaultPrefs);
+    const [preferences, setPreferences] = useState(defaultPrefs);
 
     const handleUpdatePreferences = () => {
-        updateNotificationPreferences(preferences);
         toast({ title: "Preferences Saved", description: "Your notification preferences have been updated successfully." });
     };
 
     const handleRevertPreferences = () => {
         setPreferences([...defaultPrefs]);
-        updateNotificationPreferences(defaultPrefs);
         toast({ title: "Preferences Reverted", description: "Notification preferences have been reset to defaults." });
     };
 
@@ -131,6 +179,12 @@ const NotificationsPage = () => {
                         >
                             <Settings size={16} /> Preferences
                         </Button>
+                        <Button
+                            onClick={() => setIsComposeOpen(true)}
+                            className="rounded-xl font-bold text-xs h-11 px-5 gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100"
+                        >
+                            <Plus size={16} /> New Notification
+                        </Button>
                     </div>
                 </div>
             </header>
@@ -185,7 +239,7 @@ const NotificationsPage = () => {
                                             <Megaphone size={32} />
                                         </div>
                                         <h3 className="text-lg font-bold text-slate-900">Quiet for now</h3>
-                                        <p className="text-slate-500 text-sm font-medium mt-1">No alerts found in the {filterCategory === 'All' ? 'selected' : filterCategory} category.</p>
+                                        <p className="text-slate-500 text-sm font-medium mt-1">{filterCategory === 'All' ? 'No alerts match your current filters.' : `No ${filterCategory} alerts right now.`}</p>
                                     </motion.div>
                                 ) : (
                                     <div className="space-y-4">
@@ -297,6 +351,79 @@ const NotificationsPage = () => {
                     </div>
                 )}
             </main>
+
+            {/* Compose Notification Dialog */}
+            <SideFormSheet
+                open={isComposeOpen}
+                onOpenChange={(open) => { setIsComposeOpen(open); if (!open) resetCompose(); }}
+                title="Broadcast Notification"
+                description="Compose an alert that will appear in the notification feed for employees."
+                icon={<Send size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                submitLabel="Broadcast Now"
+                submitDisabled={!isComposeValid}
+                onSubmit={(e) => { e.preventDefault(); handleBroadcast(); }}
+            >
+                <div className="space-y-4">
+                    <Field
+                        label="Title"
+                        required
+                        error={composeTitleError || undefined}
+                        hint={composeTitleError ? undefined : `${composeTitleTrimmed.length}/100`}
+                    >
+                        <Input
+                            placeholder="e.g. Quarterly Townhall Scheduled"
+                            value={composeTitle}
+                            maxLength={120}
+                            onChange={(e) => setComposeTitle(e.target.value)}
+                            aria-invalid={!!composeTitleError}
+                        />
+                    </Field>
+
+                    <Field
+                        label="Message"
+                        required
+                        error={composeMessageError || undefined}
+                        hint={composeMessageError ? undefined : `${composeMessageTrimmed.length}/500`}
+                    >
+                        <Textarea
+                            className="min-h-[120px]"
+                            placeholder="Write the announcement body..."
+                            value={composeMessage}
+                            maxLength={550}
+                            onChange={(e) => setComposeMessage(e.target.value)}
+                            aria-invalid={!!composeMessageError}
+                        />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Category">
+                            <Select value={composeCategory} onValueChange={(v) => setComposeCategory(v as NotificationCategory)}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Announcement">Announcement</SelectItem>
+                                    <SelectItem value="Policy">Policy</SelectItem>
+                                    <SelectItem value="Payroll">Payroll</SelectItem>
+                                    <SelectItem value="Performance">Performance</SelectItem>
+                                    <SelectItem value="System">System</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Type">
+                            <Select value={composeType} onValueChange={(v) => setComposeType(v as NotificationType)}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Info">Info</SelectItem>
+                                    <SelectItem value="Success">Success</SelectItem>
+                                    <SelectItem value="Warning">Warning</SelectItem>
+                                    <SelectItem value="Error">Error</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                    </div>
+                </div>
+            </SideFormSheet>
         </div>
     );
 };

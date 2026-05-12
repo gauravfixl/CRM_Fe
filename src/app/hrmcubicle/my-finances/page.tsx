@@ -29,18 +29,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/sha
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { Input } from "@/shared/components/ui/input";
-import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { useToast } from "@/shared/components/ui/use-toast";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import {
   DropdownMenu,
@@ -153,71 +144,66 @@ const MyFinancesPage = () => {
           >
             <Download size={14} className="text-slate-400" /> Tax year 2025-26
           </Button>
-          <Dialog open={isClaimOpen} onOpenChange={setIsClaimOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-[#CB9DF0] hover:bg-[#b088e0] text-white rounded-lg h-10 px-6 font-bold text-xs shadow-sm border-none">
-                <Plus size={14} className="mr-2" /> New Expense Claim
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="bg-white rounded-2xl border-none p-6 max-w-lg font-sans">
-              <DialogHeader className="text-start">
-                <DialogTitle className="text-xl font-bold tracking-tight text-slate-900">Claim Reimbursement</DialogTitle>
-                <DialogDescription className="text-[11px] font-bold text-slate-400 capitalize tracking-wide mt-1">Submit expenditures for fiscal reconciliation.</DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-6 py-8">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-start block ml-1">Expense Node</Label>
-                  <Select value={claimForm.type} onValueChange={(v) => setClaimForm({ ...claimForm, type: v })}>
-                    <SelectTrigger className="rounded-xl h-12 bg-slate-50 border border-slate-200 font-bold text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-2 font-sans">
-                      {['Travel', 'Medical', 'Food', 'Internet', 'Education'].map(cat => (
-                        <SelectItem key={cat} value={cat} className="rounded-lg">{cat}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2 text-start">
-                    <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-start block ml-1">Quantum (₹)</Label>
-                    <Input
-                      type="number"
-                      placeholder="0.00"
-                      value={claimForm.amount}
-                      onChange={e => setClaimForm({ ...claimForm, amount: e.target.value })}
-                      className="rounded-xl bg-slate-50 border border-slate-200 h-12 font-bold text-sm"
-                    />
-                  </div>
-                  <div className="space-y-2 text-start">
-                    <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-start block ml-1">Cycle Date</Label>
-                    <Input
-                      type="date"
-                      value={claimForm.date}
-                      onChange={e => setClaimForm({ ...claimForm, date: e.target.value })}
-                      className="rounded-xl bg-slate-50 border border-slate-200 h-12 font-bold text-sm"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2 text-start">
-                  <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-start block ml-1">Justification</Label>
-                  <Textarea
-                    placeholder="Brief technical description of expense..."
-                    value={claimForm.description}
-                    onChange={e => setClaimForm({ ...claimForm, description: e.target.value })}
-                    className="rounded-xl bg-slate-50 border border-slate-200 min-h-[100px] font-medium text-sm p-4"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button className="w-full bg-slate-900 text-white rounded-xl h-14 font-bold uppercase text-xs tracking-widest shadow-xl shadow-slate-200" onClick={handleClaim}>
-                  Initialize Submission
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button
+            className="bg-[#CB9DF0] hover:bg-[#b088e0] text-white rounded-lg h-10 px-6 font-bold text-xs shadow-sm border-none"
+            onClick={() => setIsClaimOpen(true)}
+          >
+            <Plus size={14} className="mr-2" /> New Expense Claim
+          </Button>
         </div>
       </div>
+
+      <SideFormSheet
+        open={isClaimOpen}
+        onOpenChange={setIsClaimOpen}
+        title="Claim Reimbursement"
+        description="Submit expenditures for fiscal reconciliation."
+        icon={<Receipt size={20} />}
+        accentColor="#4f46e5"
+        width="md"
+        submitLabel="Initialize Submission"
+        onSubmit={(e) => { e.preventDefault(); handleClaim(); }}
+      >
+        <div className="space-y-4">
+          <Field label="Expense Node" required>
+            <Select value={claimForm.type} onValueChange={(v) => setClaimForm({ ...claimForm, type: v })}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {['Travel', 'Medical', 'Food', 'Internet', 'Education'].map(cat => (
+                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Quantum (₹)" required>
+              <Input
+                type="number"
+                placeholder="0.00"
+                value={claimForm.amount}
+                onChange={e => setClaimForm({ ...claimForm, amount: e.target.value })}
+              />
+            </Field>
+            <Field label="Cycle Date" required>
+              <Input
+                type="date"
+                value={claimForm.date}
+                onChange={e => setClaimForm({ ...claimForm, date: e.target.value })}
+              />
+            </Field>
+          </div>
+          <Field label="Justification" required>
+            <Textarea
+              placeholder="Brief technical description of expense..."
+              value={claimForm.description}
+              onChange={e => setClaimForm({ ...claimForm, description: e.target.value })}
+              className="min-h-[100px]"
+            />
+          </Field>
+        </div>
+      </SideFormSheet>
 
       <ScrollArea className="flex-1">
         <div className="p-6 space-y-6">

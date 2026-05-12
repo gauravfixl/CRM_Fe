@@ -28,6 +28,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/shared/components/ui/dialog"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu"
@@ -1268,75 +1269,60 @@ ${rows
 
       {/* 8. EXPORT */}
       {exportOpen && (
-        <Dialog open onOpenChange={() => setExportOpen(false)}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Export Scorecards</DialogTitle>
-              <DialogDescription>
-                {selectedIds.length
-                  ? `Export ${selectedIds.length} selected scorecard(s)`
-                  : `Export ${filteredScorecards.length} currently visible scorecard(s)`}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
-              A single HTML document will be downloaded containing a formatted table of candidate
-              evaluations suitable for printing or PDF export.
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setExportOpen(false)}>
-                Cancel
-              </Button>
-              <Button className="bg-violet-600 hover:bg-violet-700" onClick={handleExport}>
-                <Download className="mr-1.5 h-3.5 w-3.5" /> Download HTML
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <SideFormSheet
+          open
+          onOpenChange={() => setExportOpen(false)}
+          title="Export Scorecards"
+          description={
+            selectedIds.length
+              ? `Export ${selectedIds.length} selected scorecard(s)`
+              : `Export ${filteredScorecards.length} currently visible scorecard(s)`
+          }
+          icon={<Download className="h-5 w-5" />}
+          accentColor="#7c3aed"
+          width="md"
+          submitLabel="Download HTML"
+          onSubmit={(e) => { e.preventDefault(); handleExport(); }}
+        >
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
+            A single HTML document will be downloaded containing a formatted table of candidate
+            evaluations suitable for printing or PDF export.
+          </div>
+        </SideFormSheet>
       )}
 
       {/* 9. SCHEDULE CALIBRATION */}
       {calibrationOpen && (
-        <Dialog open onOpenChange={() => setCalibrationOpen(false)}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Schedule Calibration Session</DialogTitle>
-              <DialogDescription>
-                Align interviewers on rating definitions and close rating gaps.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-3">
-              <div>
-                <Label className="text-[11px] uppercase tracking-wider">Session Name</Label>
-                <Input defaultValue="Q2 Calibration - Engineering" />
-              </div>
-              <div>
-                <Label className="text-[11px] uppercase tracking-wider">Date & Time</Label>
-                <Input type="datetime-local" />
-              </div>
-              <div>
-                <Label className="text-[11px] uppercase tracking-wider">Notes</Label>
-                <Textarea placeholder="Focus areas..." rows={3} />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setCalibrationOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                className="bg-violet-600 hover:bg-violet-700"
-                onClick={() => {
-                  toast({
-                    title: "Calibration scheduled",
-                    description: "Invites will be sent to panel members.",
-                  })
-                  setCalibrationOpen(false)
-                }}
-              >
-                Schedule
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <SideFormSheet
+          open
+          onOpenChange={() => setCalibrationOpen(false)}
+          title="Schedule Calibration Session"
+          description="Align interviewers on rating definitions and close rating gaps."
+          icon={<Scale className="h-5 w-5" />}
+          accentColor="#4f46e5"
+          width="md"
+          submitLabel="Schedule"
+          onSubmit={(e) => {
+            e.preventDefault();
+            toast({
+              title: "Calibration scheduled",
+              description: "Invites will be sent to panel members.",
+            })
+            setCalibrationOpen(false)
+          }}
+        >
+          <div className="space-y-4">
+            <Field label="Session Name">
+              <Input defaultValue="Q2 Calibration - Engineering" />
+            </Field>
+            <Field label="Date & Time">
+              <Input type="datetime-local" />
+            </Field>
+            <Field label="Notes">
+              <Textarea placeholder="Focus areas..." rows={3} />
+            </Field>
+          </div>
+        </SideFormSheet>
       )}
 
       {/* 10. DELETE CONFIRM */}
@@ -2044,15 +2030,49 @@ const ScorecardDialog: React.FC<{
   }
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{initial ? "Edit Scorecard" : "New Scorecard"}</DialogTitle>
-          <DialogDescription>
-            Structured evaluation with weighted scoring and calibrated recommendation.
-          </DialogDescription>
-        </DialogHeader>
-
+    <SideFormSheet
+      open={open}
+      onOpenChange={onClose}
+      title={initial ? "Edit Scorecard" : "New Scorecard"}
+      description="Structured evaluation with weighted scoring and calibrated recommendation."
+      icon={<ClipboardCheck className="h-5 w-5" />}
+      accentColor={initial ? "#7c3aed" : "#4f46e5"}
+      width="xl"
+      footer={
+        <div className="flex w-full items-center justify-between">
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <div className="flex items-center gap-2">
+            {step > 1 && (
+              <Button type="button" variant="outline" onClick={() => setStep(step - 1)}>
+                Back
+              </Button>
+            )}
+            {step < 3 ? (
+              <Button
+                type="button"
+                className="bg-violet-600 hover:bg-violet-700"
+                onClick={() => setStep(step + 1)}
+                disabled={step === 1 && (!candidateId || !round || !interviewerName)}
+              >
+                Next
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                className="bg-violet-600 hover:bg-violet-700"
+                onClick={handleSave}
+                disabled={!ratingsComplete}
+              >
+                <FileCheck className="mr-1.5 h-3.5 w-3.5" /> Save Scorecard
+              </Button>
+            )}
+          </div>
+        </div>
+      }
+    >
+      <div>
         {/* Stepper */}
         <div className="mb-4 flex items-center gap-2">
           {[1, 2, 3].map((n) => (
@@ -2291,40 +2311,8 @@ const ScorecardDialog: React.FC<{
             </div>
           </div>
         )}
-
-        <DialogFooter>
-          <div className="flex w-full items-center justify-between">
-            <Button variant="ghost" onClick={onClose}>
-              Cancel
-            </Button>
-            <div className="flex items-center gap-2">
-              {step > 1 && (
-                <Button variant="outline" onClick={() => setStep(step - 1)}>
-                  Back
-                </Button>
-              )}
-              {step < 3 ? (
-                <Button
-                  className="bg-violet-600 hover:bg-violet-700"
-                  onClick={() => setStep(step + 1)}
-                  disabled={step === 1 && (!candidateId || !round || !interviewerName)}
-                >
-                  Next
-                </Button>
-              ) : (
-                <Button
-                  className="bg-violet-600 hover:bg-violet-700"
-                  onClick={handleSave}
-                  disabled={!ratingsComplete}
-                >
-                  <FileCheck className="mr-1.5 h-3.5 w-3.5" /> Save Scorecard
-                </Button>
-              )}
-            </div>
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </SideFormSheet>
   )
 }
 
@@ -2382,16 +2370,19 @@ const TemplateDialog: React.FC<{
   }
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{initial ? "Edit Template" : "New Template"}</DialogTitle>
-          <DialogDescription>
-            Define criteria and weights. Total weight should sum to 100%.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4">
+    <SideFormSheet
+      open={open}
+      onOpenChange={onClose}
+      title={initial ? "Edit Template" : "New Template"}
+      description="Define criteria and weights. Total weight should sum to 100%."
+      icon={<FileCheck className="h-5 w-5" />}
+      accentColor={initial ? "#7c3aed" : "#4f46e5"}
+      width="lg"
+      submitLabel={initial ? "Save Changes" : "Create Template"}
+      submitDisabled={!name || criteria.length === 0}
+      onSubmit={(e) => { e.preventDefault(); handleSave(); }}
+    >
+      <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-[11px] uppercase tracking-wider">Template Name</Label>
@@ -2470,7 +2461,7 @@ const TemplateDialog: React.FC<{
                 >
                   Total: {weightTotal}%
                 </div>
-                <Button size="sm" variant="outline" onClick={addCriterion}>
+                <Button type="button" size="sm" variant="outline" onClick={addCriterion}>
                   <Plus className="mr-1 h-3 w-3" /> Add
                 </Button>
               </div>
@@ -2501,6 +2492,7 @@ const TemplateDialog: React.FC<{
                     className="text-right tabular-nums"
                   />
                   <Button
+                    type="button"
                     variant="ghost"
                     size="icon"
                     className="text-rose-500"
@@ -2514,22 +2506,7 @@ const TemplateDialog: React.FC<{
             </div>
           </div>
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            className="bg-violet-600 hover:bg-violet-700"
-            onClick={handleSave}
-            disabled={!name || criteria.length === 0}
-          >
-            <FileCheck className="mr-1.5 h-3.5 w-3.5" />
-            {initial ? "Save Changes" : "Create Template"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </SideFormSheet>
   )
 }
 
@@ -2544,32 +2521,22 @@ const DuplicateTemplateDialog: React.FC<{
 }> = ({ tpl, onClose, onConfirm }) => {
   const [name, setName] = useState(`${tpl.name} (Copy)`)
   return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Duplicate Template</DialogTitle>
-          <DialogDescription>
-            Create a copy of "{tpl.name}" with its criteria preserved.
-          </DialogDescription>
-        </DialogHeader>
-        <div>
-          <Label className="text-[11px] uppercase tracking-wider">New Template Name</Label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} autoFocus />
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            className="bg-violet-600 hover:bg-violet-700"
-            onClick={() => onConfirm(name)}
-            disabled={!name}
-          >
-            <Copy className="mr-1.5 h-3.5 w-3.5" /> Duplicate
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <SideFormSheet
+      open
+      onOpenChange={onClose}
+      title="Duplicate Template"
+      description={`Create a copy of "${tpl.name}" with its criteria preserved.`}
+      icon={<Copy className="h-5 w-5" />}
+      accentColor="#4f46e5"
+      width="md"
+      submitLabel="Duplicate"
+      submitDisabled={!name}
+      onSubmit={(e) => { e.preventDefault(); onConfirm(name); }}
+    >
+      <Field label="New Template Name" required>
+        <Input value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+      </Field>
+    </SideFormSheet>
   )
 }
 
@@ -2839,16 +2806,18 @@ const HireDecisionDialog: React.FC<{
   }, [scorecards])
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Hire Decision - {data.candidateName}</DialogTitle>
-          <DialogDescription>
-            Record the final outcome and optionally advance the candidate in the pipeline.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4">
+    <SideFormSheet
+      open={open}
+      onOpenChange={onClose}
+      title={`Hire Decision - ${data.candidateName}`}
+      description="Record the final outcome and optionally advance the candidate in the pipeline."
+      icon={<Award className="h-5 w-5" />}
+      accentColor="#059669"
+      width="lg"
+      submitLabel="Confirm Decision"
+      onSubmit={(e) => { e.preventDefault(); onConfirm(decision, alsoMove, notes); }}
+    >
+      <div className="space-y-4">
           {/* Summary strip */}
           <div className="rounded-xl border border-violet-200 bg-violet-50 p-4">
             <div className="flex items-center justify-between">
@@ -2963,20 +2932,7 @@ const HireDecisionDialog: React.FC<{
             </label>
           )}
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            className="bg-violet-600 hover:bg-violet-700"
-            onClick={() => onConfirm(decision, alsoMove, notes)}
-          >
-            <Award className="mr-1.5 h-3.5 w-3.5" /> Confirm Decision
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </SideFormSheet>
   )
 }
 

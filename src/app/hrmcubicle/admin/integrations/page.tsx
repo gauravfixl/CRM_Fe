@@ -34,6 +34,7 @@ import { validateWebhook, validateApiKey, validateIntegration, type ValidationEr
 const FieldError = ({ msg }: { msg?: string }) =>
     msg ? <p className="text-[11px] text-rose-600 font-medium mt-1">{msg}</p> : null;
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
@@ -592,64 +593,62 @@ const IntegrationsPage = () => {
                 </SheetContent>
             </Sheet>
 
-            {/* Webhook Dialog (Keep existing) */}
-            <Dialog open={webhookDialogOpen} onOpenChange={setWebhookDialogOpen}>
-                <DialogContent className="rounded-2xl border-none p-8 max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-bold">Register Webhook</DialogTitle>
-                    </DialogHeader>
-                    <div className="grid gap-6 py-4">
-                        <div className="grid gap-2">
-                            <Label>Endpoint URL *</Label>
-                            <Input placeholder="https://api.yourapp.com/hooks" value={newWebhook.url} onChange={e => setNewWebhook({ ...newWebhook, url: e.target.value })} className={`bg-slate-50 ${webhookErrors.url ? "border-rose-400" : ""}`} />
-                            <FieldError msg={webhookErrors.url} />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label>Events to Subscribe *</Label>
-                            <Textarea
-                                placeholder="leave.approved, employee.created (comma separated)"
-                                value={newWebhook.events.join(', ')}
-                                onChange={e => setNewWebhook({ ...newWebhook, events: e.target.value.split(',').map(s => s.trim()) })}
-                                className={`bg-slate-50 ${webhookErrors.events ? "border-rose-400" : ""}`}
-                            />
-                            <FieldError msg={webhookErrors.events} />
-                        </div>
-                    </div>
-                    <Button onClick={handleSaveWebhook} className="bg-cyan-600 text-white w-full h-12 rounded-xl font-bold hover:bg-cyan-700">Create Subscription</Button>
-                </DialogContent>
-            </Dialog>
+            {/* Register Webhook Sheet */}
+            <SideFormSheet
+                open={webhookDialogOpen}
+                onOpenChange={setWebhookDialogOpen}
+                title="Register Webhook"
+                description="Subscribe to system events via HTTP endpoint."
+                icon={<Webhook size={20} />}
+                accentColor="#0ea5e9"
+                width="md"
+                submitLabel="Create Subscription"
+                onSubmit={(e) => { e.preventDefault(); handleSaveWebhook(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Endpoint URL" required error={webhookErrors.url || undefined}>
+                        <Input placeholder="https://api.yourapp.com/hooks" value={newWebhook.url} onChange={e => setNewWebhook({ ...newWebhook, url: e.target.value })} />
+                    </Field>
+                    <Field label="Events to Subscribe" required error={webhookErrors.events || undefined}>
+                        <Textarea
+                            placeholder="leave.approved, employee.created (comma separated)"
+                            value={newWebhook.events.join(', ')}
+                            onChange={e => setNewWebhook({ ...newWebhook, events: e.target.value.split(',').map(s => s.trim()) })}
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-            {/* Add Integration Dialog */}
-            <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-                <DialogContent className="rounded-2xl border-none p-8 max-w-sm">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-bold">Add Integration</DialogTitle>
-                        <DialogDescription>Register a new custom integration.</DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid gap-2">
-                            <Label>App Name *</Label>
-                            <Input placeholder="e.g. Jira, GitHub" value={newApp.name} onChange={e => setNewApp({ ...newApp, name: e.target.value })} className={`bg-slate-50 ${appErrors.name ? "border-rose-400" : ""}`} />
-                            <FieldError msg={appErrors.name} />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label>Category *</Label>
-                            <Select value={newApp.category} onValueChange={(val) => setNewApp({ ...newApp, category: val })}>
-                                <SelectTrigger className={`bg-slate-50 ${appErrors.category ? "border-rose-400" : ""}`}><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Communication">Communication</SelectItem>
-                                    <SelectItem value="Calendar">Calendar</SelectItem>
-                                    <SelectItem value="Meeting">Meeting</SelectItem>
-                                    <SelectItem value="Storage">Storage</SelectItem>
-                                    <SelectItem value="Other">Other</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <FieldError msg={appErrors.category} />
-                        </div>
-                    </div>
-                    <Button onClick={handleAddApp} className="bg-slate-900 text-white w-full h-12 rounded-xl font-bold hover:bg-slate-800">Add to Marketplace</Button>
-                </DialogContent>
-            </Dialog>
+            {/* Add Integration Sheet */}
+            <SideFormSheet
+                open={addDialogOpen}
+                onOpenChange={setAddDialogOpen}
+                title="Add Integration"
+                description="Register a new custom integration."
+                icon={<Plus size={20} />}
+                accentColor="#4f46e5"
+                width="sm"
+                submitLabel="Add to Marketplace"
+                onSubmit={(e) => { e.preventDefault(); handleAddApp(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="App Name" required error={appErrors.name || undefined}>
+                        <Input placeholder="e.g. Jira, GitHub" value={newApp.name} onChange={e => setNewApp({ ...newApp, name: e.target.value })} />
+                    </Field>
+                    <Field label="Category" required error={appErrors.category || undefined}>
+                        <Select value={newApp.category} onValueChange={(val) => setNewApp({ ...newApp, category: val })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Communication">Communication</SelectItem>
+                                <SelectItem value="Calendar">Calendar</SelectItem>
+                                <SelectItem value="Meeting">Meeting</SelectItem>
+                                <SelectItem value="Storage">Storage</SelectItem>
+                                <SelectItem value="Other">Other</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                </div>
+            </SideFormSheet>
         </div>
     );
 };

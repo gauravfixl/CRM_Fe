@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useMemo } from "react"
 import { useParams } from "next/navigation"
 import {
     UserCheck,
@@ -41,20 +41,13 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog"
-import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -88,6 +81,28 @@ export default function ClientOwnershipRulesPage() {
         priority: "",
         status: "ACTIVE"
     })
+    const [touched, setTouched] = useState<Record<string, boolean>>({})
+
+    const formErrors = useMemo(() => {
+        const e: Record<string, string> = {}
+        if (touched.name) {
+            const n = formData.name.trim()
+            if (!n) e.name = "Rule name is required"
+            else if (n.length < 3) e.name = "Name too short (min 3 chars)"
+            else if (n.length > 80) e.name = "Name too long (max 80 chars)"
+            else if (!/^[A-Za-z0-9\s&()./-]+$/.test(n))
+                e.name = "Only letters, numbers, spaces and & ( ) . / -"
+        }
+        if (touched.criteria && !formData.criteria.trim()) e.criteria = "Criteria is required"
+        if (touched.criteria && formData.criteria.length > 300) e.criteria = "Criteria too long (max 300 chars)"
+        if (touched.assignTo && !formData.assignTo) e.assignTo = "Select an assignee"
+        if (touched.priority && formData.priority) {
+            const p = parseInt(formData.priority)
+            if (isNaN(p) || p < 1) e.priority = "Must be 1 or higher"
+            else if (p > 999) e.priority = "Priority too high"
+        }
+        return e
+    }, [formData, touched])
 
     const handleAction = (msg: string) => {
         setIsLoading(true)
@@ -105,6 +120,7 @@ export default function ClientOwnershipRulesPage() {
     const handleOpenCreate = () => {
         setIsEditing(false)
         setFormData({ name: "", criteria: "", assignTo: "", priority: "", status: "ACTIVE" })
+        setTouched({})
         setShowRuleDialog(true)
     }
 
@@ -118,13 +134,26 @@ export default function ClientOwnershipRulesPage() {
             priority: rule.priority.toString(),
             status: rule.status
         })
+        setTouched({})
         setShowRuleDialog(true)
     }
 
-    const handleSaveRule = () => {
-        if (!formData.name || !formData.criteria || !formData.assignTo) {
-            toast.error("Please fill in all required fields")
-            return
+    const handleSaveRule = (e: React.FormEvent) => {
+        e.preventDefault()
+        setTouched({ name: true, criteria: true, assignTo: true, priority: true })
+
+        const name = formData.name.trim()
+        const criteria = formData.criteria.trim()
+        if (!name) return toast.error("Rule name is required")
+        if (name.length < 3) return toast.error("Name too short (min 3 chars)")
+        if (!/^[A-Za-z0-9\s&()./-]+$/.test(name))
+            return toast.error("Name contains invalid characters")
+        if (!criteria) return toast.error("Criteria is required")
+        if (criteria.length > 300) return toast.error("Criteria too long")
+        if (!formData.assignTo) return toast.error("Please select an assignee")
+        if (formData.priority) {
+            const p = parseInt(formData.priority)
+            if (isNaN(p) || p < 1) return toast.error("Priority must be 1 or higher")
         }
 
         setIsLoading(true)
@@ -132,8 +161,8 @@ export default function ClientOwnershipRulesPage() {
             if (isEditing && currentRuleId) {
                 setRules(prev => prev.map(r => r.id === currentRuleId ? {
                     ...r,
-                    name: formData.name,
-                    criteria: formData.criteria,
+                    name,
+                    criteria,
                     assignTo: formData.assignTo,
                     priority: parseInt(formData.priority) || 1,
                     status: formData.status
@@ -142,8 +171,8 @@ export default function ClientOwnershipRulesPage() {
             } else {
                 const newRule = {
                     id: Math.random().toString(36).substr(2, 9),
-                    name: formData.name,
-                    criteria: formData.criteria,
+                    name,
+                    criteria,
                     assignTo: formData.assignTo,
                     priority: parseInt(formData.priority) || (rules.length + 1),
                     status: formData.status
@@ -153,7 +182,7 @@ export default function ClientOwnershipRulesPage() {
             }
             setIsLoading(false)
             setShowRuleDialog(false)
-        }, 800)
+        }, 600)
     }
 
     const handleDeleteClick = (id: string) => {
@@ -365,129 +394,116 @@ export default function ClientOwnershipRulesPage() {
                 </Table>
             </div>
 
-            {/* CREATE/EDIT DIALOG */}
-            <Dialog open={showRuleDialog} onOpenChange={setShowRuleDialog}>
-                <DialogContent className="sm:max-w-[550px] rounded-xl p-5 gap-0">
-                    <DialogHeader className="pb-3 border-b border-zinc-100">
-                        <DialogTitle className="text-sm font-semibold flex items-center gap-2">
-                            {isEditing ? <Edit3 className="w-4 h-4 text-blue-600" /> : <Plus className="w-4 h-4 text-blue-600" />}
-                            {isEditing ? "Configure Rule" : "Create Ownership Rule"}
-                        </DialogTitle>
-                        <DialogDescription className="text-[10px] text-zinc-500 font-medium">
-                            {isEditing ? "Modify existing assignment logic and criteria." : "Define new logic for automated account distribution."}
-                        </DialogDescription>
-                    </DialogHeader>
+            {/* Create/Edit Ownership Rule — side sheet */}
+            <SideFormSheet
+                open={showRuleDialog}
+                onOpenChange={(o) => {
+                    setShowRuleDialog(o)
+                    if (!o) setTouched({})
+                }}
+                title={isEditing ? "Configure Rule" : "Create Ownership Rule"}
+                description={
+                    isEditing
+                        ? "Modify existing assignment logic and criteria."
+                        : "Define new logic for automated account distribution."
+                }
+                icon={isEditing ? <Edit3 className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                width="lg"
+                onSubmit={handleSaveRule}
+                submitLabel={isEditing ? "Update Rule" : "Create Rule"}
+                loading={isLoading}
+            >
+                <div className="space-y-4">
+                    <Field
+                        label="Rule Name"
+                        required
+                        error={formErrors.name}
+                        hint="3–80 chars. Letters, numbers, spaces and & ( ) . / -"
+                    >
+                        <Input
+                            placeholder="e.g. Enterprise North Allocation"
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value.slice(0, 80) })}
+                            onBlur={() => setTouched((t) => ({ ...t, name: true }))}
+                            className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary"
+                            maxLength={80}
+                        />
+                    </Field>
 
-                    <div className="py-4 grid gap-4">
-                        <div className="grid gap-2">
-                            <Label className="text-xs font-medium text-zinc-500">Rule Name</Label>
+                    <div className="grid grid-cols-3 gap-3">
+                        <Field label="Assign To" required error={formErrors.assignTo} className="col-span-2">
+                            <Select value={formData.assignTo} onValueChange={(val) => {
+                                setFormData({ ...formData, assignTo: val })
+                                setTouched((t) => ({ ...t, assignTo: true }))
+                            }}>
+                                <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white">
+                                    <SelectValue placeholder="Select assignee" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Senior AM Team">Senior AM Team</SelectItem>
+                                    <SelectItem value="NA Sales Team">NA Sales Team</SelectItem>
+                                    <SelectItem value="Key Account Managers">Key Account Managers</SelectItem>
+                                    <SelectItem value="Tech Vertical Team">Tech Vertical Team</SelectItem>
+                                    <SelectItem value="Support Team">Support Team</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Priority" error={formErrors.priority} hint="Lower = higher priority">
                             <Input
-                                placeholder="e.g. Enterprise North Allocation"
-                                className="h-9 bg-zinc-50/50 border-zinc-200 focus:ring-blue-100 transition-all font-medium text-xs rounded-lg"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                type="number"
+                                placeholder="1"
+                                min={1}
+                                max={999}
+                                value={formData.priority}
+                                onChange={(e) => setFormData({ ...formData, priority: e.target.value.replace(/[^0-9]/g, "") })}
+                                onBlur={() => setTouched((t) => ({ ...t, priority: true }))}
+                                className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary font-mono"
                             />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label className="text-xs font-medium text-zinc-500">Assign To Team/User</Label>
-                                <Select value={formData.assignTo} onValueChange={(val) => setFormData({ ...formData, assignTo: val })}>
-                                    <SelectTrigger className="h-9 bg-zinc-50/50 rounded-lg">
-                                        <SelectValue placeholder="Select assignee" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Senior AM Team">Senior AM Team</SelectItem>
-                                        <SelectItem value="NA Sales Team">NA Sales Team</SelectItem>
-                                        <SelectItem value="Key Account Managers">Key Account Managers</SelectItem>
-                                        <SelectItem value="Tech Vertical Team">Tech Vertical Team</SelectItem>
-                                        <SelectItem value="Support Team">Support Team</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label className="text-xs font-medium text-zinc-500">Priority Order</Label>
-                                <Input
-                                    type="number"
-                                    placeholder="1"
-                                    className="h-9 bg-zinc-50/50 rounded-lg text-xs"
-                                    value={formData.priority}
-                                    onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label className="text-xs font-medium text-zinc-500">Assignment Criteria (Logic)</Label>
-                            <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200">
-                                <Input
-                                    placeholder="e.g. Tier = Enterprise AND Revenue > 50000"
-                                    className="h-9 border-zinc-200 font-mono text-xs bg-white mb-2 rounded-lg"
-                                    value={formData.criteria}
-                                    onChange={(e) => setFormData({ ...formData, criteria: e.target.value })}
-                                />
-                                <div className="flex gap-2">
-                                    <Badge
-                                        variant="outline"
-                                        className="text-[10px] font-medium rounded-md bg-white cursor-pointer hover:bg-blue-50 transition-colors"
-                                        onClick={() => addCriteriaSuggestion("Tier = ")}
-                                    >
-                                        Tier =
-                                    </Badge>
-                                    <Badge
-                                        variant="outline"
-                                        className="text-[10px] font-medium rounded-md bg-white cursor-pointer hover:bg-blue-50 transition-colors"
-                                        onClick={() => addCriteriaSuggestion("Region = ")}
-                                    >
-                                        Region =
-                                    </Badge>
-                                    <Badge
-                                        variant="outline"
-                                        className="text-[10px] font-medium rounded-md bg-white cursor-pointer hover:bg-blue-50 transition-colors"
-                                        onClick={() => addCriteriaSuggestion("Revenue > ")}
-                                    >
-                                        Revenue &gt;
-                                    </Badge>
-                                    <Badge
-                                        variant="outline"
-                                        className="text-[10px] font-medium rounded-md bg-white cursor-pointer hover:bg-blue-50 transition-colors"
-                                        onClick={() => addCriteriaSuggestion("Employees > ")}
-                                    >
-                                        Employees &gt;
-                                    </Badge>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center justify-between p-4 bg-zinc-50 rounded-xl border border-zinc-200/60">
-                            <div>
-                                <Label className="text-xs font-medium text-zinc-900">Activate Rule Immediately</Label>
-                                <p className="text-[10px] text-zinc-500 font-medium">New clients will be processed by this rule upon creation.</p>
-                            </div>
-                            <Switch
-                                checked={formData.status === 'ACTIVE'}
-                                onCheckedChange={(c) => setFormData({ ...formData, status: c ? 'ACTIVE' : 'INACTIVE' })}
-                                className="data-[state=checked]:bg-blue-600"
-                            />
-                        </div>
+                        </Field>
                     </div>
 
-                    <DialogFooter className="pt-3 border-t border-zinc-100 gap-2">
-                        <Button variant="ghost" onClick={() => setShowRuleDialog(false)} className="h-8 text-xs font-medium rounded-lg">Cancel</Button>
-                        <Button
-                            onClick={handleSaveRule}
-                            disabled={isLoading}
-                            className="h-8 bg-primary hover:bg-primary/90 text-white text-xs font-medium shadow-sm px-6 rounded-lg"
-                        >
-                            {isLoading ? (
-                                <>Processing...</>
-                            ) : (
-                                <>{isEditing ? 'Update Rule' : 'Create Rule'}</>
-                            )}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field
+                        label="Assignment Criteria"
+                        required
+                        error={formErrors.criteria}
+                        hint={`${formData.criteria.length}/300 — click a chip below to add`}
+                    >
+                        <Input
+                            placeholder="e.g. Tier = Enterprise AND Revenue > 50000"
+                            value={formData.criteria}
+                            onChange={(e) => setFormData({ ...formData, criteria: e.target.value.slice(0, 300) })}
+                            onBlur={() => setTouched((t) => ({ ...t, criteria: true }))}
+                            className="h-11 rounded-lg border-[#E5E7EB] bg-white focus:border-primary font-mono text-[12.5px]"
+                        />
+                        <div className="flex flex-wrap gap-2 pt-2">
+                            {["Tier = ", "Region = ", "Revenue > ", "Employees > "].map((s) => (
+                                <Badge
+                                    key={s}
+                                    variant="outline"
+                                    className="text-[11px] font-medium rounded-md bg-white cursor-pointer hover:bg-primary/5 hover:border-primary/30 hover:text-primary transition-colors"
+                                    onClick={() => addCriteriaSuggestion(s)}
+                                >
+                                    {s.trim()}
+                                </Badge>
+                            ))}
+                        </div>
+                    </Field>
+
+                    <div className="flex items-center justify-between p-3.5 bg-[#FAFBFC] rounded-xl border border-[#EEF1F6]">
+                        <div className="flex-1">
+                            <p className="text-[13px] font-semibold text-zinc-900">Activate Rule Immediately</p>
+                            <p className="text-[11.5px] text-zinc-500 mt-0.5 leading-relaxed">
+                                New clients will be processed by this rule upon creation.
+                            </p>
+                        </div>
+                        <Switch
+                            checked={formData.status === 'ACTIVE'}
+                            onCheckedChange={(c) => setFormData({ ...formData, status: c ? 'ACTIVE' : 'INACTIVE' })}
+                            className="data-[state=checked]:bg-primary"
+                        />
+                    </div>
+                </div>
+            </SideFormSheet>
 
             {/* DELETE CONFIRMATION */}
             <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

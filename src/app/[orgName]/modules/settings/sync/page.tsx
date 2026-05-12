@@ -17,14 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/shared/components/ui/switch";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter,
-} from "@/shared/components/ui/dialog";
-import { Label } from "@/shared/components/ui/label";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -263,24 +256,20 @@ export default function DataSyncPage() {
         setForm: (fn: (prev: SourceForm) => SourceForm) => void,
         errors: FormErrors
     ) => (
-        <>
-            <div className="space-y-1.5">
-                <Label className="text-sm font-semibold text-zinc-700">Source Name</Label>
+        <div className="space-y-4">
+            <Field label="Source Name" required error={errors.name || undefined}>
                 <Input
                     placeholder="e.g. ERP System"
                     value={form.name}
                     onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-                    className="rounded-none h-9 text-sm"
                 />
-                {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
-            </div>
-            <div className="space-y-1.5">
-                <Label className="text-sm font-semibold text-zinc-700">Type</Label>
+            </Field>
+            <Field label="Type" required error={errors.type || undefined}>
                 <Select value={form.type} onValueChange={(val) => setForm((prev) => ({ ...prev, type: val }))}>
-                    <SelectTrigger className="rounded-none h-9 text-sm">
+                    <SelectTrigger>
                         <SelectValue placeholder="Select type" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-none">
+                    <SelectContent>
                         <SelectItem value="Database">Database</SelectItem>
                         <SelectItem value="API">API</SelectItem>
                         <SelectItem value="Webhook">Webhook</SelectItem>
@@ -288,25 +277,20 @@ export default function DataSyncPage() {
                         <SelectItem value="Custom">Custom</SelectItem>
                     </SelectContent>
                 </Select>
-                {errors.type && <p className="text-xs text-red-500">{errors.type}</p>}
-            </div>
-            <div className="space-y-1.5">
-                <Label className="text-sm font-semibold text-zinc-700">Connection URL</Label>
+            </Field>
+            <Field label="Connection URL" required error={errors.connectionUrl || undefined}>
                 <Input
                     placeholder="e.g. https://api.example.com/v3"
                     value={form.connectionUrl}
                     onChange={(e) => setForm((prev) => ({ ...prev, connectionUrl: e.target.value }))}
-                    className="rounded-none h-9 text-sm"
                 />
-                {errors.connectionUrl && <p className="text-xs text-red-500">{errors.connectionUrl}</p>}
-            </div>
-            <div className="space-y-1.5">
-                <Label className="text-sm font-semibold text-zinc-700">Sync Interval</Label>
+            </Field>
+            <Field label="Sync Interval" required error={errors.syncInterval || undefined}>
                 <Select value={form.syncInterval} onValueChange={(val) => setForm((prev) => ({ ...prev, syncInterval: val }))}>
-                    <SelectTrigger className="rounded-none h-9 text-sm">
+                    <SelectTrigger>
                         <SelectValue placeholder="Select interval" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-none">
+                    <SelectContent>
                         <SelectItem value="Real-time">Real-time</SelectItem>
                         <SelectItem value="Every 5 mins">Every 5 mins</SelectItem>
                         <SelectItem value="Every 15 mins">Every 15 mins</SelectItem>
@@ -314,9 +298,8 @@ export default function DataSyncPage() {
                         <SelectItem value="Daily">Daily</SelectItem>
                     </SelectContent>
                 </Select>
-                {errors.syncInterval && <p className="text-xs text-red-500">{errors.syncInterval}</p>}
-            </div>
-        </>
+            </Field>
+        </div>
     );
 
     return (
@@ -523,67 +506,43 @@ export default function DataSyncPage() {
                 </div>
             </div>
 
-            {/* Create Modal */}
-            <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-                <DialogContent className="rounded-none max-w-md p-0">
-                    <DialogHeader className="px-5 py-4 bg-gradient-to-r from-primary/80 to-primary">
-                        <DialogTitle className="text-base font-bold text-white">Add Data Source</DialogTitle>
-                    </DialogHeader>
-                    <div className="p-5 space-y-4">
-                        {renderFormFields(
-                            newSource,
-                            (fn) => setNewSource((prev) => fn(prev)),
-                            formErrors
-                        )}
-                    </div>
-                    <DialogFooter className="px-5 py-3 border-t border-zinc-100">
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowCreateModal(false)}
-                            className="rounded-none h-9 px-6"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleCreate}
-                            className="rounded-none bg-primary hover:bg-primary/90 h-9 px-6"
-                        >
-                            Add Source
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Create Sheet */}
+            <SideFormSheet
+                open={showCreateModal}
+                onOpenChange={setShowCreateModal}
+                title="Add Data Source"
+                description="Connect a new data source for synchronization."
+                icon={<Plus size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                submitLabel="Add Source"
+                onSubmit={(e) => { e.preventDefault(); handleCreate(); }}
+            >
+                {renderFormFields(
+                    newSource,
+                    (fn) => setNewSource((prev) => fn(prev)),
+                    formErrors
+                )}
+            </SideFormSheet>
 
-            {/* Edit Modal */}
-            <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-                <DialogContent className="rounded-none max-w-md p-0">
-                    <DialogHeader className="px-5 py-4 bg-gradient-to-r from-primary/80 to-primary">
-                        <DialogTitle className="text-base font-bold text-white">Configure Source</DialogTitle>
-                    </DialogHeader>
-                    <div className="p-5 space-y-4">
-                        {renderFormFields(
-                            editSource,
-                            (fn) => setEditSource((prev) => fn(prev)),
-                            editFormErrors
-                        )}
-                    </div>
-                    <DialogFooter className="px-5 py-3 border-t border-zinc-100">
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowEditModal(false)}
-                            className="rounded-none h-9 px-6"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleEdit}
-                            className="rounded-none bg-primary hover:bg-primary/90 h-9 px-6"
-                        >
-                            Save Changes
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Edit Sheet */}
+            <SideFormSheet
+                open={showEditModal}
+                onOpenChange={setShowEditModal}
+                title="Configure Source"
+                description="Update connection settings for this data source."
+                icon={<Settings size={20} />}
+                accentColor="#7c3aed"
+                width="md"
+                submitLabel="Save Changes"
+                onSubmit={(e) => { e.preventDefault(); handleEdit(); }}
+            >
+                {renderFormFields(
+                    editSource,
+                    (fn) => setEditSource((prev) => fn(prev)),
+                    editFormErrors
+                )}
+            </SideFormSheet>
         </div>
     );
 }

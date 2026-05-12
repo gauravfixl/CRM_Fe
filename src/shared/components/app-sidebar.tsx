@@ -308,8 +308,8 @@ const rolesAdminMenuData = [
     items: [
       { title: "Roles & Permissions", url: "/modules/administration/roles", icon: Shield },
       { title: "Custom Roles", url: "/modules/administration/roles/custom", icon: Settings },
-      { title: "Permission Matrix", url: "/modules/administration/roles?tab=permissions", icon: ListTree },
-      { title: "Role Assignments", url: "/modules/administration/roles?tab=assignments", icon: UserCheck },
+      { title: "Permission Matrix", url: "/modules/administration/permissions", icon: ListTree },
+      { title: "Role Assignments", url: "/modules/administration/roles/assignments", icon: UserCheck },
     ]
   },
   {
@@ -619,7 +619,6 @@ const organizationMenuData = [
     group: "IDENTITY & STYLE",
     items: [
       { title: "Branding & Theme", url: "/modules/organization/branding", icon: Palette },
-      { title: "Org Admins", url: "/modules/organization/users", icon: ShieldCheck }, // Renamed from "Organization Users"
     ]
   },
   {
@@ -655,7 +654,6 @@ const adminSidebarGroupsData = [
       },
       { title: "Branding & Theme", icon: Palette, url: "/modules/organization/branding" },
       { title: "Org Settings", icon: Settings, url: "/modules/organization/settings" },
-      { title: "Org Admins", icon: ShieldCheck, url: "/modules/organization/users" },
     ]
   },
   {
@@ -764,6 +762,22 @@ const adminSidebarGroupsData = [
       { title: "Billing History", icon: History, url: "/modules/billing/history" },
       { title: "Billing Details", icon: FileText, url: "/modules/billing/settings" },
       { title: "Upgrade / Downgrade", icon: ArrowUpCircle, url: "/modules/billing/upgrade" },
+    ]
+  },
+  {
+    title: "SETTINGS",
+    icon: Settings,
+    items: [
+      { title: "General Preferences", icon: Settings, url: "/modules/settings/preferences" },
+      { title: "Localization", icon: Globe, url: "/modules/settings/localization" },
+      { title: "Email Templates", icon: Mail, url: "/modules/settings/email-templates" },
+      { title: "Document Templates", icon: FileText, url: "/modules/settings/document-templates" },
+      { title: "Communication Gateways", icon: Webhook, url: "/modules/settings/communication" },
+      { title: "Custom Fields & Tags", icon: ListTree, url: "/modules/settings/custom-fields" },
+      { title: "Numbering Schemes", icon: Receipt, url: "/modules/settings/numbering" },
+      { title: "My Account", icon: UserCheck, url: "/modules/settings/my-account" },
+      { title: "System Tools", icon: HardDrive, url: "/modules/settings/system-tools" },
+      { title: "About & Help", icon: ShieldCheck, url: "/modules/settings/about" },
     ]
   }
 ];
@@ -1309,6 +1323,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
           { title: "Organization Dashboard", url: `/modules/organization/overview`, icon: LayoutDashboard },
           { title: "Org Health & Usage", url: `/modules/organization/health`, icon: Activity },
           { title: "Recent Admin Activity", url: `/modules/organization/activity`, icon: History },
+          { title: "Reports & Insights", url: `/modules/organization/insights`, icon: PieChart },
         ]
       }
     ].map(group => ({
@@ -1411,30 +1426,6 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
     }));
   }, [currentOrg]);
 
-  // 7. Organization Users Menu
-  const finalOrgUsersMenu = useMemo(() => {
-    return [
-      {
-        group: "ORG STAFF",
-        items: [
-          { title: "Org Users List", url: `/modules/organization/users`, icon: Users },
-          { title: "Org Roles", url: `/modules/organization/users/roles`, icon: ShieldCheck },
-          { title: "Invitations", url: `/modules/organization/users/invites`, icon: UserPlus },
-        ]
-      },
-      {
-        group: "ACCESS",
-        items: [
-          { title: "Cross-Firm Access", url: `/modules/organization/users/access`, icon: Network },
-          { title: "Deactivated Users", url: `/modules/organization/users/deactivated`, icon: UserMinus },
-        ]
-      }
-    ].map(group => ({
-      ...group,
-      items: group.items.map(item => ({ ...item, url: currentOrg ? `/${currentOrg}${item.url}` : item.url }))
-    }));
-  }, [currentOrg]);
-
   // 8. Organization Policies Menu
   const finalOrgPoliciesMenu = useMemo(() => {
     return [
@@ -1489,12 +1480,17 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
     if (activePath?.includes("/modules/settings/entitlements/pipeline")) return "PipelineGov";
 
     // Organization Granular Drill-down
-    if (activePath?.includes("/modules/organization/overview") || activePath?.includes("/modules/organization/onboarding")) return "OrgOverview";
+    if (
+      activePath?.includes("/modules/organization/overview") ||
+      activePath?.includes("/modules/organization/onboarding") ||
+      activePath?.includes("/modules/organization/health") ||
+      activePath?.includes("/modules/organization/activity") ||
+      activePath?.includes("/modules/organization/insights")
+    ) return "OrgOverview";
     if (activePath?.includes("/modules/firm-management/firms/deleted") || activePath?.includes("/modules/organization/trash")) return "OrgRecycleBin";
     if (activePath?.includes("/modules/firm-management/firms") || activePath?.includes("/modules/organization/firms") || activePath?.includes("/modules/organization/create") || activePath?.includes("/modules/organization/admins") || activePath?.includes("/modules/organization/access")) return "OrgFirms";
     if (activePath?.includes("/modules/organization/branding")) return "OrgBranding";
     if (activePath?.includes("/modules/organization/settings")) return "OrgSettings";
-    if (activePath?.includes("/modules/organization/users")) return "OrgUsers";
     if (activePath?.includes("/modules/organization/policies")) return "OrgPolicies";
     // Fallback if just clicked organization but not a specific page yet (unlikely if strictly routed)
     if (activeCategory === "ORGANIZATION") return "OrgOverview";
@@ -1573,7 +1569,6 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
       case "OrgRecycleBin": return finalOrgRecycleBinMenu;
       case "OrgBranding": return finalOrgBrandingMenu;
       case "OrgSettings": return finalOrgSettingsMenu;
-      case "OrgUsers": return finalOrgUsersMenu;
       case "OrgPolicies": return finalOrgPoliciesMenu;
       default: return []; // Dashboard or others with no sub-sidebar
     }
@@ -1771,8 +1766,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
                                                     activeModule === "OrgRecycleBin" ? "Firm Recycle Bin" :
                                                       activeModule === "OrgBranding" ? "Branding & Theme" :
                                                         activeModule === "OrgSettings" ? "Organization Settings" :
-                                                          activeModule === "OrgUsers" ? "Org Admins" :
-                                                            activeModule === "OrgPolicies" ? "Org Policies" :
+                                                          activeModule === "OrgPolicies" ? "Org Policies" :
                                                               activeModule ? activeModule.toUpperCase() : activeCategory}
               </h4>
               <div className="space-y-4">
@@ -1836,8 +1830,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
                                                     activeModule === "OrgRecycleBin" ? "Firm Recycle Bin" :
                                                       activeModule === "OrgBranding" ? "Branding & Theme" :
                                                         activeModule === "OrgSettings" ? "Organization Settings" :
-                                                          activeModule === "OrgUsers" ? "Org Admins" :
-                                                            activeModule === "OrgPolicies" ? "Org Policies" :
+                                                          activeModule === "OrgPolicies" ? "Org Policies" :
                                                               activeModule ? activeModule.toUpperCase() : activeCategory}
               </h3>
             )}

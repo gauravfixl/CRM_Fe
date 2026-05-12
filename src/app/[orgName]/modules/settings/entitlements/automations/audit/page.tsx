@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from "react";
 import {
@@ -88,7 +88,7 @@ export default function AuditLogsPage() {
     return (
         <div className="relative min-h-screen bg-[#F8F9FC] dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-outfit p-6 space-y-6">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white dark:bg-zinc-900 p-6 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white dark:bg-zinc-900 p-6 border border-zinc-200 dark:border-zinc-800 rounded-none shadow-sm">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-slate-600 to-zinc-700 flex items-center justify-center text-white shadow-lg">
                         <FileText className="w-6 h-6" />
@@ -127,7 +127,7 @@ export default function AuditLogsPage() {
                             <span className="text-xl font-semibold text-zinc-900 dark:text-white block">{successCount}</span>
                             <span className="text-[10px] text-emerald-600 font-medium mt-1 block">Events logged</span>
                         </div>
-                        <div className="h-10 w-10 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 rounded-2xl flex items-center justify-center">
+                        <div className="h-10 w-10 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 rounded-none flex items-center justify-center">
                             <CheckCircle2 className="w-5 h-5" />
                         </div>
                     </SmallCardContent>
@@ -139,7 +139,7 @@ export default function AuditLogsPage() {
                             <span className="text-xl font-semibold text-zinc-900 dark:text-white block">{failedCount}</span>
                             <span className="text-[10px] text-amber-600 font-medium mt-1 block">Needs review</span>
                         </div>
-                        <div className="h-10 w-10 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-2xl flex items-center justify-center">
+                        <div className="h-10 w-10 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-none flex items-center justify-center">
                             <AlertCircle className="w-5 h-5" />
                         </div>
                     </SmallCardContent>
@@ -151,7 +151,7 @@ export default function AuditLogsPage() {
                             <span className="text-xl font-semibold text-zinc-900 dark:text-white block">{uniqueUsers}</span>
                             <span className="text-[10px] text-blue-600 font-medium mt-1 block">This week</span>
                         </div>
-                        <div className="h-10 w-10 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-2xl flex items-center justify-center">
+                        <div className="h-10 w-10 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-none flex items-center justify-center">
                             <Users className="w-5 h-5" />
                         </div>
                     </SmallCardContent>
@@ -159,7 +159,7 @@ export default function AuditLogsPage() {
             </div>
 
             {/* Logs Table */}
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none shadow-sm overflow-hidden">
                 <div className="p-4 border-b border-zinc-100 dark:border-zinc-800 flex flex-col md:flex-row gap-3 justify-between items-center bg-zinc-50/20 dark:bg-zinc-900/50">
                     <div className="relative w-full md:w-80">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />

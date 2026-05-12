@@ -44,26 +44,6 @@ export const createOrg = async (form) => {
 };
 
 /**
- * Updates the current organization's details.
- * @param {Object} form - Updated organization data.
- */
-export const updateOrg = async (form) => {
-  const orgId = localStorage.getItem("orgID");
-  const response = await axios.patch(`/org/update/${orgId}`, form);
-  return response;
-};
-
-/**
- * Updates the current organization's logo.
- * @param {Object} form - Logo data.
- */
-export const updateLogo = async (form) => {
-  const orgId = localStorage.getItem("orgID");
-  const response = await axios.patch(`/org/logo/${orgId}`, form);
-  return response;
-};
-
-/**
  * Fetches all users in the organization.
  */
 export const fetchUsersApi = async () => {
@@ -117,6 +97,27 @@ export const createOrgInvite = async (form) => {
  */
 export const declineOrgInvite = async (token) => {
   const response = await axios.post(`/organization/declineInvite/${token}`);
+  return response;
+};
+
+/**
+ * Resends a pending organization invite. Rotates the token, extends expiry,
+ * and re-sends the invite email.
+ * @param {string} inviteId - The OrganizationInvite document _id.
+ */
+export const resendOrgInvite = async (inviteId) => {
+  const response = await axios.post(`/organization/invite/${inviteId}/resend`);
+  return response;
+};
+
+/**
+ * Updates a pending invite's editable fields (firstName, lastName, role, firmIds).
+ * Email is NOT editable — change of email = new invite.
+ * @param {string} inviteId - The OrganizationInvite document _id.
+ * @param {Object} form - { firstName, lastName, role, firmIds }
+ */
+export const updateOrgInvite = async (inviteId, form) => {
+  const response = await axios.patch(`/organization/invite/${inviteId}`, form);
   return response;
 };
 

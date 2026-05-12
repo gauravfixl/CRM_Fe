@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
@@ -11,26 +11,17 @@ import {
     FileText,
     Receipt,
     Clock,
-    X,
     Check,
-    Download
+    Download,
+    Rocket,
+    LayoutGrid,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { SmallCard, SmallCardContent } from "@/shared/components/custom/SmallCard"
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger
-} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import { toast } from "sonner"
 import { axiosInstance } from "@/lib/axios"
 
@@ -98,11 +89,11 @@ export default function OrgSubscriptionPage() {
                 const planName = h?.planSnapshot?.name ?? "Plan"
                 const price = h?.planSnapshot?.price
                 const amount =
-                    typeof price === "number" ? `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "$—"
+                    typeof price === "number" ? `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "$â€”"
 
                 return {
                     id: `#${planName}-${idx + 1}`,
-                    date: createdAt ? createdAt.toLocaleDateString(undefined, { month: "short", day: "2-digit", year: "numeric" }) : "—",
+                    date: createdAt ? createdAt.toLocaleDateString(undefined, { month: "short", day: "2-digit", year: "numeric" }) : "â€”",
                     amount,
                     status: h?.paymentStatus === "active" ? "Paid" : h?.paymentStatus === "trialing" ? "Trial" : "Updated",
                     method: "Billing on file",
@@ -112,9 +103,9 @@ export default function OrgSubscriptionPage() {
 
         // fallback
         return [
-            { id: "#Inv-2026-001", date: "Jan 24, 2026", amount: "$1,499.00", status: "Paid", method: "Visa •••• 4242" },
-            { id: "#Inv-2025-012", date: "Dec 24, 2025", amount: "$1,499.00", status: "Paid", method: "Visa •••• 4242" },
-            { id: "#Inv-2025-011", date: "Nov 24, 2025", amount: "$1,499.00", status: "Paid", method: "Visa •••• 4242" },
+            { id: "#Inv-2026-001", date: "Jan 24, 2026", amount: "$1,499.00", status: "Paid", method: "Visa â€¢â€¢â€¢â€¢ 4242" },
+            { id: "#Inv-2025-012", date: "Dec 24, 2025", amount: "$1,499.00", status: "Paid", method: "Visa â€¢â€¢â€¢â€¢ 4242" },
+            { id: "#Inv-2025-011", date: "Nov 24, 2025", amount: "$1,499.00", status: "Paid", method: "Visa â€¢â€¢â€¢â€¢ 4242" },
         ]
     })()
 
@@ -179,71 +170,13 @@ export default function OrgSubscriptionPage() {
                     <h1 className="text-sm font-semibold tracking-tight text-slate-900">Subscription & Usage</h1>
                     <p className="text-xs text-slate-500 mt-0.5">Manage your enterprise plan, usage limits and billing information.</p>
                 </div>
-                <Dialog open={isUpgradeOpen} onOpenChange={setIsUpgradeOpen}>
-                    <DialogTrigger asChild>
-                        <Button className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 font-medium text-xs px-4 shadow-sm">
-                            <ArrowUpCircle className="w-3.5 h-3.5" />
-                            Upgrade Plan
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden border-none rounded-xl shadow-xl">
-                        <div className="grid md:grid-cols-2">
-                            <div className="bg-slate-900 p-8 text-white space-y-6">
-                                <Badge className="bg-emerald-500 text-slate-950 font-medium text-[10px] px-2">Elite Tier</Badge>
-                                <div>
-                                    <h2 className="text-xl font-semibold tracking-tight leading-tight">{selectedPlan}</h2>
-                                    <p className="text-slate-400 text-xs mt-1.5">Unlimited power for global giants.</p>
-                                </div>
-                                <div className="space-y-3">
-                                    {(availablePlans.find(p => p.name === selectedPlan)?.features || []).map(f => (
-                                        <div key={f} className="flex items-center gap-2.5">
-                                            <div className="h-4 w-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                                                <Check className="w-2.5 h-2.5 text-emerald-500" />
-                                            </div>
-                                            <span className="text-xs text-slate-100">{f}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="pt-4">
-                                    <p className="text-xl font-semibold">{availablePlans.find(p => p.name === selectedPlan)?.price}<span className="text-xs text-slate-500 font-normal ml-1">/mo</span></p>
-                                </div>
-                            </div>
-                            <div className="p-8 bg-white space-y-5">
-                                <h3 className="text-xs font-semibold text-slate-900">Confirm Expansion</h3>
-                                <div className="space-y-3">
-                                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                        <p className="text-[10px] font-medium text-slate-400 mb-1">Current Method</p>
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2.5">
-                                                <div className="w-9 h-5 bg-slate-900 rounded flex items-center justify-center text-[9px] font-semibold italic text-zinc-400">Visa</div>
-                                                <p className="text-xs font-medium text-slate-900">•••• 4242</p>
-                                            </div>
-                                            <Button variant="link" className="text-blue-600 text-[10px] font-medium p-0" onClick={() => { setIsUpgradeOpen(false); setIsPaymentOpen(true) }}>Change</Button>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-medium text-slate-400">Security Code (Cvv)</Label>
-                                        <Input
-                                            type="password"
-                                            placeholder="•••"
-                                            value={cvv}
-                                            onChange={(e) => { setCvv(e.target.value.replace(/\D/g, "")); setCvvError("") }}
-                                            className={`h-10 rounded-lg bg-slate-50 border-slate-100 font-medium text-center text-sm tracking-widest ${cvvError ? "border-red-400" : ""}`}
-                                            maxLength={3}
-                                        />
-                                        {cvvError && <p className="text-[10px] text-red-500">{cvvError}</p>}
-                                    </div>
-                                </div>
-                                <div className="space-y-3 pt-2">
-                                    <Button className="w-full h-10 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs shadow-sm" onClick={handleUpgrade}>
-                                        Commit Upgrade
-                                    </Button>
-                                    <p className="text-[10px] text-center text-slate-400 px-4">Billed immediately. Prorated credits from current plan will be applied to the next invoice.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </DialogContent>
-                </Dialog>
+                <Button
+                    className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 font-medium text-xs px-4 shadow-sm"
+                    onClick={() => setIsUpgradeOpen(true)}
+                >
+                    <ArrowUpCircle className="w-3.5 h-3.5" />
+                    Upgrade Plan
+                </Button>
             </div>
 
             {/* Plan Overview */}
@@ -287,7 +220,7 @@ export default function OrgSubscriptionPage() {
                             </div>
                             <div className="space-y-0.5">
                                 <p className="text-[10px] font-medium text-indigo-300">Payment Method</p>
-                                <p className="text-xs font-medium text-white flex items-center gap-1.5">•••• 4242 <CreditCard className="w-3 h-3" /></p>
+                                <p className="text-xs font-medium text-white flex items-center gap-1.5">â€¢â€¢â€¢â€¢ 4242 <CreditCard className="w-3 h-3" /></p>
                             </div>
                             <div className="space-y-0.5">
                                 <p className="text-[10px] font-medium text-indigo-300">Billing Logic</p>
@@ -315,73 +248,14 @@ export default function OrgSubscriptionPage() {
                             Download Latest Invoice
                         </Button>
 
-                        <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
-                            <DialogTrigger asChild>
-                                <Button variant="outline" className="w-full justify-start h-9 text-xs font-medium hover:bg-slate-50 border-slate-200 rounded-lg">
-                                    <CreditCard className="w-3.5 h-3.5 mr-2.5 text-slate-400" />
-                                    Update Payment Details
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-[420px] p-6 border-none rounded-xl shadow-xl">
-                                <DialogHeader>
-                                    <DialogTitle className="text-sm font-semibold text-slate-900 tracking-tight">Update Payment Method</DialogTitle>
-                                    <DialogDescription className="text-xs text-slate-400">Update your PCI-DSS compliant payment method.</DialogDescription>
-                                </DialogHeader>
-                                <div className="space-y-4 py-4">
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-medium text-slate-400">Cardholder Name</Label>
-                                        <Input
-                                            placeholder="John Doe"
-                                            value={paymentForm.name}
-                                            onChange={(e) => setPaymentForm(prev => ({ ...prev, name: e.target.value }))}
-                                            className={`h-9 bg-slate-50 border-slate-100 rounded-lg text-xs ${paymentErrors.name ? "border-red-400" : ""}`}
-                                        />
-                                        {paymentErrors.name && <p className="text-[10px] text-red-500">{paymentErrors.name}</p>}
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-medium text-slate-400">Card Number</Label>
-                                        <Input
-                                            placeholder="0000 0000 0000 0000"
-                                            value={paymentForm.number}
-                                            onChange={(e) => setPaymentForm(prev => ({ ...prev, number: e.target.value.replace(/[^\d\s]/g, "").slice(0, 19) }))}
-                                            className={`h-9 bg-slate-50 border-slate-100 rounded-lg text-xs ${paymentErrors.number ? "border-red-400" : ""}`}
-                                        />
-                                        {paymentErrors.number && <p className="text-[10px] text-red-500">{paymentErrors.number}</p>}
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="space-y-1.5">
-                                            <Label className="text-[10px] font-medium text-slate-400">Expiry</Label>
-                                            <Input
-                                                placeholder="MM/YY"
-                                                value={paymentForm.expiry}
-                                                onChange={(e) => {
-                                                    let val = e.target.value.replace(/[^\d]/g, "").slice(0, 4)
-                                                    if (val.length >= 3) val = val.slice(0, 2) + "/" + val.slice(2)
-                                                    setPaymentForm(prev => ({ ...prev, expiry: val }))
-                                                }}
-                                                className={`h-9 bg-slate-50 border-slate-100 rounded-lg text-xs ${paymentErrors.expiry ? "border-red-400" : ""}`}
-                                            />
-                                            {paymentErrors.expiry && <p className="text-[10px] text-red-500">{paymentErrors.expiry}</p>}
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <Label className="text-[10px] font-medium text-slate-400">Cvc</Label>
-                                            <Input
-                                                placeholder="•••"
-                                                value={paymentForm.cvc}
-                                                onChange={(e) => setPaymentForm(prev => ({ ...prev, cvc: e.target.value.replace(/\D/g, "").slice(0, 3) }))}
-                                                className={`h-9 bg-slate-50 border-slate-100 rounded-lg text-xs ${paymentErrors.cvc ? "border-red-400" : ""}`}
-                                            />
-                                            {paymentErrors.cvc && <p className="text-[10px] text-red-500">{paymentErrors.cvc}</p>}
-                                        </div>
-                                    </div>
-                                </div>
-                                <DialogFooter>
-                                    <Button className="w-full h-9 bg-slate-900 hover:bg-black text-white font-medium text-xs rounded-lg shadow-sm" onClick={handleSavePayment}>
-                                        Save Securely
-                                    </Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
+                        <Button
+                            variant="outline"
+                            className="w-full justify-start h-9 text-xs font-medium hover:bg-slate-50 border-slate-200 rounded-lg"
+                            onClick={() => setIsPaymentOpen(true)}
+                        >
+                            <CreditCard className="w-3.5 h-3.5 mr-2.5 text-slate-400" />
+                            Update Payment Details
+                        </Button>
 
                         <Button variant="outline" className="w-full justify-start h-9 text-xs font-medium hover:bg-slate-50 border-slate-200 rounded-lg" onClick={navigateToHistory}>
                             <Receipt className="w-3.5 h-3.5 mr-2.5 text-slate-400" />
@@ -458,43 +332,264 @@ export default function OrgSubscriptionPage() {
                 </CardContent>
             </Card>
 
-            {/* Compare Plans Dialog */}
-            <Dialog open={isCompareOpen} onOpenChange={setIsCompareOpen}>
-                <DialogContent className="sm:max-w-[800px] p-0 overflow-hidden border-none rounded-xl shadow-xl">
-                    <DialogHeader className="p-5 pb-3 border-b border-slate-100">
-                        <DialogTitle className="text-sm font-semibold text-slate-900">Compare Plans</DialogTitle>
-                        <DialogDescription className="text-xs text-slate-400">Choose the plan that best fits your organization.</DialogDescription>
-                    </DialogHeader>
-                    <div className="p-5 grid grid-cols-2 md:grid-cols-4 gap-3">
-                        {availablePlans.map((plan) => (
-                            <div key={plan.name} className={`p-4 rounded-xl border ${plan.current ? "border-blue-500 bg-blue-50/50" : "border-slate-200 bg-white"} space-y-3`}>
-                                <div>
-                                    <p className="text-xs font-semibold text-slate-900">{plan.name}</p>
-                                    <p className="text-sm font-semibold text-slate-900 mt-1">{plan.price}<span className="text-[10px] font-normal text-slate-400">/mo</span></p>
-                                </div>
-                                <div className="space-y-1.5">
-                                    {plan.features.map(f => (
-                                        <div key={f} className="flex items-center gap-1.5">
-                                            <Check className="w-2.5 h-2.5 text-emerald-500" />
-                                            <span className="text-[10px] text-slate-600">{f}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                                {plan.current ? (
-                                    <Badge className="bg-blue-100 text-blue-700 border-none text-[10px] font-medium w-full justify-center">Current Plan</Badge>
-                                ) : (
-                                    <Button
-                                        className="w-full h-7 bg-slate-900 hover:bg-blue-600 text-white font-medium text-[10px] rounded-lg shadow-sm"
-                                        onClick={() => { setSelectedPlan(plan.name); setIsCompareOpen(false); setIsUpgradeOpen(true) }}
-                                    >
-                                        {parseInt(plan.price.replace(/\D/g, "")) > 1499 ? "Upgrade" : "Downgrade"}
-                                    </Button>
-                                )}
+            {/* Upgrade Plan â€” side sheet */}
+            <SideFormSheet
+                open={isUpgradeOpen}
+                onOpenChange={(o) => {
+                    setIsUpgradeOpen(o)
+                    if (!o) {
+                        setCvv("")
+                        setCvvError("")
+                    }
+                }}
+                title="Confirm Plan Upgrade"
+                description="Review your new plan and confirm the upgrade."
+                icon={<Rocket className="w-5 h-5" />}
+                accentColor="#059669"
+                width="lg"
+                onSubmit={(e) => {
+                    e.preventDefault()
+                    handleUpgrade()
+                }}
+                submitLabel="Commit Upgrade"
+            >
+                <div className="space-y-5">
+                    {/* Plan summary â€” dark panel, explicit white text */}
+                    <div className="relative bg-slate-900 rounded-none p-6 overflow-hidden">
+                        <div
+                            className="absolute inset-0 opacity-[0.04] pointer-events-none"
+                            style={{
+                                backgroundImage: `radial-gradient(rgba(255,255,255,0.8) 1px, transparent 1px)`,
+                                backgroundSize: "18px 18px",
+                            }}
+                        />
+                        <div className="relative space-y-4">
+                            <Badge className="bg-emerald-500 text-slate-950 font-semibold text-[10px] px-2 py-0.5 rounded-full hover:bg-emerald-500">
+                                Elite Tier
+                            </Badge>
+                            <div>
+                                <h2 className="text-white text-xl font-bold tracking-tight leading-tight">
+                                    {selectedPlan}
+                                </h2>
+                                <p className="text-slate-300 text-[12.5px] mt-1.5">
+                                    Unlimited power for global giants.
+                                </p>
                             </div>
-                        ))}
+                            <div className="space-y-2 pt-1">
+                                {(availablePlans.find((p) => p.name === selectedPlan)?.features || []).map((f) => (
+                                    <div key={f} className="flex items-center gap-2.5">
+                                        <div className="h-4 w-4 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
+                                            <Check className="w-2.5 h-2.5 text-emerald-400" strokeWidth={3} />
+                                        </div>
+                                        <span className="text-[12.5px] text-white">{f}</span>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="pt-3 border-t border-white/10">
+                                <p className="text-white text-2xl font-bold">
+                                    {availablePlans.find((p) => p.name === selectedPlan)?.price}
+                                    <span className="text-[11px] text-slate-400 font-medium ml-1">/mo</span>
+                                </p>
+                            </div>
+                        </div>
                     </div>
-                </DialogContent>
-            </Dialog>
+
+                    {/* Current method */}
+                    <div>
+                        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2">Current Method</p>
+                        <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="w-10 h-6 bg-slate-900 rounded flex items-center justify-center text-[9px] font-bold italic text-white">
+                                        VISA
+                                    </div>
+                                    <p className="text-[13px] font-semibold text-slate-900">â€¢â€¢â€¢â€¢ 4242</p>
+                                </div>
+                                <Button
+                                    variant="link"
+                                    className="text-blue-600 text-[12px] font-medium p-0 h-auto"
+                                    onClick={() => {
+                                        setIsUpgradeOpen(false)
+                                        setIsPaymentOpen(true)
+                                    }}
+                                >
+                                    Change
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <Field label="Security Code (CVV)" required error={cvvError} hint="3 digits on the back of your card">
+                        <Input
+                            type="password"
+                            placeholder="â€¢â€¢â€¢"
+                            value={cvv}
+                            onChange={(e) => {
+                                setCvv(e.target.value.replace(/\D/g, ""))
+                                setCvvError("")
+                            }}
+                            className="h-11 rounded-lg bg-white border-slate-200 font-mono text-center text-base tracking-[0.5em]"
+                            maxLength={4}
+                            autoComplete="cc-csc"
+                            inputMode="numeric"
+                        />
+                    </Field>
+
+                    <div className="flex items-start gap-2 p-3 bg-emerald-50 border border-emerald-100 rounded-lg">
+                        <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <p className="text-[11.5px] text-emerald-800 leading-relaxed">
+                            Billed immediately. Prorated credits from your current plan will be applied to the next invoice.
+                        </p>
+                    </div>
+                </div>
+            </SideFormSheet>
+
+            {/* Update Payment Details â€” side sheet */}
+            <SideFormSheet
+                open={isPaymentOpen}
+                onOpenChange={(o) => {
+                    setIsPaymentOpen(o)
+                    if (!o) {
+                        setPaymentForm({ name: "", number: "", expiry: "", cvc: "" })
+                        setPaymentErrors({})
+                    }
+                }}
+                title="Update Payment Method"
+                description="Your PCI-DSS compliant payment details are encrypted end-to-end."
+                icon={<CreditCard className="w-5 h-5" />}
+                width="md"
+                onSubmit={(e) => {
+                    e.preventDefault()
+                    handleSavePayment()
+                }}
+                submitLabel="Save Securely"
+            >
+                <div className="space-y-4">
+                    <Field label="Cardholder Name" required error={paymentErrors.name}>
+                        <Input
+                            placeholder="John Doe"
+                            value={paymentForm.name}
+                            onChange={(e) =>
+                                setPaymentForm((prev) => ({
+                                    ...prev,
+                                    name: e.target.value.replace(/[^A-Za-z\s.'-]/g, ""),
+                                }))
+                            }
+                            className="h-11 rounded-lg bg-white border-slate-200 focus:border-primary"
+                            maxLength={80}
+                        />
+                    </Field>
+
+                    <Field label="Card Number" required error={paymentErrors.number} hint="16-digit card number">
+                        <Input
+                            placeholder="0000 0000 0000 0000"
+                            value={paymentForm.number}
+                            onChange={(e) => {
+                                const digits = e.target.value.replace(/\D/g, "").slice(0, 16)
+                                const formatted = digits.replace(/(\d{4})(?=\d)/g, "$1 ")
+                                setPaymentForm((prev) => ({ ...prev, number: formatted }))
+                            }}
+                            className="h-11 rounded-lg bg-white border-slate-200 focus:border-primary font-mono tracking-wider"
+                            inputMode="numeric"
+                            autoComplete="cc-number"
+                        />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Expiry" required error={paymentErrors.expiry} hint="MM/YY">
+                            <Input
+                                placeholder="12/26"
+                                value={paymentForm.expiry}
+                                onChange={(e) => {
+                                    let val = e.target.value.replace(/[^\d]/g, "").slice(0, 4)
+                                    if (val.length >= 3) val = val.slice(0, 2) + "/" + val.slice(2)
+                                    setPaymentForm((prev) => ({ ...prev, expiry: val }))
+                                }}
+                                className="h-11 rounded-lg bg-white border-slate-200 focus:border-primary font-mono"
+                                maxLength={5}
+                                inputMode="numeric"
+                                autoComplete="cc-exp"
+                            />
+                        </Field>
+                        <Field label="CVC" required error={paymentErrors.cvc} hint="3 or 4 digits">
+                            <Input
+                                type="password"
+                                placeholder="â€¢â€¢â€¢"
+                                value={paymentForm.cvc}
+                                onChange={(e) =>
+                                    setPaymentForm((prev) => ({
+                                        ...prev,
+                                        cvc: e.target.value.replace(/\D/g, "").slice(0, 4),
+                                    }))
+                                }
+                                className="h-11 rounded-lg bg-white border-slate-200 focus:border-primary font-mono"
+                                maxLength={4}
+                                inputMode="numeric"
+                                autoComplete="cc-csc"
+                            />
+                        </Field>
+                    </div>
+
+                    <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                        <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                        <p className="text-[11.5px] text-blue-800 leading-relaxed">
+                            Your card information is encrypted and securely stored. We are PCI-DSS compliant.
+                        </p>
+                    </div>
+                </div>
+            </SideFormSheet>
+
+            {/* Compare Plans â€” side sheet */}
+            <SideFormSheet
+                open={isCompareOpen}
+                onOpenChange={setIsCompareOpen}
+                title="Compare Plans"
+                description="Choose the plan that best fits your organization."
+                icon={<LayoutGrid className="w-5 h-5" />}
+                width="xl"
+                hideFooter
+            >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {availablePlans.map((plan) => (
+                        <div
+                            key={plan.name}
+                            className={`p-4 rounded-xl border ${plan.current ? "border-blue-500 bg-blue-50/50" : "border-slate-200 bg-white hover:border-slate-300"} space-y-3 transition-colors`}
+                        >
+                            <div>
+                                <p className="text-[13px] font-semibold text-slate-900">{plan.name}</p>
+                                <p className="text-lg font-bold text-slate-900 mt-1">
+                                    {plan.price}
+                                    <span className="text-[11px] font-normal text-slate-400">/mo</span>
+                                </p>
+                            </div>
+                            <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                                {plan.features.map((f) => (
+                                    <div key={f} className="flex items-center gap-1.5">
+                                        <Check className="w-3 h-3 text-emerald-500 shrink-0" />
+                                        <span className="text-[11.5px] text-slate-600">{f}</span>
+                                    </div>
+                                ))}
+                            </div>
+                            {plan.current ? (
+                                <Badge className="bg-blue-100 text-blue-700 border-none text-[10px] font-medium w-full justify-center py-1">
+                                    Current Plan
+                                </Badge>
+                            ) : (
+                                <Button
+                                    className="w-full h-9 bg-slate-900 hover:bg-blue-600 text-white font-medium text-[12px] rounded-lg shadow-sm transition-colors"
+                                    onClick={() => {
+                                        setSelectedPlan(plan.name)
+                                        setIsCompareOpen(false)
+                                        setIsUpgradeOpen(true)
+                                    }}
+                                >
+                                    {parseInt(plan.price.replace(/\D/g, "")) > 1499 ? "Upgrade" : "Downgrade"}
+                                </Button>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </SideFormSheet>
         </div>
     )
 }

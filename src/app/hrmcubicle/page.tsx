@@ -386,8 +386,8 @@ const HRAdminDashboard = () => {
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {[
           { label: "Total Employees", value: metrics.headcount, sub: "Total workforce", icon: Users, theme: "indigo", color: "bg-indigo-100/50 border-indigo-200", iconBg: "bg-white", iconColor: "text-indigo-700", url: "/hrmcubicle/organization/employees" },
-          { label: "Present Today", value: metrics.presentToday, sub: `${Math.round((metrics.presentToday / metrics.headcount) * 100)}% Capacity`, icon: UserCheck, theme: "emerald", color: "bg-emerald-100/50 border-emerald-200", iconBg: "bg-white", iconColor: "text-emerald-700", url: "/hrmcubicle/time-attendance/attendance" },
-          { label: "On Leave", value: metrics.onLeaveToday, sub: "Scheduled absences", icon: Calendar, theme: "amber", color: "bg-amber-100/50 border-amber-200", iconBg: "bg-white", iconColor: "text-amber-700", url: "/hrmcubicle/time-attendance/leave" },
+          { label: "Present Today", value: metrics.presentToday, sub: `${Math.round((metrics.presentToday / metrics.headcount) * 100)}% Capacity`, icon: UserCheck, theme: "emerald", color: "bg-emerald-100/50 border-emerald-200", iconBg: "bg-white", iconColor: "text-emerald-700", url: "/hrmcubicle/timeattend/attendance" },
+          { label: "On Leave", value: metrics.onLeaveToday, sub: "Scheduled absences", icon: Calendar, theme: "amber", color: "bg-amber-100/50 border-amber-200", iconBg: "bg-white", iconColor: "text-amber-700", url: "/hrmcubicle/timeattend/leave" },
           { label: "New Joiners", value: metrics.newJoinersThisMonth, sub: "This month", icon: UserPlus, theme: "blue", color: "bg-blue-100/50 border-blue-200", iconBg: "bg-white", iconColor: "text-blue-700", url: "/hrmcubicle/my-team/members" },
           { label: "Pending Approvals", value: metrics.pendingApprovals, sub: "Action required", icon: Activity, theme: "rose", color: "bg-rose-100/50 border-rose-200", iconBg: "bg-white", iconColor: "text-rose-700", url: "/hrmcubicle/my-team/requests" },
         ].map((stat, i) => (
@@ -416,7 +416,10 @@ const HRAdminDashboard = () => {
       </section>
 
       {/* 📈 GROWTH ANALYTICS (Full Width to fill horizontal space) */}
-      <Card className={`${CARD_RADIUS} shadow-md border border-slate-200 bg-white overflow-hidden`}>
+      <Card
+        onClick={() => router.push('/hrmcubicle/organization/dashboard')}
+        className={`${CARD_RADIUS} shadow-md border border-slate-200 bg-white overflow-hidden cursor-pointer hover:shadow-lg transition-all`}
+      >
         <div className="p-4 border-b border-slate-50 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
@@ -467,7 +470,10 @@ const HRAdminDashboard = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* ⏱ Attendance Snapshot (ERP Layer) */}
-            <Card className={`${CARD_RADIUS} shadow-md overflow-hidden bg-white group h-full flex flex-col border border-slate-200`}>
+            <Card
+              onClick={() => router.push('/hrmcubicle/timeattend/attendance')}
+              className={`${CARD_RADIUS} shadow-md overflow-hidden bg-white group h-full flex flex-col border border-slate-200 cursor-pointer hover:shadow-lg transition-all`}
+            >
               <CardHeader className="p-4 bg-slate-50/50 border-b border-slate-100">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-3">
@@ -480,7 +486,10 @@ const HRAdminDashboard = () => {
                     </div>
                   </div>
                   <Select defaultValue="all" onValueChange={() => toast.success("Filter Applied: Displaying department-specific metrics.")}>
-                    <SelectTrigger className="w-[110px] h-8 text-[10px] font-bold border-slate-200 bg-white shadow-none">
+                    <SelectTrigger
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-[110px] h-8 text-[10px] font-bold border-slate-200 bg-white shadow-none"
+                    >
                       <SelectValue placeholder="Department" />
                     </SelectTrigger>
                     <SelectContent>
@@ -518,7 +527,7 @@ const HRAdminDashboard = () => {
                 <Button
                   variant="ghost"
                   className="w-full text-indigo-600 font-bold text-[10px] h-9 border border-indigo-50 hover:bg-indigo-50 rounded-xl"
-                  onClick={() => router.push('/hrmcubicle/time-attendance/attendance')}
+                  onClick={(e) => { e.stopPropagation(); router.push('/hrmcubicle/timeattend/attendance'); }}
                 >
                   VIEW FULL SUMMARY
                 </Button>
@@ -526,7 +535,10 @@ const HRAdminDashboard = () => {
             </Card>
 
             {/* 🌴 Leave Overview (ERP Layer) */}
-            <Card className={`${CARD_RADIUS} shadow-md overflow-hidden bg-white group h-full flex flex-col border border-slate-200`}>
+            <Card
+              onClick={() => router.push('/hrmcubicle/timeattend/leave')}
+              className={`${CARD_RADIUS} shadow-md overflow-hidden bg-white group h-full flex flex-col border border-slate-200 cursor-pointer hover:shadow-lg transition-all`}
+            >
               <CardHeader className="p-4 bg-slate-50/50 border-b border-slate-100">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-3">
@@ -572,7 +584,10 @@ const HRAdminDashboard = () => {
 
           {/* Departmental Performance Matrix & Composition */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className={`${CARD_RADIUS} shadow-md bg-[#f1f5f9] overflow-hidden border border-slate-200`}>
+            <Card
+              onClick={() => router.push('/hrmcubicle/my-team/members')}
+              className={`${CARD_RADIUS} shadow-md bg-[#f1f5f9] overflow-hidden border border-slate-200 cursor-pointer hover:shadow-lg transition-all`}
+            >
               <div className="p-2 px-4 border-b border-slate-50 flex items-center justify-between">
                 <div>
                   <CardTitle className="text-base font-bold text-slate-900 tracking-tight text-start">Workforce Health</CardTitle>
@@ -611,7 +626,10 @@ const HRAdminDashboard = () => {
               </div>
             </Card>
 
-            <Card className={`${CARD_RADIUS} shadow-md bg-[#f1f5f9] overflow-hidden border border-slate-200`}>
+            <Card
+              onClick={() => router.push('/hrmcubicle/organization/employees')}
+              className={`${CARD_RADIUS} shadow-md bg-[#f1f5f9] overflow-hidden border border-slate-200 cursor-pointer hover:shadow-lg transition-all`}
+            >
               <div className="p-3 px-4 border-b border-white/50 flex items-center justify-between bg-white/30">
                 <div>
                   <CardTitle className="text-base font-bold text-slate-900 tracking-tight text-start">Staff Metrics</CardTitle>
@@ -663,7 +681,10 @@ const HRAdminDashboard = () => {
               </CardContent>
             </Card>
 
-            <Card className={`${CARD_RADIUS} shadow-md bg-white overflow-hidden border border-slate-200`}>
+            <Card
+              onClick={() => router.push('/hrmcubicle/hire/candidates')}
+              className={`${CARD_RADIUS} shadow-md bg-white overflow-hidden border border-slate-200 cursor-pointer hover:shadow-lg transition-all`}
+            >
               <div className="p-3 px-4 border-b border-slate-50 flex items-center justify-between">
                 <div>
                   <CardTitle className="text-base font-bold text-slate-900 tracking-tight text-start">Recruitment Funnel</CardTitle>
@@ -725,7 +746,10 @@ const HRAdminDashboard = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Team Recognitions (Filling Space) */}
-              <Card className={`${CARD_RADIUS} shadow-sm border border-slate-200 bg-white overflow-hidden`}>
+              <Card
+                onClick={() => router.push('/hrmcubicle/engage/rewards')}
+                className={`${CARD_RADIUS} shadow-sm border border-slate-200 bg-white overflow-hidden cursor-pointer hover:shadow-lg transition-all`}
+              >
                 <div className="p-4 border-b border-slate-50 flex items-center gap-3">
                   <div className="h-8 w-8 bg-amber-100 text-amber-600 rounded-lg flex items-center justify-center">
                     <Sparkles size={16} />
@@ -753,7 +777,7 @@ const HRAdminDashboard = () => {
                 <div className="p-3 bg-slate-50 border-t border-slate-100 flex justify-center">
                   <button
                     className="text-[10px] font-bold text-indigo-600 flex items-center gap-1.5 hover:underline"
-                    onClick={() => router.push('/hrmcubicle/engage/recognitions')}
+                    onClick={(e) => { e.stopPropagation(); router.push('/hrmcubicle/engage/rewards'); }}
                   >
                     View Wall of Fame <ArrowRight size={12} />
                   </button>
@@ -761,7 +785,10 @@ const HRAdminDashboard = () => {
               </Card>
 
               {/* Monthly Holidays Card */}
-              <Card className="border-none shadow-sm bg-indigo-200/40 rounded-3xl overflow-hidden relative group border border-indigo-200/50">
+              <Card
+                onClick={() => router.push('/hrmcubicle/organization/holidays')}
+                className="border-none shadow-sm bg-indigo-200/40 rounded-3xl overflow-hidden relative group border border-indigo-200/50 cursor-pointer hover:shadow-lg transition-all"
+              >
                 <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:rotate-12 transition-transform duration-700 pointer-events-none">
                   <Calendar size={120} />
                 </div>
@@ -794,7 +821,10 @@ const HRAdminDashboard = () => {
             </div>
 
             {/* Upcoming Birthdays Card */}
-            <Card className="border-none shadow-sm bg-rose-200/40 rounded-3xl overflow-hidden relative group border border-rose-200/50">
+            <Card
+              onClick={() => router.push('/hrmcubicle/engage/celebrations')}
+              className="border-none shadow-sm bg-rose-200/40 rounded-3xl overflow-hidden relative group border border-rose-200/50 cursor-pointer hover:shadow-lg transition-all"
+            >
               <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 transition-transform duration-700 pointer-events-none">
                 <Smile size={120} />
               </div>
@@ -818,12 +848,13 @@ const HRAdminDashboard = () => {
                         <p className="text-[9px] text-slate-400 font-bold mt-1.5 capitalize tracking-tight">{bday.dept} • {bday.date}</p>
                       </div>
                     </div>
-                    <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-rose-300 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-100">
-                      <Sparkles
-                        size={14}
-                        className="cursor-pointer"
-                        onClick={handleAcknowledge}
-                      />
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={(e) => { e.stopPropagation(); handleAcknowledge(); }}
+                      className="h-8 w-8 rounded-lg text-rose-300 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-100"
+                    >
+                      <Sparkles size={14} className="cursor-pointer" />
                     </Button>
                   </div>
                 ))}
@@ -973,9 +1004,9 @@ const HRAdminDashboard = () => {
                   onClick={() => {
                     const paths: Record<string, string> = {
                       "Probation Ending": "/hrmcubicle/my-team/members",
-                      "Document Expiry": "/hrmcubicle/documents",
+                      "Document Expiry": "/hrmcubicle/documents/policies",
                       "Birthday Today": "/hrmcubicle/engage/events",
-                      "Payroll Lock Date": "/hrmcubicle/payroll/run"
+                      "Payroll Lock Date": "/hrmcubicle/payroll/processing"
                     };
                     if (paths[alert.label]) router.push(paths[alert.label]);
                     else toast.success(`${alert.label}: View details for ${alert.label}`);
@@ -1007,7 +1038,7 @@ const HRAdminDashboard = () => {
                 {[
                   { time: "11:00 AM", title: "Product Sync", dept: "Product", type: "Internal", url: "/hrmcubicle/engage/events" },
                   { time: "02:30 PM", title: "Technical Interview", candidate: "Amit R.", dept: "Engineering", url: "/hrmcubicle/hire/interviews" },
-                  { time: "04:00 PM", title: "Budget Review", dept: "Finance", type: "Strategic", url: "/hrmcubicle/payroll" },
+                  { time: "04:00 PM", title: "Budget Review", dept: "Finance", type: "Strategic", url: "/hrmcubicle/payroll/dashboard" },
                 ].map((event, i) => (
                   <div
                     key={i}
@@ -1068,8 +1099,8 @@ const HRAdminDashboard = () => {
                 </div>
                 <div className="p-0 divide-y divide-slate-50">
                   {[
-                    { msg: "Payroll period for Jan '26 is now locked.", time: "10m ago", icon: FileCheck, color: "text-emerald-500", url: "/hrmcubicle/payroll" },
-                    { msg: "New policy: Work from Anywhere (Summer '26)", time: "1h ago", icon: Megaphone, color: "text-indigo-500", url: "/hrmcubicle/documents" },
+                    { msg: "Payroll period for Jan '26 is now locked.", time: "10m ago", icon: FileCheck, color: "text-emerald-500", url: "/hrmcubicle/payroll/dashboard" },
+                    { msg: "New policy: Work from Anywhere (Summer '26)", time: "1h ago", icon: Megaphone, color: "text-indigo-500", url: "/hrmcubicle/documents/policies" },
                     { msg: "Candidate 'Rohan' moved to Interview stage.", time: "2h ago", icon: UserPlus, color: "text-blue-500", url: "/hrmcubicle/hire/candidates" },
                   ].map((item, i) => (
                     <div

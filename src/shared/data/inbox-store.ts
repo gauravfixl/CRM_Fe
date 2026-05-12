@@ -84,11 +84,13 @@ interface InboxState {
     delegateRequest: (id: string, delegatedTo: string) => void;
     escalateRequest: (id: string, escalatedTo: string) => void;
     bulkApprove: (ids: string[], approvedBy: string) => void;
+    deleteApproval: (id: string) => void;
 
     // Notifications
     markAsRead: (id: string) => void;
     markAllAsRead: () => void;
     deleteNotification: (id: string) => void;
+    addNotification: (payload: Omit<Notification, 'id' | 'timestamp' | 'isRead'>) => void;
 
     // Notification Preferences
     updateNotificationPreferences: (prefs: NotificationPreference[]) => void;
@@ -97,6 +99,7 @@ interface InboxState {
     updateRequestStatus: (id: string, status: RequestStatus) => void;
     addReplyToRequest: (id: string, reply: string) => void;
     deleteRequest: (id: string) => void;
+    addRequest: (payload: Omit<Request, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => void;
 }
 
 // Mock Data
@@ -271,6 +274,10 @@ export const useInboxStore = create<InboxState>()(
                 )
             })),
 
+            deleteApproval: (id) => set((state) => ({
+                approvals: state.approvals.filter(a => a.id !== id)
+            })),
+
             markAsRead: (id) => set((state) => ({
                 notifications: state.notifications.map(n =>
                     n.id === id ? { ...n, isRead: true } : n
@@ -285,7 +292,21 @@ export const useInboxStore = create<InboxState>()(
                 notifications: state.notifications.filter(n => n.id !== id)
             })),
 
-            updateNotificationPreferences: (prefs) => set({ notificationPreferences: prefs }),
+            addNotification: (payload) => set((state) => ({
+                notifications: [
+                    {
+                        ...payload,
+                        id: `notif-${Date.now()}`,
+                        timestamp: new Date().toISOString(),
+                        isRead: false
+                    },
+                    ...state.notifications
+                ]
+            })),
+
+            updateNotificationPreferences: (prefs) => set(() => ({
+                notificationPreferences: prefs
+            })),
 
             updateRequestStatus: (id, status) => set((state) => ({
                 requests: state.requests.map(r =>
@@ -301,6 +322,19 @@ export const useInboxStore = create<InboxState>()(
 
             deleteRequest: (id) => set((state) => ({
                 requests: state.requests.filter(r => r.id !== id)
+            })),
+
+            addRequest: (payload) => set((state) => ({
+                requests: [
+                    {
+                        ...payload,
+                        id: `req-${Date.now()}`,
+                        status: 'Open' as RequestStatus,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    },
+                    ...state.requests
+                ]
             }))
         }),
         { name: 'inbox-storage-v2' }

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState, useEffect, useRef } from "react"
 import {
@@ -20,6 +20,7 @@ import { useBrandingStore } from "../../../../../lib/useBrandingStore"
 import { toast } from "sonner"
 import Link from "next/link"
 import { useParams } from "next/navigation"
+import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks"
 
 const DEFAULT_LOGO = "/images/cubicleweb.png"
 
@@ -36,6 +37,7 @@ export default function OrgBrandingPage() {
     const [logoUrl, setLogoUrl] = useState(storeLogoUrl)
     const [loginLogoUrl, setLoginLogoUrl] = useState(storeLoginLogoUrl)
     const [mounted, setMounted] = useState(false)
+    const [saving, setSaving] = useState(false)
 
     const mainLogoInputRef = useRef<HTMLInputElement>(null)
     const loginLogoInputRef = useRef<HTMLInputElement>(null)
@@ -50,7 +52,23 @@ export default function OrgBrandingPage() {
         setLoginLogoUrl(storeLoginLogoUrl)
     }, [storeLogoUrl, storeLoginLogoUrl, storeOrgName])
 
-    const handleApplyChanges = () => {
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await getOrgAdminSettings()
+                const s = res?.data?.settings || res?.data?.data || res?.data || {}
+                const remoteName = s?.branding?.companyDisplayName
+                if (remoteName) {
+                    setOrgName(remoteName)
+                    setBranding({ orgName: remoteName })
+                }
+            } catch (err) {
+                // Silent â€” fall back to Zustand store value
+            }
+        })()
+    }, [setBranding])
+
+    const handleApplyChanges = async () => {
         const trimmedName = orgName.trim();
         if (!trimmedName) {
             toast.error("Organization name is required");
@@ -63,12 +81,21 @@ export default function OrgBrandingPage() {
             return;
         }
 
-        setBranding({
-            orgName: trimmedName,
-            logoUrl,
-            loginLogoUrl
-        })
-        toast.success("Brand identity updated successfully!")
+        try {
+            setSaving(true)
+            await updateOrgAdminSettings({ branding: { companyDisplayName: trimmedName } })
+            setBranding({
+                orgName: trimmedName,
+                logoUrl,
+                loginLogoUrl
+            })
+            toast.success("Brand identity updated successfully!")
+        } catch (err: any) {
+            console.error("Failed to update branding:", err)
+            toast.error(err?.response?.data?.message || "Failed to save brand identity")
+        } finally {
+            setSaving(false)
+        }
     }
 
     const handleReset = () => {
@@ -152,9 +179,10 @@ export default function OrgBrandingPage() {
                     <Button
                         className="h-9 bg-primary text-primary-foreground gap-2 font-bold shadow-lg shadow-primary/20 transition-all active:scale-95 hover:bg-primary/90"
                         onClick={handleApplyChanges}
+                        disabled={saving}
                     >
                         <Save className="w-4 h-4" />
-                        Save Identity
+                        {saving ? "Saving..." : "Save Identity"}
                     </Button>
                 </div>
             </div>
@@ -162,7 +190,7 @@ export default function OrgBrandingPage() {
             <div className="grid gap-6 md:grid-cols-12">
                 {/* BRAND IDENTITY */}
                 <div className="md:col-span-8 space-y-6">
-                    <Card className="border-border shadow-sm overflow-hidden rounded-xl bg-card">
+                    <Card className="border-border shadow-sm overflow-hidden rounded-none bg-card">
                         <CardHeader className="bg-card border-b border-border pb-4">
                             <CardTitle className="text-base font-bold text-foreground">Identity & Assets</CardTitle>
                             <CardDescription className="text-xs text-muted-foreground">These assets represent your organization across the portal and emails.</CardDescription>
@@ -210,7 +238,7 @@ export default function OrgBrandingPage() {
                                         </div>
                                     </div>
                                     <div
-                                        className="border-2 border-dashed border-border rounded-xl p-8 flex flex-col items-center justify-center bg-muted/30 hover:bg-muted transition-all cursor-pointer group relative min-h-[160px]"
+                                        className="border-2 border-dashed border-border rounded-none p-8 flex flex-col items-center justify-center bg-muted/30 hover:bg-muted transition-all cursor-pointer group relative min-h-[160px]"
                                         onClick={() => mainLogoInputRef.current?.click()}
                                     >
                                         {logoUrl ? (
@@ -227,7 +255,7 @@ export default function OrgBrandingPage() {
                                             </div>
                                         )}
                                         {logoUrl && (
-                                            <div className="absolute inset-0 bg-black/5 dark:bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
+                                            <div className="absolute inset-0 bg-black/5 dark:bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-none">
                                                 <p className="text-[10px] font-bold bg-card text-foreground px-3 py-1 rounded-full shadow-sm border border-border">Change Image</p>
                                             </div>
                                         )}
@@ -262,7 +290,7 @@ export default function OrgBrandingPage() {
                                         </div>
                                     </div>
                                     <div
-                                        className="border-2 border-dashed border-zinc-700 dark:border-zinc-800 rounded-xl p-8 flex flex-col items-center justify-center bg-zinc-900 hover:bg-zinc-800 transition-all cursor-pointer group relative min-h-[160px]"
+                                        className="border-2 border-dashed border-zinc-700 dark:border-zinc-800 rounded-none p-8 flex flex-col items-center justify-center bg-zinc-900 hover:bg-zinc-800 transition-all cursor-pointer group relative min-h-[160px]"
                                         onClick={() => loginLogoInputRef.current?.click()}
                                     >
                                         {loginLogoUrl ? (
@@ -279,7 +307,7 @@ export default function OrgBrandingPage() {
                                             </div>
                                         )}
                                         {loginLogoUrl && (
-                                            <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
+                                            <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-none">
                                                 <p className="text-[10px] font-bold bg-card text-foreground px-3 py-1 rounded-full shadow-sm border border-border">Change Image</p>
                                             </div>
                                         )}
@@ -292,7 +320,7 @@ export default function OrgBrandingPage() {
 
                 {/* QUICK ACTIONS / INFO */}
                 <div className="md:col-span-4 space-y-6">
-                    <Card className="border-border shadow-sm rounded-xl overflow-hidden bg-card">
+                    <Card className="border-border shadow-sm rounded-none overflow-hidden bg-card">
                         <CardHeader className="border-b border-border">
                             <CardTitle className="text-sm font-bold flex items-center gap-2 text-foreground">
                                 <Palette className="w-4 h-4 text-primary" />
@@ -312,7 +340,7 @@ export default function OrgBrandingPage() {
                         </CardContent>
                     </Card>
 
-                    <Card className="border-none shadow-md bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-xl overflow-hidden relative">
+                    <Card className="border-none shadow-md bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-none overflow-hidden relative">
                         <div className="absolute top-0 right-0 p-4 opacity-10">
                             <Building2 className="w-24 h-24" />
                         </div>

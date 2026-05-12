@@ -8,7 +8,8 @@ const PUBLIC_ROUTES = [
   "/auth/create-org",
   "/auth/forgot-pwd",
   "/auth/reset-password",
-  "/acceptInvite",
+  "/reset-password",
+  "/accept-invite",
   "/pricing",
   "/modules",
   "/testimonials",
@@ -50,6 +51,8 @@ const PUBLIC_ROUTES = [
   "/contact",
   "/privacy-policy",
   "/terms-of-service",
+  "/terms",
+  "/privacy",
 ];
 
 /**

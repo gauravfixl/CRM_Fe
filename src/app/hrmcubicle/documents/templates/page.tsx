@@ -43,6 +43,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     Select,
     SelectContent,
@@ -183,120 +184,9 @@ const TemplatesPage = () => {
                                 <Trash2 className="w-4 h-4 mr-2" /> Delete ({selectedTemplateIds.length})
                             </Button>
                         )}
-                        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                            <DialogTrigger asChild>
-                                <Button className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-11 px-6 font-bold shadow-lg shadow-indigo-100 transition-all gap-2 text-[10px] tracking-wide border-none">
-                                    <Plus className="w-4 h-4" /> Create Template
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-5xl bg-white rounded-[2rem] border border-slate-200 p-8 shadow-3xl font-sans" style={{ zoom: "80%" }}>
-                                <DialogHeader>
-                                    <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">New Document Template</DialogTitle>
-                                    <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-wide mt-2">
-                                        Define Official Blueprints v3.0
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div className="grid grid-cols-3 gap-8 py-8">
-                                    <div className="col-span-2 space-y-6">
-                                        <div className="space-y-3 text-start">
-                                            <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Template Name</label>
-                                            <Input
-                                                placeholder="e.g., Senior Management Offer Letter"
-                                                value={newTemplate.name}
-                                                onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
-                                                className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
-                                            />
-                                        </div>
-                                        <div className="space-y-3 text-start">
-                                            <div className="flex items-center justify-between mb-1 ml-1">
-                                                <label className="text-[10px] font-bold tracking-wide text-slate-400">Template Content</label>
-                                                <div className="flex gap-2">
-                                                    <Button variant="outline" size="sm" className={`h-7 w-7 rounded-lg text-[10px] font-black p-0 border-slate-200 shadow-sm ${isBold ? 'bg-indigo-100 border-indigo-300 text-indigo-700' : ''}`} onClick={() => setIsBold(!isBold)}>B</Button>
-                                                    <Button variant="outline" size="sm" className={`h-7 w-7 rounded-lg text-[10px] font-black p-0 border-slate-200 shadow-sm italic ${isItalic ? 'bg-indigo-100 border-indigo-300 text-indigo-700' : ''}`} onClick={() => setIsItalic(!isItalic)}>I</Button>
-                                                </div>
-                                            </div>
-                                            <Textarea
-                                                placeholder="Use {{placeholder_name}} for dynamic data..."
-                                                className={`min-h-[400px] font-mono text-sm bg-slate-50 border-slate-200 rounded-[2rem] p-8 focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all custom-scrollbar overflow-y-auto ${isBold ? 'font-bold' : ''} ${isItalic ? 'italic' : ''}`}
-                                                value={newTemplate.content}
-                                                onChange={(e) => setNewTemplate({ ...newTemplate, content: e.target.value })}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-8">
-                                        <div className="space-y-4 p-8 rounded-[2rem] bg-indigo-50/40 border border-indigo-100 shadow-sm text-start">
-                                            <div className="flex items-center gap-3 text-indigo-600 mb-2">
-                                                <div className="h-8 w-8 bg-white rounded-xl flex items-center justify-center shadow-sm">
-                                                    <Settings size={16} />
-                                                </div>
-                                                <h4 className="text-[10px] font-bold tracking-wide">Properties</h4>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[9px] font-bold text-slate-400 tracking-wide ml-1">Document Type</label>
-                                                <Select
-                                                    value={newTemplate.type}
-                                                    onValueChange={(val: any) => setNewTemplate({ ...newTemplate, type: val })}
-                                                >
-                                                    <SelectTrigger className="h-12 bg-white border border-slate-200 rounded-xl font-bold text-xs px-4 shadow-sm">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-2 font-bold text-xs">
-                                                        <SelectItem value="Offer Letter" className="rounded-lg h-10">Offer Letter</SelectItem>
-                                                        <SelectItem value="Experience Letter" className="rounded-lg h-10">Experience Letter</SelectItem>
-                                                        <SelectItem value="Relieving Letter" className="rounded-lg h-10">Relieving Letter</SelectItem>
-                                                        <SelectItem value="Appointment Letter" className="rounded-lg h-10">Appointment Letter</SelectItem>
-                                                        <SelectItem value="Form Template" className="rounded-lg h-10">HR Form Template</SelectItem>
-                                                        <SelectItem value="Email Content" className="rounded-lg h-10">Email Template</SelectItem>
-                                                        <SelectItem value="Custom" className="rounded-lg h-10">Custom Template</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-4 p-8 rounded-[2rem] bg-slate-50 border border-slate-200 shadow-sm text-start">
-                                            <div className="flex items-center gap-3 text-slate-600 mb-2 text-start">
-                                                <div className="h-8 w-8 bg-white rounded-xl flex items-center justify-center shadow-sm text-start">
-                                                    <Braces size={16} className="text-indigo-500" />
-                                                </div>
-                                                <h4 className="text-[10px] font-bold tracking-wide">Placeholders</h4>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <Input
-                                                    placeholder="tag_name"
-                                                    className="h-10 text-xs bg-white border border-slate-200 rounded-xl font-bold px-4 shadow-sm"
-                                                    value={currentPlaceholder}
-                                                    onChange={(e) => setCurrentPlaceholder(e.target.value)}
-                                                    onKeyDown={(e) => e.key === 'Enter' && handleAddPlaceholder()}
-                                                />
-                                                <Button size="icon" className="h-10 w-10 bg-indigo-600 text-white rounded-xl shadow-md shrink-0" onClick={handleAddPlaceholder}>
-                                                    <Plus size={18} />
-                                                </Button>
-                                            </div>
-                                            <div className="flex flex-wrap gap-2 mt-4 text-start">
-                                                {newTemplate.placeholders.map((p, i) => (
-                                                    <Badge key={i} className="bg-white text-indigo-600 border border-indigo-100 px-3 py-1.5 gap-2 group rounded-lg font-bold text-[9px] shadow-sm">
-                                                        {"{{"}{p}{"}}"}
-                                                        <X
-                                                            className="w-3 h-3 text-slate-300 group-hover:text-rose-500 cursor-pointer transition-colors"
-                                                            onClick={() => setNewTemplate({ ...newTemplate, placeholders: newTemplate.placeholders.filter((_, idx) => idx !== i) })}
-                                                        />
-                                                    </Badge>
-                                                ))}
-                                                {newTemplate.placeholders.length === 0 && (
-                                                    <p className="text-[10px] text-slate-400 font-bold tracking-wide italic opacity-50 text-start w-full">No tags defined</p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <DialogFooter className="border-t border-slate-50 pt-8 gap-3">
-                                    <Button variant="ghost" onClick={() => setIsCreateOpen(false)} className="h-12 rounded-xl font-bold text-[10px] tracking-wide transition-all px-6">Discard</Button>
-                                    <Button className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 px-10 font-bold shadow-lg shadow-indigo-100 transition-all text-[10px] tracking-wide border-none gap-2" onClick={handleCreateTemplate}>
-                                        <Save size={16} /> Save Template
-                                    </Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
+                        <Button onClick={() => setIsCreateOpen(true)} className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-11 px-6 font-bold shadow-lg shadow-indigo-100 transition-all gap-2 text-[10px] tracking-wide border-none">
+                            <Plus className="w-4 h-4" /> Create Template
+                        </Button>
                     </div>
                 </div>
             </header>
@@ -488,99 +378,161 @@ const TemplatesPage = () => {
                     </DialogContent>
                 </Dialog>
 
-                {/* Edit Template Dialog */}
-                <Dialog open={!!editingTemplate} onOpenChange={(open) => !open && setEditingTemplate(null)}>
-                    <DialogContent className="max-w-6xl bg-white rounded-[2rem] border border-slate-200 p-8 shadow-3xl font-sans" style={{ zoom: "80%" }}>
-                        <DialogHeader className="text-start">
-                            <DialogTitle className="text-2xl font-black tracking-tight text-slate-900 leading-tight">Sync Template Blueprint</DialogTitle>
-                            <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-wide mt-2">
-                                Update system architecture for consistent organizational output.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid grid-cols-3 gap-8 py-8">
-                            <div className="col-span-2 space-y-6">
-                                <div className="space-y-3 text-start">
-                                    <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Refined Title</label>
-                                    <Input
-                                        placeholder="Blueprint title..."
-                                        value={editingTemplate?.name || ""}
-                                        onChange={(e) => setEditingTemplate(prev => prev ? { ...prev, name: e.target.value } : null)}
-                                        className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
-                                    />
-                                </div>
-                                <div className="space-y-3 text-start">
-                                    <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1 mb-2 block">Content Repository</label>
-                                    <Textarea
-                                        className="min-h-[450px] font-mono text-sm bg-slate-50 border-slate-200 rounded-[2.5rem] p-8 focus:bg-white transition-all custom-scrollbar overflow-y-auto"
-                                        value={editingTemplate?.content || ""}
-                                        onChange={(e) => setEditingTemplate(prev => prev ? { ...prev, content: e.target.value } : null)}
-                                    />
-                                </div>
+                {/* Create Template Sheet */}
+                <SideFormSheet
+                    open={isCreateOpen}
+                    onOpenChange={(o) => {
+                        setIsCreateOpen(o);
+                        if (!o) {
+                            setNewTemplate({ name: "", type: "Offer Letter", content: "", placeholders: [] });
+                            setCurrentPlaceholder("");
+                        }
+                    }}
+                    title="New Document Template"
+                    description="Define Official Blueprints v3.0"
+                    icon={<Save size={20} />}
+                    accentColor="#4f46e5"
+                    width="xl"
+                    submitLabel="Save Template"
+                    cancelLabel="Discard"
+                    onSubmit={(e) => { e.preventDefault(); handleCreateTemplate(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Template Name" required>
+                            <Input
+                                placeholder="e.g., Senior Management Offer Letter"
+                                value={newTemplate.name}
+                                onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
+                            />
+                        </Field>
+                        <Field label="Document Type" required>
+                            <Select
+                                value={newTemplate.type}
+                                onValueChange={(val: any) => setNewTemplate({ ...newTemplate, type: val })}
+                            >
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Offer Letter">Offer Letter</SelectItem>
+                                    <SelectItem value="Experience Letter">Experience Letter</SelectItem>
+                                    <SelectItem value="Relieving Letter">Relieving Letter</SelectItem>
+                                    <SelectItem value="Appointment Letter">Appointment Letter</SelectItem>
+                                    <SelectItem value="Form Template">HR Form Template</SelectItem>
+                                    <SelectItem value="Email Content">Email Template</SelectItem>
+                                    <SelectItem value="Custom">Custom Template</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Template Content" required>
+                            <div className="flex gap-2 mb-2">
+                                <Button type="button" variant="outline" size="sm" className={`h-7 w-7 rounded-lg text-[10px] font-bold p-0 ${isBold ? 'bg-indigo-100 border-indigo-300 text-indigo-700' : ''}`} onClick={() => setIsBold(!isBold)}>B</Button>
+                                <Button type="button" variant="outline" size="sm" className={`h-7 w-7 rounded-lg text-[10px] font-bold p-0 italic ${isItalic ? 'bg-indigo-100 border-indigo-300 text-indigo-700' : ''}`} onClick={() => setIsItalic(!isItalic)}>I</Button>
                             </div>
-                            <div className="space-y-8">
-                                <div className="space-y-4 p-8 rounded-[2rem] bg-indigo-50/40 border border-indigo-100 shadow-sm text-start">
-                                    <div className="flex items-center gap-3 text-indigo-600 mb-2">
-                                        <Settings size={16} />
-                                        <h4 className="text-[10px] font-bold tracking-wide">Configuration</h4>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[9px] font-bold text-slate-400 tracking-wide ml-1">Output Format</label>
-                                        <Select
-                                            value={editingTemplate?.type}
-                                            onValueChange={(val: any) => setEditingTemplate(prev => prev ? { ...prev, type: val } : null)}
-                                        >
-                                            <SelectTrigger className="h-12 bg-white border border-slate-200 rounded-xl font-bold text-xs px-4 shadow-sm">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-2 font-bold text-xs">
-                                                <SelectItem value="Offer Letter">Offer Letter</SelectItem>
-                                                <SelectItem value="Experience Letter">Experience Letter</SelectItem>
-                                                <SelectItem value="Relieving Letter">Relieving Letter</SelectItem>
-                                                <SelectItem value="Appointment Letter">Appointment Letter</SelectItem>
-                                                <SelectItem value="Form Template">Form Template</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4 p-8 rounded-[2rem] bg-slate-50 border border-slate-200 shadow-sm text-start">
-                                    <div className="flex items-center gap-3 text-slate-600 mb-2">
-                                        <Braces size={16} className="text-indigo-500" />
-                                        <h4 className="text-[10px] font-bold tracking-wide">Injection Tags</h4>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <Input
-                                            id="tag-input-edit"
-                                            placeholder="new_tag"
-                                            className="h-10 text-xs bg-white border border-slate-200 rounded-xl font-bold px-4 shadow-sm"
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                    handleAddPlaceholderToEdit((e.currentTarget as HTMLInputElement).value);
-                                                    (e.currentTarget as HTMLInputElement).value = "";
-                                                }
-                                            }}
+                            <Textarea
+                                placeholder="Use {{placeholder_name}} for dynamic data..."
+                                className={`min-h-[280px] font-mono text-sm ${isBold ? 'font-bold' : ''} ${isItalic ? 'italic' : ''}`}
+                                value={newTemplate.content}
+                                onChange={(e) => setNewTemplate({ ...newTemplate, content: e.target.value })}
+                            />
+                        </Field>
+                        <Field label="Placeholders">
+                            <div className="flex gap-2">
+                                <Input
+                                    placeholder="tag_name"
+                                    value={currentPlaceholder}
+                                    onChange={(e) => setCurrentPlaceholder(e.target.value)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddPlaceholder(); } }}
+                                />
+                                <Button type="button" size="icon" className="h-10 w-10 bg-indigo-600 text-white rounded-lg shrink-0" onClick={handleAddPlaceholder}>
+                                    <Plus size={18} />
+                                </Button>
+                            </div>
+                            <div className="flex flex-wrap gap-2 mt-3">
+                                {newTemplate.placeholders.map((p, i) => (
+                                    <Badge key={i} className="bg-white text-indigo-600 border border-indigo-100 px-3 py-1.5 gap-2 group rounded-lg font-bold text-[10px] shadow-sm">
+                                        {"{{"}{p}{"}}"}
+                                        <X
+                                            className="w-3 h-3 text-slate-300 group-hover:text-rose-500 cursor-pointer transition-colors"
+                                            onClick={() => setNewTemplate({ ...newTemplate, placeholders: newTemplate.placeholders.filter((_, idx) => idx !== i) })}
                                         />
-                                    </div>
-                                    <div className="flex flex-wrap gap-2 mt-4">
-                                        {editingTemplate?.placeholders.map((p, i) => (
-                                            <Badge key={i} className="bg-white text-indigo-600 border border-indigo-100 px-3 py-1.5 gap-2 rounded-lg font-bold text-[9px] shadow-sm">
-                                                {"{{"}{p}{"}}"}
-                                                <X
-                                                    className="w-3 h-3 text-slate-300 hover:text-rose-500 cursor-pointer transition-colors"
-                                                    onClick={() => setEditingTemplate(prev => prev ? { ...prev, placeholders: prev.placeholders.filter((_, idx) => idx !== i) } : null)}
-                                                />
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                </div>
+                                    </Badge>
+                                ))}
+                                {newTemplate.placeholders.length === 0 && (
+                                    <p className="text-[10px] text-slate-400 font-bold italic w-full">No tags defined</p>
+                                )}
                             </div>
-                        </div>
-                        <DialogFooter className="border-t border-slate-50 pt-8 gap-3">
-                            <Button variant="ghost" onClick={() => setEditingTemplate(null)} className="h-14 rounded-2xl font-bold text-[11px] tracking-wide transition-all px-8 border-none">Discard Changes</Button>
-                            <Button className="bg-indigo-600 hover:bg-slate-900 text-white rounded-2xl h-14 px-12 font-bold shadow-lg shadow-indigo-100 transition-all text-[11px] tracking-wide border-none" onClick={handleUpdateTemplate}>Synchronize Blueprint</Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                        </Field>
+                    </div>
+                </SideFormSheet>
+
+                {/* Edit Template Sheet */}
+                <SideFormSheet
+                    open={!!editingTemplate}
+                    onOpenChange={(o) => { if (!o) setEditingTemplate(null); }}
+                    title="Sync Template Blueprint"
+                    description="Update system architecture for consistent organizational output."
+                    icon={<Edit3 size={20} />}
+                    accentColor="#7c3aed"
+                    width="xl"
+                    submitLabel="Synchronize Blueprint"
+                    cancelLabel="Discard Changes"
+                    onSubmit={(e) => { e.preventDefault(); handleUpdateTemplate(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Refined Title" required>
+                            <Input
+                                placeholder="Blueprint title..."
+                                value={editingTemplate?.name || ""}
+                                onChange={(e) => setEditingTemplate(prev => prev ? { ...prev, name: e.target.value } : null)}
+                            />
+                        </Field>
+                        <Field label="Output Format" required>
+                            <Select
+                                value={editingTemplate?.type}
+                                onValueChange={(val: any) => setEditingTemplate(prev => prev ? { ...prev, type: val } : null)}
+                            >
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Offer Letter">Offer Letter</SelectItem>
+                                    <SelectItem value="Experience Letter">Experience Letter</SelectItem>
+                                    <SelectItem value="Relieving Letter">Relieving Letter</SelectItem>
+                                    <SelectItem value="Appointment Letter">Appointment Letter</SelectItem>
+                                    <SelectItem value="Form Template">Form Template</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Content Repository" required>
+                            <Textarea
+                                className="min-h-[320px] font-mono text-sm"
+                                value={editingTemplate?.content || ""}
+                                onChange={(e) => setEditingTemplate(prev => prev ? { ...prev, content: e.target.value } : null)}
+                            />
+                        </Field>
+                        <Field label="Injection Tags">
+                            <Input
+                                id="tag-input-edit"
+                                placeholder="new_tag (press Enter)"
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        handleAddPlaceholderToEdit((e.currentTarget as HTMLInputElement).value);
+                                        (e.currentTarget as HTMLInputElement).value = "";
+                                    }
+                                }}
+                            />
+                            <div className="flex flex-wrap gap-2 mt-3">
+                                {editingTemplate?.placeholders.map((p, i) => (
+                                    <Badge key={i} className="bg-white text-indigo-600 border border-indigo-100 px-3 py-1.5 gap-2 rounded-lg font-bold text-[10px] shadow-sm">
+                                        {"{{"}{p}{"}}"}
+                                        <X
+                                            className="w-3 h-3 text-slate-300 hover:text-rose-500 cursor-pointer transition-colors"
+                                            onClick={() => setEditingTemplate(prev => prev ? { ...prev, placeholders: prev.placeholders.filter((_, idx) => idx !== i) } : null)}
+                                        />
+                                    </Badge>
+                                ))}
+                            </div>
+                        </Field>
+                    </div>
+                </SideFormSheet>
 
                 {/* Preview Blueprint Dialog */}
                 <Dialog open={!!previewingTemplate} onOpenChange={(open) => !open && setPreviewingTemplate(null)}>

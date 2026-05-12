@@ -24,14 +24,7 @@ import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Checkbox } from "@/shared/components/ui/checkbox";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     Select,
     SelectContent,
@@ -472,107 +465,124 @@ const ExpenseApprovalsPage = () => {
                 </Card>
             )}
 
-            {/* Review Dialog */}
-            <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
-                <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto border-2 border-slate-200">
-                    <DialogHeader>
-                        <DialogTitle>Review Expense Claim</DialogTitle>
-                        <DialogDescription>{selectedClaim?.id} - {selectedClaim?.employeeName}</DialogDescription>
-                    </DialogHeader>
-                    {selectedClaim && (
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="bg-slate-50 rounded-lg p-3">
-                                    <p className="text-[10px] text-slate-400 uppercase">Category</p>
-                                    <p className="text-sm font-medium text-slate-900">{selectedClaim.category}</p>
-                                </div>
-                                <div className="bg-slate-50 rounded-lg p-3">
-                                    <p className="text-[10px] text-slate-400 uppercase">Amount</p>
-                                    <p className="text-sm font-bold text-slate-900">₹{selectedClaim.amount.toLocaleString()}</p>
-                                </div>
-                                <div className="bg-slate-50 rounded-lg p-3">
-                                    <p className="text-[10px] text-slate-400 uppercase">Date</p>
-                                    <p className="text-sm font-medium text-slate-900">{selectedClaim.date}</p>
-                                </div>
-                                <div className="bg-slate-50 rounded-lg p-3">
-                                    <p className="text-[10px] text-slate-400 uppercase">Receipt</p>
-                                    <p className="text-sm font-medium text-slate-900">{selectedClaim.receiptUrl ? (selectedClaim.receiptName || 'Attached') : 'Not attached'}</p>
-                                </div>
-                            </div>
-                            <div className="bg-slate-50 rounded-lg p-3">
-                                <p className="text-[10px] text-slate-400 uppercase">Description</p>
-                                <p className="text-sm text-slate-700 mt-1">{selectedClaim.description || '-'}</p>
-                            </div>
-
-                            {(() => {
-                                const violations = checkPolicyViolation(selectedClaim);
-                                if (violations.length > 0) {
-                                    return (
-                                        <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                                            <div className="flex items-center gap-1.5 mb-2">
-                                                <AlertTriangle className="h-4 w-4 text-orange-600" />
-                                                <p className="text-xs font-bold text-orange-700">Policy Violations</p>
-                                            </div>
-                                            <ul className="space-y-1">
-                                                {violations.map((v, i) => (
-                                                    <li key={i} className="text-xs text-orange-600 flex items-start gap-1.5">
-                                                        <span className="mt-0.5">-</span> {v}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    );
-                                }
-                                return (
-                                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
-                                        <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                        <p className="text-xs font-medium text-green-700">Compliant with expense policies</p>
-                                    </div>
-                                );
-                            })()}
-
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Review Notes</Label>
-                                <Textarea
-                                    placeholder="Add notes (required for rejection)..."
-                                    value={reviewNotes}
-                                    onChange={(e) => setReviewNotes(e.target.value)}
-                                    rows={3}
-                                    maxLength={500}
-                                />
-                                <p className="text-xs text-slate-400 text-right">{reviewNotes.length}/500</p>
-                            </div>
-                        </div>
-                    )}
-                    <DialogFooter className="gap-2">
-                        <Button variant="outline" className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50" onClick={() => selectedClaim && handleReject(selectedClaim)}>
+            {/* Review Sheet */}
+            <SideFormSheet
+                open={isReviewOpen}
+                onOpenChange={(o) => { setIsReviewOpen(o); if (!o) setReviewNotes(''); }}
+                title="Review Expense Claim"
+                description={selectedClaim ? `${selectedClaim.id} - ${selectedClaim.employeeName}` : undefined}
+                icon={<ShieldCheck size={20} />}
+                accentColor="#059669"
+                width="lg"
+                footer={
+                    <>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="h-10 px-5 rounded-lg gap-1.5 text-red-600 border-red-200 hover:bg-red-50"
+                            onClick={() => selectedClaim && handleReject(selectedClaim)}
+                        >
                             <XCircle className="h-4 w-4" /> Reject
                         </Button>
-                        <Button className="gap-1.5 bg-green-600 hover:bg-green-700" onClick={() => selectedClaim && handleApprove(selectedClaim, reviewNotes)}>
+                        <Button
+                            type="button"
+                            className="h-10 px-5 rounded-lg gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+                            onClick={() => selectedClaim && handleApprove(selectedClaim, reviewNotes)}
+                        >
                             <CheckCircle2 className="h-4 w-4" /> Approve
                         </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    </>
+                }
+            >
+                {selectedClaim && (
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-slate-50 rounded-lg p-3">
+                                <p className="text-[10px] text-slate-400 uppercase">Category</p>
+                                <p className="text-sm font-medium text-slate-900">{selectedClaim.category}</p>
+                            </div>
+                            <div className="bg-slate-50 rounded-lg p-3">
+                                <p className="text-[10px] text-slate-400 uppercase">Amount</p>
+                                <p className="text-sm font-bold text-slate-900">₹{selectedClaim.amount.toLocaleString()}</p>
+                            </div>
+                            <div className="bg-slate-50 rounded-lg p-3">
+                                <p className="text-[10px] text-slate-400 uppercase">Date</p>
+                                <p className="text-sm font-medium text-slate-900">{selectedClaim.date}</p>
+                            </div>
+                            <div className="bg-slate-50 rounded-lg p-3">
+                                <p className="text-[10px] text-slate-400 uppercase">Receipt</p>
+                                <p className="text-sm font-medium text-slate-900">{selectedClaim.receiptUrl ? (selectedClaim.receiptName || 'Attached') : 'Not attached'}</p>
+                            </div>
+                        </div>
+                        <div className="bg-slate-50 rounded-lg p-3">
+                            <p className="text-[10px] text-slate-400 uppercase">Description</p>
+                            <p className="text-sm text-slate-700 mt-1">{selectedClaim.description || '-'}</p>
+                        </div>
 
-            {/* Bulk Reject Dialog */}
-            <Dialog open={isBulkRejectOpen} onOpenChange={setIsBulkRejectOpen}>
-                <DialogContent className="max-w-md border-2 border-slate-200">
-                    <DialogHeader>
-                        <DialogTitle>Reject {selectedIds.length} claim{selectedIds.length > 1 ? 's' : ''}</DialogTitle>
-                        <DialogDescription>Please provide a reason that will be shared with the employees.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-2">
-                        <Label className="text-xs font-bold text-slate-500">Reason *</Label>
-                        <Textarea placeholder="Reason for bulk rejection..." value={bulkRejectNotes} onChange={(e) => setBulkRejectNotes(e.target.value)} rows={4} maxLength={500} />
-                        <p className="text-xs text-slate-400 text-right">{bulkRejectNotes.length}/500</p>
+                        {(() => {
+                            const violations = checkPolicyViolation(selectedClaim);
+                            if (violations.length > 0) {
+                                return (
+                                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                                        <div className="flex items-center gap-1.5 mb-2">
+                                            <AlertTriangle className="h-4 w-4 text-orange-600" />
+                                            <p className="text-xs font-bold text-orange-700">Policy Violations</p>
+                                        </div>
+                                        <ul className="space-y-1">
+                                            {violations.map((v, i) => (
+                                                <li key={i} className="text-xs text-orange-600 flex items-start gap-1.5">
+                                                    <span className="mt-0.5">-</span> {v}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                );
+                            }
+                            return (
+                                <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
+                                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                    <p className="text-xs font-medium text-green-700">Compliant with expense policies</p>
+                                </div>
+                            );
+                        })()}
+
+                        <Field label="Review Notes" hint={`${reviewNotes.length}/500`}>
+                            <Textarea
+                                placeholder="Add notes (required for rejection)..."
+                                value={reviewNotes}
+                                onChange={(e) => setReviewNotes(e.target.value)}
+                                rows={3}
+                                maxLength={500}
+                            />
+                        </Field>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsBulkRejectOpen(false)}>Cancel</Button>
-                        <Button className="bg-red-600 hover:bg-red-700" onClick={confirmBulkReject}>Reject All</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                )}
+            </SideFormSheet>
+
+            {/* Bulk Reject Sheet */}
+            <SideFormSheet
+                open={isBulkRejectOpen}
+                onOpenChange={(o) => { setIsBulkRejectOpen(o); if (!o) setBulkRejectNotes(''); }}
+                title={`Reject ${selectedIds.length} claim${selectedIds.length > 1 ? 's' : ''}`}
+                description="Please provide a reason that will be shared with the employees."
+                icon={<XCircle size={20} />}
+                accentColor="#e11d48"
+                width="md"
+                submitLabel="Reject All"
+                onSubmit={(e) => { e.preventDefault(); confirmBulkReject(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Reason" required hint={`${bulkRejectNotes.length}/500`}>
+                        <Textarea
+                            placeholder="Reason for bulk rejection..."
+                            value={bulkRejectNotes}
+                            onChange={(e) => setBulkRejectNotes(e.target.value)}
+                            rows={4}
+                            maxLength={500}
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
         </div>
     );
 };

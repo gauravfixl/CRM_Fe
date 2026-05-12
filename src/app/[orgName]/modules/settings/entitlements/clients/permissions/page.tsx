@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
 import { useParams } from "next/navigation"
@@ -71,7 +71,7 @@ export default function ClientPermissionsPage() {
     return (
         <div className="flex flex-col gap-6 p-6 min-h-screen bg-[#fafafa]">
             {/* PAGE HEADER */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-none border border-zinc-200 shadow-sm gap-4">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white shadow-lg border-t border-white/20">
                         <ShieldCheck className="w-6 h-6" />
@@ -152,7 +152,7 @@ export default function ClientPermissionsPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 <div className="lg:col-span-12">
-                    <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden flex flex-col">
+                    <div className="bg-white rounded-none border border-zinc-200 shadow-sm overflow-hidden flex flex-col">
                         <div className="p-4 border-b border-zinc-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-zinc-50/20">
                             <div className="relative w-full md:w-80 group">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 group-hover:text-emerald-500 transition-colors" />
@@ -239,10 +239,10 @@ export default function ClientPermissionsPage() {
                 </div>
 
                 <div className="lg:col-span-12">
-                    <div className="p-8 bg-zinc-900 rounded-3xl text-white shadow-2xl relative overflow-hidden border-t border-white/10">
+                    <div className="p-8 bg-zinc-900 rounded-none text-white shadow-2xl relative overflow-hidden border-t border-white/10">
                         <div className="flex flex-col md:flex-row justify-between items-center gap-8 relative z-10">
                             <div className="flex gap-6 items-center">
-                                <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/10">
+                                <div className="w-14 h-14 bg-white/10 rounded-none flex items-center justify-center backdrop-blur-md border border-white/10">
                                     <Shield className="w-7 h-7 text-emerald-400" />
                                 </div>
                                 <div>
@@ -269,7 +269,7 @@ export default function ClientPermissionsPage() {
 
 function PermissionSnippet({ title, capability, icon: Icon, color = "emerald" }: any) {
     return (
-        <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm flex items-center justify-between group hover:border-zinc-300 transition-all">
+        <div className="bg-white p-6 rounded-none border border-zinc-200 shadow-sm flex items-center justify-between group hover:border-zinc-300 transition-all">
             <div className="flex items-center gap-4">
                 <div className={`w-10 h-10 rounded-xl bg-zinc-50 flex items-center justify-center text-zinc-300 group-hover:text-${color}-500 transition-colors`}>
                     <Icon className="w-5 h-5" />

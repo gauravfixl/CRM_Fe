@@ -21,6 +21,8 @@ import {
   Users,
   ArrowRight,
   CheckCircle2,
+  Sparkles,
+  Copy,
 } from "lucide-react"
 import { useAuthStore } from "@/lib/useAuthStore"
 import { showError, showSuccess } from "@/utils/toast"
@@ -49,7 +51,25 @@ export default function SignInPage() {
   const [isOtpMode, setIsOtpMode] = useState(false)
   const [otpSent, setOtpSent] = useState(false)
   const [errors, setErrors] = useState<{ email?: string; password?: string; otp?: string }>({})
+  const [demoFilled, setDemoFilled] = useState(false)
   const router = useRouter()
+
+  const DEMO_EMAIL = "orgadmin@gmail.com"
+  const DEMO_PASSWORD = "Admin@123"
+
+  const fillDemoCredentials = () => {
+    if (isOtpMode) {
+      setIsOtpMode(false)
+      setOtpSent(false)
+      setOtp("")
+    }
+    setEmail(DEMO_EMAIL)
+    setPassword(DEMO_PASSWORD)
+    setErrors({})
+    setDemoFilled(true)
+    showSuccess("Demo credentials filled — click Sign In to continue")
+    setTimeout(() => setDemoFilled(false), 1500)
+  }
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get("redirect")
   const login = useAuthStore((state) => state.login)
@@ -162,7 +182,7 @@ export default function SignInPage() {
               className="h-8 w-auto object-contain brightness-0 invert"
             />
             <span className="text-white font-bold text-lg tracking-tight">
-              {orgName || "CubicleERP"}
+              {orgName || "Cubicle ERP"}
             </span>
           </div>
 
@@ -221,7 +241,7 @@ export default function SignInPage() {
       </div>
 
       {/* Right Panel - Form */}
-      <div className="flex-1 flex items-center justify-center bg-[#FAFBFC] relative p-6">
+      <div className="flex-1 flex items-center justify-center bg-[#EDF1F7] relative p-6">
         {/* Back button */}
         <button
           onClick={() => router.push("/")}
@@ -237,10 +257,10 @@ export default function SignInPage() {
             alt="Logo"
             className="h-7 w-auto object-contain"
           />
-          <span className="font-bold text-[15px] text-[#1A1A1A]">{orgName || "CubicleERP"}</span>
+          <span className="font-bold text-[15px] text-[#1A1A1A]">{orgName || "Cubicle ERP"}</span>
         </div>
 
-        <div className="signin-container w-full max-w-[420px]">
+        <div className="signin-container w-full max-w-[420px]" style={{ zoom: 0.9 }}>
           {/* Header */}
           <div className="text-center mb-8">
             <div
@@ -254,7 +274,15 @@ export default function SignInPage() {
           </div>
 
           {/* Form Card */}
-          <div className="signin-card bg-white rounded-2xl shadow-sm border border-[#F0F0F0] p-7">
+          <div
+            className="signin-card rounded-3xl border border-white p-7 sm:p-8"
+            style={{
+              background:
+                "linear-gradient(145deg, #FFFFFF 0%, #F4F8FF 55%, #EAF2FE 100%)",
+              boxShadow:
+                "0 20px 60px -20px rgba(15, 23, 42, 0.12), 0 8px 24px -12px rgba(37, 99, 235, 0.12)",
+            }}
+          >
             <form onSubmit={handleSignIn} className="signin-form space-y-5">
               {/* Email */}
               <div className="signin-email space-y-2">
@@ -269,7 +297,7 @@ export default function SignInPage() {
                     placeholder="name@company.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="signin-input h-12 pl-10 bg-[#FAFBFC] border-[#E5E7EB] focus:border-[#0067B8] focus:ring-2 focus:ring-[#0067B8]/10 focus:bg-white rounded-xl text-[14px] transition-all"
+                    className="signin-input h-12 pl-10 bg-white border-[#E5E7EB] focus:border-[#0067B8] focus:ring-2 focus:ring-[#0067B8]/10 rounded-xl text-[14px] transition-all"
                   />
                 </div>
                 <ErrorMessage message={errors.email} />
@@ -289,7 +317,7 @@ export default function SignInPage() {
                       placeholder="Enter your password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="signin-input h-12 pl-10 pr-11 bg-[#FAFBFC] border-[#E5E7EB] focus:border-[#0067B8] focus:ring-2 focus:ring-[#0067B8]/10 focus:bg-white rounded-xl text-[14px] transition-all"
+                      className="signin-input h-12 pl-10 pr-11 bg-white border-[#E5E7EB] focus:border-[#0067B8] focus:ring-2 focus:ring-[#0067B8]/10 rounded-xl text-[14px] transition-all"
                     />
                     <Button
                       type="button"
@@ -325,7 +353,7 @@ export default function SignInPage() {
                       maxLength={6}
                       value={otp}
                       onChange={(e) => setOtp(e.target.value)}
-                      className="signin-input h-12 pl-10 bg-[#FAFBFC] border-[#E5E7EB] focus:border-[#0067B8] focus:ring-2 focus:ring-[#0067B8]/10 focus:bg-white rounded-xl text-[14px] tracking-[0.4em] font-semibold text-center transition-all"
+                      className="signin-input h-12 pl-10 bg-white border-[#E5E7EB] focus:border-[#0067B8] focus:ring-2 focus:ring-[#0067B8]/10 rounded-xl text-[14px] tracking-[0.4em] font-semibold text-center transition-all"
                     />
                   </div>
                   <p className="text-[11px] text-[#9CA3AF]">We sent a 6-digit code to your email</p>
@@ -417,6 +445,55 @@ export default function SignInPage() {
                   Sign in with OTP
                 </>
               )}
+            </button>
+
+            {/* Demo Account Card — compact */}
+            <button
+              type="button"
+              onClick={fillDemoCredentials}
+              className="signin-demo mt-4 w-full rounded-xl border p-3 relative overflow-hidden transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 group flex items-center gap-3 text-left"
+              style={{
+                background: demoFilled
+                  ? "linear-gradient(135deg, rgba(16, 185, 129, 0.10) 0%, rgba(5, 150, 105, 0.06) 100%)"
+                  : "linear-gradient(135deg, rgba(139, 92, 246, 0.10) 0%, rgba(37, 99, 235, 0.06) 100%)",
+                borderColor: demoFilled ? "rgba(16, 185, 129, 0.30)" : "rgba(139, 92, 246, 0.30)",
+              }}
+            >
+              <div
+                className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 text-white shadow-sm"
+                style={{
+                  background: demoFilled
+                    ? "linear-gradient(135deg, #10b981, #059669)"
+                    : "linear-gradient(135deg, #8b5cf6, #2563eb)",
+                  boxShadow: demoFilled
+                    ? "0 4px 12px rgba(16, 185, 129, 0.30)"
+                    : "0 4px 12px rgba(139, 92, 246, 0.30)",
+                }}
+              >
+                {demoFilled ? <CheckCircle2 className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[12.5px] font-semibold text-[#1A1A1A] flex items-center gap-1.5">
+                  {demoFilled ? "Credentials filled" : "Try Demo Account"}
+                  <span
+                    className="text-[8.5px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded text-white"
+                    style={{
+                      background: demoFilled
+                        ? "linear-gradient(135deg, #10b981, #059669)"
+                        : "linear-gradient(135deg, #8b5cf6, #2563eb)",
+                    }}
+                  >
+                    Demo
+                  </span>
+                </p>
+                <p className="text-[11px] text-[#6B7280] mt-0.5 truncate">
+                  {demoFilled ? "Click Sign In to continue" : "Auto-fill OrgAdmin test credentials"}
+                </p>
+              </div>
+              <ArrowRight
+                className="w-4 h-4 shrink-0 transition-transform group-hover:translate-x-0.5"
+                style={{ color: demoFilled ? "#10b981" : "#8b5cf6" }}
+              />
             </button>
           </div>
 

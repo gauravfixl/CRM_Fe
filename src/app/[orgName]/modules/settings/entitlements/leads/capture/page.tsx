@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
 import { useParams } from "next/navigation"
@@ -49,15 +49,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/shared/components/ui/select"
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/shared/components/ui/dialog"
 import { SmallCard, SmallCardHeader, SmallCardContent } from "@/shared/components/custom/SmallCard"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import { toast } from "sonner"
 import { Progress } from "@/shared/components/ui/progress"
 import { Switch } from "@/shared/components/ui/switch"
@@ -116,15 +109,31 @@ export default function LeadCapturePage() {
         setIsProvisionOpen(true)
     }
 
-    const saveEndpoint = () => {
-        if (!editingEndpoint.name || !editingEndpoint.origin) {
-            toast.error("Name and Origin are required")
+    const saveEndpoint = (e: React.FormEvent) => {
+        e.preventDefault()
+        const name = (editingEndpoint?.name || "").trim()
+        const origin = (editingEndpoint?.origin || "").trim()
+
+        if (!name) {
+            toast.error("Gateway name is required")
+            return
+        }
+        if (name.length < 3) {
+            toast.error("Name must be at least 3 characters")
+            return
+        }
+        if (!origin) {
+            toast.error("Origin URL is required")
+            return
+        }
+        if (!/^https?:\/\/[\w.-]+(:\d+)?(\/.*)?$/i.test(origin)) {
+            toast.error("Origin must be a valid URL (starting with http:// or https://)")
             return
         }
         setCaptureEndpoints(prev => {
             const exists = prev.find(e => e.id === editingEndpoint.id)
-            if (exists) return prev.map(e => e.id === editingEndpoint.id ? editingEndpoint : e)
-            return [...prev, editingEndpoint]
+            if (exists) return prev.map(e => e.id === editingEndpoint.id ? { ...editingEndpoint, name, origin } : e)
+            return [...prev, { ...editingEndpoint, name, origin }]
         })
         setIsProvisionOpen(false)
         toast.success("Capture gateway provisioned successfully")
@@ -220,7 +229,7 @@ export default function LeadCapturePage() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     {/* Inbound Gateway Registry + summary (left) */}
                     <div className="lg:col-span-8 flex flex-col gap-4 self-start">
-                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-md overflow-hidden text-left">
+                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none shadow-md overflow-hidden text-left">
                             <div className="px-4 py-2 border-b border-zinc-50 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/40 dark:bg-zinc-900/40">
                                 <div className="text-left space-y-1">
                                     <h4 className="text-base font-medium text-gray-900 dark:text-zinc-100 leading-none">
@@ -385,7 +394,7 @@ export default function LeadCapturePage() {
 
                     {/* API Configuration Panel */}
                     <div className="lg:col-span-4 space-y-8">
-                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-md p-6 text-left">
+                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none shadow-md p-6 text-left">
                             <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-6 pb-4 border-b border-zinc-50 dark:border-zinc-800 flex items-center gap-3 leading-none">
                                 <Terminal className="w-5 h-5 text-blue-600" /> Api Access Authority
                             </h3>
@@ -444,7 +453,7 @@ export default function LeadCapturePage() {
                         </div>
 
                         {/* Integration Quicklinks */}
-                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-md p-6 space-y-4 text-left">
+                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none shadow-md p-6 space-y-4 text-left">
                             <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2 leading-none">Implementation Assets</h3>
                             <div className="space-y-3">
                                 {[
@@ -467,7 +476,7 @@ export default function LeadCapturePage() {
                 </div>
 
                 {/* Algorithmic Security Matrix */}
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-md p-6 relative overflow-hidden group text-left">
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none shadow-md p-6 relative overflow-hidden group text-left">
                     <Activity className="absolute -bottom-20 -right-20 h-96 w-96 text-indigo-600 opacity-5 group-hover:scale-110 transition-transform pointer-events-none" />
                     <div className="relative z-10 w-full text-left">
                         <div className="flex items-center justify-between mb-8 border-b border-zinc-50 dark:border-zinc-800/50 pb-6">
@@ -506,60 +515,75 @@ export default function LeadCapturePage() {
                     </div>
                 </div>
             </div>
-            {/* Provision Gateway Dialog */}
-            <Dialog open={isProvisionOpen} onOpenChange={setIsProvisionOpen}>
-                <DialogContent className="sm:max-w-[500px] rounded-3xl p-8 font-outfit">
-                    <DialogHeader>
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="h-10 w-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-xl shadow-blue-500/20">
-                                <Webhook className="w-5 h-5" />
-                            </div>
-                            <DialogTitle className="text-xl font-semibold">Provision New Gateway</DialogTitle>
-                        </div>
-                        <DialogDescription className="text-xs text-zinc-400">
-                            Configure institutional intake endpoints for lead ingestion.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-5 py-4">
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-medium text-zinc-400">Gateway Name</Label>
+            {/* Provision Gateway â€” side sheet */}
+            <SideFormSheet
+                open={isProvisionOpen}
+                onOpenChange={(o) => {
+                    setIsProvisionOpen(o)
+                    if (!o) setEditingEndpoint(null)
+                }}
+                title="Provision New Gateway"
+                description="Configure institutional intake endpoints for lead ingestion."
+                icon={<Webhook className="w-5 h-5" />}
+                width="md"
+                onSubmit={saveEndpoint}
+                submitLabel="Authorize Gateway"
+            >
+                {editingEndpoint && (
+                    <div className="space-y-4">
+                        <Field
+                            label="Gateway Name"
+                            required
+                            hint="3-80 characters; descriptive label"
+                        >
                             <Input
                                 placeholder="e.g. Website Contact Form"
-                                value={editingEndpoint?.name ?? ''}
+                                value={editingEndpoint.name ?? ''}
                                 onChange={(e) => setEditingEndpoint(prev => prev ? { ...prev, name: e.target.value } : prev)}
-                                className="h-12 rounded-2xl border-zinc-100 bg-zinc-50/50 focus:bg-white transition-all"
+                                className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary"
+                                maxLength={80}
                             />
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-medium text-zinc-400">Origin Url / Source</Label>
+                        </Field>
+
+                        <Field
+                            label="Origin URL / Source"
+                            required
+                            hint="Must start with http:// or https://"
+                        >
                             <Input
                                 placeholder="https://yourdomain.com"
-                                value={editingEndpoint?.origin ?? ''}
+                                value={editingEndpoint.origin ?? ''}
                                 onChange={(e) => setEditingEndpoint(prev => prev ? { ...prev, origin: e.target.value } : prev)}
-                                className="h-12 rounded-2xl border-zinc-100 bg-zinc-50/50 focus:bg-white transition-all"
+                                className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary font-mono text-[13px]"
+                                maxLength={200}
+                                type="url"
                             />
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-medium text-zinc-400">Initial Trust Protocol</Label>
-                            <Select value={editingEndpoint?.status ?? 'Active'} onValueChange={(v) => setEditingEndpoint(prev => prev ? { ...prev, status: v } : prev)}>
-                                <SelectTrigger className="h-12 rounded-2xl border-zinc-100 bg-zinc-50/50">
+                        </Field>
+
+                        <Field label="Initial Trust Protocol" hint="Sandboxed gateways don't capture leads until activated">
+                            <Select
+                                value={editingEndpoint.status ?? 'Active'}
+                                onValueChange={(v) => setEditingEndpoint(prev => prev ? { ...prev, status: v } : prev)}
+                            >
+                                <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white">
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent className="rounded-2xl border-zinc-100">
+                                <SelectContent>
                                     <SelectItem value="Active">Operational (Active)</SelectItem>
                                     <SelectItem value="Inactive">Sandboxed (Inactive)</SelectItem>
                                 </SelectContent>
                             </Select>
+                        </Field>
+
+                        <div className="flex items-start gap-2 p-3 bg-[#F0F7FF] border border-[#DBEAFE] rounded-lg">
+                            <Webhook className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                            <p className="text-[11.5px] text-[#475569] leading-relaxed">
+                                After provisioning, share the gateway URL with your dev team to embed the intake script or webhook.
+                            </p>
                         </div>
                     </div>
-                    <DialogFooter className="gap-3 mt-4">
-                        <CustomButton variant="outline" onClick={() => setIsProvisionOpen(false)} className="h-12 rounded-2xl px-6 border-zinc-100 font-medium text-zinc-400">Decline</CustomButton>
-                        <CustomButton onClick={saveEndpoint} className="h-12 rounded-2xl px-8 bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-xl shadow-blue-500/20 border-0">
-                            Authorize Gateway
-                        </CustomButton>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                )}
+            </SideFormSheet>
         </div>
     )
 }

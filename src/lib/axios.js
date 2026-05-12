@@ -7,18 +7,26 @@ import { setAuthCookie, clearAuthCookie } from "@/lib/auth-cookies";
 export const axiosInstance = axios.create({
   baseURL: API,
   withCredentials: true,
+  // Without a timeout a hung request leaves callers' loading state stuck
+  // forever. 20s is the same safety budget the swrCache hook uses, so the
+  // axios reject and the UI safety timer fire close together.
+  timeout: 20000,
   headers: {
     "Content-Type": "application/json",
   },
 })
 
-// Add a request interceptor to include the org-token
+// Add a request interceptor to include org-token and firm-id
 axiosInstance.interceptors.request.use(
   (config) => {
     if (typeof window !== "undefined") {
       const orgToken = localStorage.getItem("orgToken");
       if (orgToken) {
         config.headers["org-token"] = orgToken;
+      }
+      const firmId = localStorage.getItem("firmId");
+      if (firmId) {
+        config.headers["firm-id"] = firmId;
       }
     }
     return config;

@@ -49,6 +49,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import {
     Select,
     SelectContent,
@@ -983,110 +984,75 @@ const Form16Page = () => {
                 </DialogContent>
             </Dialog>
 
-            {/* Dialog 1: Sign Form 16 / Digital Signature */}
-            <Dialog open={signDialogOpen} onOpenChange={setSignDialogOpen}>
-                <DialogContent className="sm:max-w-[520px] rounded-2xl">
-                    <DialogHeader>
-                        <div className="flex items-center gap-3 mb-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6]">
-                                <Signature size={18} />
-                            </div>
-                            <div>
-                                <DialogTitle className="text-lg font-bold text-slate-900">Sign Form 16</DialogTitle>
-                                <DialogDescription className="text-xs text-slate-500">Apply Class-3 DSC on the employee's Form 16 certificate.</DialogDescription>
-                            </div>
-                        </div>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Employee (Form 16)</Label>
-                            <Select value={signForm.form16Id} onValueChange={(v) => setSignForm(f => ({ ...f, form16Id: v }))}>
-                                <SelectTrigger className="h-10 rounded-lg border-slate-200 text-xs">
-                                    <SelectValue placeholder="Select Form 16 record" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {signableRecords.length === 0 && (
-                                        <div className="px-2 py-3 text-[10px] text-slate-400">All available Form 16 records are already signed.</div>
-                                    )}
-                                    {signableRecords.map(r => (
-                                        <SelectItem key={r.id} value={r.id} className="text-xs">
-                                            {r.employeeName} · {r.employeeId} · {r.fiscalYear}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+            {/* Sign Form 16 / Digital Signature Sheet */}
+            <SideFormSheet
+                open={signDialogOpen}
+                onOpenChange={setSignDialogOpen}
+                title="Sign Form 16"
+                description="Apply Class-3 DSC on the employee's Form 16 certificate."
+                icon={<Signature size={20} />}
+                accentColor="#4f46e5"
+                width="lg"
+                submitLabel="Apply signature"
+                onSubmit={(e) => { e.preventDefault(); handleSubmitSignForm(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Employee (Form 16)">
+                        <Select value={signForm.form16Id} onValueChange={(v) => setSignForm(f => ({ ...f, form16Id: v }))}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select Form 16 record" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {signableRecords.length === 0 && (
+                                    <div className="px-2 py-3 text-[10px] text-slate-400">All available Form 16 records are already signed.</div>
+                                )}
+                                {signableRecords.map(r => (
+                                    <SelectItem key={r.id} value={r.id} className="text-xs">
+                                        {r.employeeName} · {r.employeeId} · {r.fiscalYear}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
 
-                        {signForm.form16Id && (
-                            <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fiscal Year</p>
-                                <p className="text-xs font-bold text-slate-700">{form16Records.find(r => r.id === signForm.form16Id)?.fiscalYear}</p>
-                            </div>
-                        )}
-
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Signed By</Label>
-                                <Input
-                                    className="h-10 rounded-lg border-slate-200 text-xs"
-                                    value={signForm.signedBy}
-                                    onChange={(e) => setSignForm(f => ({ ...f, signedBy: e.target.value }))}
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Designation</Label>
-                                <Input
-                                    className="h-10 rounded-lg border-slate-200 text-xs"
-                                    value={signForm.signedByDesignation}
-                                    onChange={(e) => setSignForm(f => ({ ...f, signedByDesignation: e.target.value }))}
-                                />
-                            </div>
+                    {signForm.form16Id && (
+                        <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fiscal Year</p>
+                            <p className="text-xs font-bold text-slate-700">{form16Records.find(r => r.id === signForm.form16Id)?.fiscalYear}</p>
                         </div>
+                    )}
 
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Signature Certificate Serial</Label>
-                            <Input
-                                className="h-10 rounded-lg border-slate-200 text-xs font-mono"
-                                placeholder="Auto-generate if blank"
-                                value={signForm.signatureCertSerial}
-                                onChange={(e) => setSignForm(f => ({ ...f, signatureCertSerial: e.target.value }))}
-                            />
-                        </div>
-
-                        <div className="p-3 rounded-xl bg-emerald-50/50 border border-emerald-100 space-y-2">
-                            <div className="flex items-center gap-2">
-                                <Checkbox
-                                    checked={signForm.form12BaGenerated}
-                                    onCheckedChange={(v) => setSignForm(f => ({ ...f, form12BaGenerated: !!v }))}
-                                />
-                                <Label className="text-xs font-bold text-emerald-700 cursor-pointer" onClick={() => setSignForm(f => ({ ...f, form12BaGenerated: !f.form12BaGenerated }))}>
-                                    Also generate Form 12BA (perquisites)
-                                </Label>
-                            </div>
-                            {signForm.form12BaGenerated && (
-                                <div className="space-y-1.5 pl-6">
-                                    <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Perks Value (INR)</Label>
-                                    <Input
-                                        type="number"
-                                        className="h-9 rounded-lg border-emerald-200 text-xs"
-                                        value={signForm.form12BaPerks || ""}
-                                        onChange={(e) => setSignForm(f => ({ ...f, form12BaPerks: Number(e.target.value) }))}
-                                    />
-                                </div>
-                            )}
-                        </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Signed By">
+                            <Input value={signForm.signedBy} onChange={(e) => setSignForm(f => ({ ...f, signedBy: e.target.value }))} />
+                        </Field>
+                        <Field label="Designation">
+                            <Input value={signForm.signedByDesignation} onChange={(e) => setSignForm(f => ({ ...f, signedByDesignation: e.target.value }))} />
+                        </Field>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => setSignDialogOpen(false)}>Cancel</Button>
-                        <Button
-                            className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-[#8B5CF6]/20 gap-2"
-                            onClick={handleSubmitSignForm}
-                        >
-                            <Signature size={12} /> Apply signature
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+
+                    <Field label="Signature Certificate Serial">
+                        <Input className="font-mono" placeholder="Auto-generate if blank" value={signForm.signatureCertSerial} onChange={(e) => setSignForm(f => ({ ...f, signatureCertSerial: e.target.value }))} />
+                    </Field>
+
+                    <div className="p-3 rounded-xl bg-emerald-50/50 border border-emerald-100 space-y-2">
+                        <div className="flex items-center gap-2">
+                            <Checkbox
+                                checked={signForm.form12BaGenerated}
+                                onCheckedChange={(v) => setSignForm(f => ({ ...f, form12BaGenerated: !!v }))}
+                            />
+                            <Label className="text-xs font-bold text-emerald-700 cursor-pointer" onClick={() => setSignForm(f => ({ ...f, form12BaGenerated: !f.form12BaGenerated }))}>
+                                Also generate Form 12BA (perquisites)
+                            </Label>
+                        </div>
+                        {signForm.form12BaGenerated && (
+                            <Field label="Perks Value (INR)" className="pl-6">
+                                <Input type="number" value={signForm.form12BaPerks || ""} onChange={(e) => setSignForm(f => ({ ...f, form12BaPerks: Number(e.target.value) }))} />
+                            </Field>
+                        )}
+                    </div>
+                </div>
+            </SideFormSheet>
 
             {/* Dialog 2: Bulk TRACES submit result */}
             <Dialog open={!!bulkResult} onOpenChange={() => setBulkResult(null)}>
@@ -1184,79 +1150,50 @@ const Form16Page = () => {
                 </DialogContent>
             </Dialog>
 
-            {/* Dialog 4: Generate Form 12BA */}
-            <Dialog open={form12BaDialogOpen} onOpenChange={setForm12BaDialogOpen}>
-                <DialogContent className="sm:max-w-[480px] rounded-2xl">
-                    <DialogHeader>
-                        <div className="flex items-center gap-3 mb-1">
-                            <div className="h-10 w-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500">
-                                <ReceiptText size={18} />
-                            </div>
-                            <div>
-                                <DialogTitle className="text-lg font-bold text-slate-900">Generate Form 12BA</DialogTitle>
-                                <DialogDescription className="text-xs text-slate-500">Statement of perquisites, profits in lieu of salary & other benefits.</DialogDescription>
-                            </div>
-                        </div>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Employee</Label>
-                            <Select value={perksForm.form16Id} onValueChange={(v) => setPerksForm(f => ({ ...f, form16Id: v }))}>
-                                <SelectTrigger className="h-10 rounded-lg border-slate-200 text-xs">
-                                    <SelectValue placeholder="Select Form 16 record" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {form16Records.map(r => (
-                                        <SelectItem key={r.id} value={r.id} className="text-xs">
-                                            {r.employeeName} · {r.employeeId} · {r.fiscalYear}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+            {/* Generate Form 12BA Sheet */}
+            <SideFormSheet
+                open={form12BaDialogOpen}
+                onOpenChange={setForm12BaDialogOpen}
+                title="Generate Form 12BA"
+                description="Statement of perquisites, profits in lieu of salary & other benefits."
+                icon={<ReceiptText size={20} />}
+                accentColor="#059669"
+                width="md"
+                submitLabel="Generate"
+                onSubmit={(e) => { e.preventDefault(); handleSubmitPerksForm(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Employee">
+                        <Select value={perksForm.form16Id} onValueChange={(v) => setPerksForm(f => ({ ...f, form16Id: v }))}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select Form 16 record" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {form16Records.map(r => (
+                                    <SelectItem key={r.id} value={r.id} className="text-xs">
+                                        {r.employeeName} · {r.employeeId} · {r.fiscalYear}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
 
-                        {perksForm.form16Id && (
-                            <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fiscal Year</p>
-                                <p className="text-xs font-bold text-slate-700">{form16Records.find(r => r.id === perksForm.form16Id)?.fiscalYear}</p>
-                            </div>
-                        )}
-
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Perks Value (INR)</Label>
-                            <Input
-                                type="number"
-                                className="h-10 rounded-lg border-slate-200 text-xs"
-                                placeholder="0"
-                                value={perksForm.perksValue || ""}
-                                onChange={(e) => setPerksForm(f => ({ ...f, perksValue: Number(e.target.value) }))}
-                            />
-                            {perksForm.perksValue > 0 && (
-                                <p className="text-[10px] text-slate-500">{formatINR(perksForm.perksValue)}</p>
-                            )}
+                    {perksForm.form16Id && (
+                        <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fiscal Year</p>
+                            <p className="text-xs font-bold text-slate-700">{form16Records.find(r => r.id === perksForm.form16Id)?.fiscalYear}</p>
                         </div>
+                    )}
 
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Perks Description</Label>
-                            <Textarea
-                                className="rounded-lg border-slate-200 text-xs min-h-[84px]"
-                                placeholder="Company car, rent-free accommodation, stock options, etc."
-                                value={perksForm.perksDescription}
-                                onChange={(e) => setPerksForm(f => ({ ...f, perksDescription: e.target.value }))}
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => setForm12BaDialogOpen(false)}>Cancel</Button>
-                        <Button
-                            className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-[#8B5CF6]/20 gap-2"
-                            onClick={handleSubmitPerksForm}
-                        >
-                            <ReceiptText size={12} /> Generate
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Perks Value (INR)" hint={perksForm.perksValue > 0 ? formatINR(perksForm.perksValue) : undefined}>
+                        <Input type="number" placeholder="0" value={perksForm.perksValue || ""} onChange={(e) => setPerksForm(f => ({ ...f, perksValue: Number(e.target.value) }))} />
+                    </Field>
+
+                    <Field label="Perks Description">
+                        <Textarea placeholder="Company car, rent-free accommodation, stock options, etc." value={perksForm.perksDescription} onChange={(e) => setPerksForm(f => ({ ...f, perksDescription: e.target.value }))} />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             {/* Dialog 5: TRACES status detail */}
             <Dialog open={!!tracesDetailSig} onOpenChange={() => setTracesDetailSig(null)}>

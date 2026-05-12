@@ -36,6 +36,7 @@ import { Label } from "@/shared/components/ui/label";
 import { Switch } from "@/shared/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Sheet, SheetContent, SheetTitle } from "@/shared/components/ui/sheet";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Separator } from "@/shared/components/ui/separator";
@@ -580,127 +581,112 @@ const AgentManagementPage = () => {
                 </div>
             </div>
 
-            {/* Onboard / Edit Agent Dialog */}
-            <Dialog open={isCreateDialogOpen} onOpenChange={(v) => { if (!v) resetForm(); setIsCreateDialogOpen(v); }}>
-                <DialogContent className="max-w-2xl p-0 overflow-hidden border-2 border-slate-200 rounded-3xl shadow-3xl bg-white outline-none">
-                    <div className="bg-slate-50 border-b border-slate-200 px-8 py-6 flex items-center gap-4">
-                        <div className="h-10 w-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-indigo-600 shadow-sm">
-                            <UserPlus size={20} />
+            {/* Onboard / Edit Agent Side Sheet */}
+            <SideFormSheet
+                open={isCreateDialogOpen}
+                onOpenChange={(o) => { setIsCreateDialogOpen(o); if (!o) resetForm(); }}
+                title={editingId ? "Edit Agent Profile" : "Agent Provisioning"}
+                description="Grant access and map support responsibilities"
+                icon={<UserPlus size={20} />}
+                accentColor={editingId ? "#7c3aed" : "#4f46e5"}
+                width="lg"
+                submitLabel={editingId ? "Save Changes" : "Deploy Agent"}
+                cancelLabel="Abort"
+                onSubmit={(e) => { e.preventDefault(); handleSave(); }}
+            >
+                <div className="space-y-5">
+                    {!editingId && orgUsers.length > 0 && (
+                        <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl space-y-2">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest">Import from Organization</span>
+                                <span className="text-[9px] font-bold text-emerald-600">{orgUsers.length} users available</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
+                                {orgUsers.slice(0, 12).map(u => (
+                                    <Badge
+                                        key={u.id}
+                                        onClick={() => importOrgUser(u)}
+                                        className="bg-white text-emerald-700 border-emerald-200 font-bold text-[10px] h-7 px-3 cursor-pointer hover:bg-emerald-100"
+                                    >
+                                        + {u.name}
+                                    </Badge>
+                                ))}
+                            </div>
                         </div>
-                        <div>
-                            <DialogTitle className="text-xl font-bold text-slate-900 tracking-tight leading-none uppercase">{editingId ? "Edit Agent Profile" : "Agent Provisioning"}</DialogTitle>
-                            <DialogDescription className="text-xs font-semibold text-slate-400 mt-1 uppercase tracking-widest">Grant access and map support responsibilities</DialogDescription>
-                        </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Full Name" required error={formErrors.name || undefined}>
+                            <Input placeholder="Full legal name" value={formData.name || ""} maxLength={NAME_MAX + 10} onChange={e => { setFormData({ ...formData, name: e.target.value }); if (formErrors.name) setFormErrors({ ...formErrors, name: "" }); }} />
+                        </Field>
+                        <Field label="Work Email" required error={formErrors.email || undefined}>
+                            <Input placeholder="agent@firm.com" value={formData.email || ""} type="email" onChange={e => { setFormData({ ...formData, email: e.target.value }); if (formErrors.email) setFormErrors({ ...formErrors, email: "" }); }} />
+                        </Field>
                     </div>
 
-                    <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto">
-                        {!editingId && orgUsers.length > 0 && (
-                            <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest">Import from Organization</span>
-                                    <span className="text-[9px] font-bold text-emerald-600">{orgUsers.length} users available</span>
-                                </div>
-                                <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
-                                    {orgUsers.slice(0, 12).map(u => (
-                                        <Badge
-                                            key={u.id}
-                                            onClick={() => importOrgUser(u)}
-                                            className="bg-white text-emerald-700 border-emerald-200 font-bold text-[10px] h-7 px-3 cursor-pointer hover:bg-emerald-100"
-                                        >
-                                            + {u.name}
-                                        </Badge>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                        <div className="grid grid-cols-2 gap-8">
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Full Name *</Label>
-                                <Input placeholder="Full legal name" value={formData.name || ""} maxLength={NAME_MAX + 10} onChange={e => { setFormData({ ...formData, name: e.target.value }); if (formErrors.name) setFormErrors({ ...formErrors, name: "" }); }} className={`h-12 border-slate-200 rounded-xl px-4 font-bold text-slate-900 bg-slate-50/50 ${formErrors.name ? 'border-rose-300 focus-visible:ring-rose-500' : ''}`} />
-                                {formErrors.name && <p className="text-[11px] text-rose-500 font-bold px-1">{formErrors.name}</p>}
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Work Email *</Label>
-                                <Input placeholder="agent@firm.com" value={formData.email || ""} type="email" onChange={e => { setFormData({ ...formData, email: e.target.value }); if (formErrors.email) setFormErrors({ ...formErrors, email: "" }); }} className={`h-12 border-slate-200 rounded-xl px-4 font-bold text-slate-900 bg-slate-50/50 ${formErrors.email ? 'border-rose-300 focus-visible:ring-rose-500' : ''}`} />
-                                {formErrors.email && <p className="text-[11px] text-rose-500 font-bold px-1">{formErrors.email}</p>}
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-8">
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Role</Label>
-                                <Select value={formData.role} onValueChange={v => setFormData({ ...formData, role: v as any })}>
-                                    <SelectTrigger className="h-12 border-slate-200 rounded-xl font-bold shadow-sm"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="rounded-xl border-slate-100">
-                                        <SelectItem value="Agent">Support Agent</SelectItem>
-                                        <SelectItem value="Supervisor">Team Supervisor</SelectItem>
-                                        <SelectItem value="Admin">System Administrator</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Status</Label>
-                                <Select value={formData.status} onValueChange={v => setFormData({ ...formData, status: v as any })}>
-                                    <SelectTrigger className="h-12 border-slate-200 rounded-xl font-bold shadow-sm"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="rounded-xl border-slate-100">
-                                        <SelectItem value="Active">Active</SelectItem>
-                                        <SelectItem value="Away">Away</SelectItem>
-                                        <SelectItem value="Offline">Offline</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-
-                        <div className="space-y-3">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Queue Ownership</Label>
-                            <div className="flex flex-wrap gap-2 p-5 border border-slate-100 rounded-2xl bg-slate-50/50 min-h-[100px]">
-                                {categories.map(cat => {
-                                    const picked = formData.assignedQueues?.includes(cat.name);
-                                    return (
-                                        <Badge
-                                            key={cat.id}
-                                            onClick={() => toggleQueue(cat.name)}
-                                            className={`cursor-pointer h-7 px-4 rounded-lg font-bold text-[10px] uppercase tracking-widest transition-all ${picked ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-white border border-slate-200 text-slate-400'}`}
-                                        >
-                                            {cat.name}
-                                        </Badge>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-8">
-                            <div className="flex items-center gap-4 p-5 bg-slate-900 rounded-2xl border border-slate-800 shadow-xl">
-                                <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center text-emerald-400">
-                                    <ShieldCheck size={20} />
-                                </div>
-                                <div className="flex-1">
-                                    <span className="text-[11px] font-bold text-white block leading-none">Delete Privileges</span>
-                                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">Can delete tickets</span>
-                                </div>
-                                <Switch checked={!!formData.canDeleteTickets} onCheckedChange={(v) => setFormData({ ...formData, canDeleteTickets: v })} />
-                            </div>
-                            <div className="flex items-center gap-4 p-5 bg-indigo-600 rounded-2xl border border-indigo-500 shadow-xl">
-                                <div className="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center text-white">
-                                    <Mail size={20} />
-                                </div>
-                                <div className="flex-1">
-                                    <span className="text-[11px] font-bold text-white block leading-none">Auto Invite</span>
-                                    <span className="text-[9px] font-bold text-indigo-200 uppercase tracking-widest mt-1">Send access email</span>
-                                </div>
-                                <Switch checked={!!formData.autoInvite} onCheckedChange={(v) => setFormData({ ...formData, autoInvite: v })} />
-                            </div>
-                        </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Role">
+                            <Select value={formData.role} onValueChange={v => setFormData({ ...formData, role: v as any })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Agent">Support Agent</SelectItem>
+                                    <SelectItem value="Supervisor">Team Supervisor</SelectItem>
+                                    <SelectItem value="Admin">System Administrator</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Status">
+                            <Select value={formData.status} onValueChange={v => setFormData({ ...formData, status: v as any })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Active">Active</SelectItem>
+                                    <SelectItem value="Away">Away</SelectItem>
+                                    <SelectItem value="Offline">Offline</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
                     </div>
 
-                    <div className="p-8 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
-                        <Button variant="ghost" onClick={() => setIsCreateDialogOpen(false)} className="h-12 px-8 font-bold text-slate-400 text-xs uppercase tracking-widest">Abort</Button>
-                        <Button onClick={handleSave} className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl h-12 px-10 font-bold text-xs uppercase tracking-widest shadow-xl shadow-slate-200 gap-2">
-                            <CheckCircle2 size={16} /> {editingId ? "Save Changes" : "Deploy Agent"}
-                        </Button>
+                    <Field label="Queue Ownership">
+                        <div className="flex flex-wrap gap-2 p-3 border border-slate-100 rounded-xl bg-slate-50/50 min-h-[80px]">
+                            {categories.map(cat => {
+                                const picked = formData.assignedQueues?.includes(cat.name);
+                                return (
+                                    <Badge
+                                        key={cat.id}
+                                        onClick={() => toggleQueue(cat.name)}
+                                        className={`cursor-pointer h-7 px-4 rounded-lg font-bold text-[10px] uppercase tracking-widest transition-all ${picked ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-white border border-slate-200 text-slate-400'}`}
+                                    >
+                                        {cat.name}
+                                    </Badge>
+                                );
+                            })}
+                        </div>
+                    </Field>
+
+                    <div className="grid grid-cols-1 gap-3">
+                        <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <div className="h-9 w-9 rounded-lg bg-white flex items-center justify-center text-emerald-500 border border-slate-100">
+                                <ShieldCheck size={18} />
+                            </div>
+                            <div className="flex-1">
+                                <span className="text-[12px] font-bold text-slate-800 block leading-none">Delete Privileges</span>
+                                <span className="text-[10px] text-slate-400 mt-1 block">Can delete tickets</span>
+                            </div>
+                            <Switch checked={!!formData.canDeleteTickets} onCheckedChange={(v) => setFormData({ ...formData, canDeleteTickets: v })} />
+                        </div>
+                        <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <div className="h-9 w-9 rounded-lg bg-white flex items-center justify-center text-indigo-500 border border-slate-100">
+                                <Mail size={18} />
+                            </div>
+                            <div className="flex-1">
+                                <span className="text-[12px] font-bold text-slate-800 block leading-none">Auto Invite</span>
+                                <span className="text-[10px] text-slate-400 mt-1 block">Send access email</span>
+                            </div>
+                            <Switch checked={!!formData.autoInvite} onCheckedChange={(v) => setFormData({ ...formData, autoInvite: v })} />
+                        </div>
                     </div>
-                </DialogContent>
-            </Dialog>
+                </div>
+            </SideFormSheet>
 
             {/* Agent Detail Sheet */}
             <Sheet open={isDetailSheetOpen} onOpenChange={setIsDetailSheetOpen}>
@@ -799,90 +785,79 @@ const AgentManagementPage = () => {
                 </SheetContent>
             </Sheet>
 
-            {/* Add Queue Dialog */}
-            <Dialog open={isAddQueueDialogOpen} onOpenChange={setIsAddQueueDialogOpen}>
-                <DialogContent className="max-w-md p-0 overflow-hidden border-2 border-slate-200 rounded-3xl shadow-3xl bg-white outline-none">
-                    <div className="bg-slate-50 border-b border-slate-200 px-8 py-6 flex items-center gap-4">
-                        <div className="h-10 w-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-indigo-600 shadow-sm">
-                            <Plus size={20} />
-                        </div>
-                        <div>
-                            <DialogTitle className="text-lg font-bold text-slate-900 tracking-tight leading-none uppercase">Add Queue</DialogTitle>
-                            <DialogDescription className="text-xs font-semibold text-slate-400 mt-1 uppercase tracking-widest">Assign a new support queue</DialogDescription>
-                        </div>
-                    </div>
-                    <div className="p-8 space-y-6">
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Queue Name</Label>
-                            <Select value={newQueueName} onValueChange={setNewQueueName}>
-                                <SelectTrigger className="h-12 border-slate-200 rounded-xl font-bold shadow-sm"><SelectValue placeholder="Select a queue" /></SelectTrigger>
-                                <SelectContent className="rounded-xl border-slate-100">
-                                    {categories.filter(c => !liveSelectedAgent?.assignedQueues.includes(c.name)).map(cat => (
-                                        <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                    <div className="p-8 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
-                        <Button variant="ghost" onClick={() => { setIsAddQueueDialogOpen(false); setNewQueueName(""); }} className="h-12 px-8 font-bold text-slate-400 text-xs uppercase tracking-widest">Cancel</Button>
-                        <Button onClick={handleAddQueue} className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl h-12 px-10 font-bold text-xs uppercase tracking-widest shadow-xl shadow-slate-200 gap-2">
-                            <CheckCircle2 size={16} /> Assign
-                        </Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
+            {/* Add Queue Side Sheet */}
+            <SideFormSheet
+                open={isAddQueueDialogOpen}
+                onOpenChange={(o) => { setIsAddQueueDialogOpen(o); if (!o) setNewQueueName(""); }}
+                title="Add Queue"
+                description="Assign a new support queue"
+                icon={<Plus size={20} />}
+                accentColor="#4f46e5"
+                width="sm"
+                submitLabel="Assign"
+                onSubmit={(e) => { e.preventDefault(); handleAddQueue(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Queue Name" required>
+                        <Select value={newQueueName} onValueChange={setNewQueueName}>
+                            <SelectTrigger><SelectValue placeholder="Select a queue" /></SelectTrigger>
+                            <SelectContent>
+                                {categories.filter(c => !liveSelectedAgent?.assignedQueues.includes(c.name)).map(cat => (
+                                    <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-            {/* Advanced Config Modal */}
-            <Dialog open={isAdvancedConfigOpen} onOpenChange={setIsAdvancedConfigOpen}>
-                <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl">
-                    <DialogHeader className="bg-slate-50 border-b border-slate-200 p-6">
-                        <DialogTitle>Advanced Configuration</DialogTitle>
-                        <DialogDescription>Fine-tune permissions and quotas for {advConfig.name}.</DialogDescription>
-                    </DialogHeader>
-                    <div className="p-6 space-y-5">
-                        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                            <div>
-                                <Label className="text-xs font-bold text-slate-800">Delete Privilege</Label>
-                                <p className="text-[10px] text-slate-400">Can permanently remove tickets</p>
-                            </div>
-                            <Switch checked={!!advConfig.canDeleteTickets} onCheckedChange={(v) => setAdvConfig({ ...advConfig, canDeleteTickets: v })} />
+            {/* Advanced Config Side Sheet */}
+            <SideFormSheet
+                open={isAdvancedConfigOpen}
+                onOpenChange={setIsAdvancedConfigOpen}
+                title="Advanced Configuration"
+                description={`Fine-tune permissions and quotas for ${advConfig.name || ''}.`}
+                icon={<Settings2 size={20} />}
+                accentColor="#7c3aed"
+                width="md"
+                submitLabel="Save Config"
+                onSubmit={(e) => { e.preventDefault(); saveAdvancedConfig(); }}
+            >
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        <div>
+                            <Label className="text-xs font-bold text-slate-800">Delete Privilege</Label>
+                            <p className="text-[10px] text-slate-400">Can permanently remove tickets</p>
                         </div>
-                        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                            <div>
-                                <Label className="text-xs font-bold text-slate-800">Auto Invite</Label>
-                                <p className="text-[10px] text-slate-400">Send access email on changes</p>
-                            </div>
-                            <Switch checked={!!advConfig.autoInvite} onCheckedChange={(v) => setAdvConfig({ ...advConfig, autoInvite: v })} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Role</Label>
-                            <Select value={advConfig.role} onValueChange={(v) => setAdvConfig({ ...advConfig, role: v as any })}>
-                                <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Agent">Support Agent</SelectItem>
-                                    <SelectItem value="Supervisor">Team Supervisor</SelectItem>
-                                    <SelectItem value="Admin">System Administrator</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Avg Time</Label>
-                                <Input value={advConfig.avgResolutionTime || ""} onChange={e => setAdvConfig({ ...advConfig, avgResolutionTime: e.target.value })} className="h-10 rounded-xl" placeholder="e.g. 3.5h" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">CSAT (0-5)</Label>
-                                <Input type="number" step={0.1} min={0} max={5} value={advConfig.csatScore ?? 0} onChange={e => setAdvConfig({ ...advConfig, csatScore: Number(e.target.value) })} className="h-10 rounded-xl" />
-                            </div>
-                        </div>
+                        <Switch checked={!!advConfig.canDeleteTickets} onCheckedChange={(v) => setAdvConfig({ ...advConfig, canDeleteTickets: v })} />
                     </div>
-                    <DialogFooter className="p-4 bg-slate-50 border-t border-slate-200">
-                        <Button variant="ghost" onClick={() => setIsAdvancedConfigOpen(false)}>Cancel</Button>
-                        <Button onClick={saveAdvancedConfig} className="bg-indigo-600 hover:bg-indigo-700 text-white">Save Config</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        <div>
+                            <Label className="text-xs font-bold text-slate-800">Auto Invite</Label>
+                            <p className="text-[10px] text-slate-400">Send access email on changes</p>
+                        </div>
+                        <Switch checked={!!advConfig.autoInvite} onCheckedChange={(v) => setAdvConfig({ ...advConfig, autoInvite: v })} />
+                    </div>
+                    <Field label="Role">
+                        <Select value={advConfig.role} onValueChange={(v) => setAdvConfig({ ...advConfig, role: v as any })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Agent">Support Agent</SelectItem>
+                                <SelectItem value="Supervisor">Team Supervisor</SelectItem>
+                                <SelectItem value="Admin">System Administrator</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Avg Time">
+                            <Input value={advConfig.avgResolutionTime || ""} onChange={e => setAdvConfig({ ...advConfig, avgResolutionTime: e.target.value })} placeholder="e.g. 3.5h" />
+                        </Field>
+                        <Field label="CSAT (0-5)">
+                            <Input type="number" step={0.1} min={0} max={5} value={advConfig.csatScore ?? 0} onChange={e => setAdvConfig({ ...advConfig, csatScore: Number(e.target.value) })} />
+                        </Field>
+                    </div>
+                </div>
+            </SideFormSheet>
 
             {/* Compliance Report Modal */}
             <Dialog open={isComplianceOpen} onOpenChange={setIsComplianceOpen}>

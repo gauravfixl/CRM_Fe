@@ -35,6 +35,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     Sheet,
     SheetContent,
@@ -1383,19 +1384,18 @@ export default function InterviewsPage() {
             {/* =========================================================== */}
             {/*  DIALOG 1: Schedule Interview                              */}
             {/* =========================================================== */}
-            <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
-                <DialogContent className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-3xl p-0 overflow-hidden">
-                    <DialogHeader className="px-6 pt-5 pb-3 border-b border-slate-100">
-                        <DialogTitle className="text-lg font-bold text-slate-900">
-                            Schedule Interview
-                        </DialogTitle>
-                        <DialogDescription className="text-[11px] text-slate-500">
-                            Pick candidate, coordinate panel, and confirm schedule.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <Tabs value={scheduleTab} onValueChange={(v) => setScheduleTab(v as any)}>
-                        <TabsList className="mx-6 mt-4 bg-slate-100 p-1 h-10 rounded-xl">
+            <SideFormSheet
+                open={scheduleOpen}
+                onOpenChange={setScheduleOpen}
+                title="Schedule Interview"
+                description="Pick candidate, coordinate panel, and confirm schedule."
+                icon={<Calendar className="h-5 w-5" />}
+                accentColor="#4f46e5"
+                width="xl"
+                hideFooter
+            >
+                <Tabs value={scheduleTab} onValueChange={(v) => setScheduleTab(v as any)}>
+                    <TabsList className="bg-slate-100 p-1 h-10 rounded-xl">
                             <TabsTrigger
                                 value="role"
                                 className="h-8 px-4 text-[11px] font-semibold rounded-lg data-[state=active]:bg-white data-[state=active]:text-violet-600 data-[state=active]:shadow-sm"
@@ -1889,24 +1889,23 @@ export default function InterviewsPage() {
                             </div>
                         </TabsContent>
                     </Tabs>
-                </DialogContent>
-            </Dialog>
+            </SideFormSheet>
 
             {/* =========================================================== */}
             {/*  DIALOG 2: Edit                                             */}
             {/* =========================================================== */}
-            <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                <DialogContent className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-3xl p-0 overflow-hidden">
-                    <DialogHeader className="px-6 pt-5 pb-3 border-b border-slate-100">
-                        <DialogTitle className="text-lg font-bold text-slate-900">
-                            Edit Interview
-                        </DialogTitle>
-                        <DialogDescription className="text-[11px] text-slate-500">
-                            Modify round, panel, or schedule.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <Tabs value={editTab} onValueChange={(v) => setEditTab(v as any)}>
-                        <TabsList className="mx-6 mt-4 bg-slate-100 p-1 h-10 rounded-xl">
+            <SideFormSheet
+                open={editOpen}
+                onOpenChange={setEditOpen}
+                title="Edit Interview"
+                description="Modify round, panel, or schedule."
+                icon={<Edit className="h-5 w-5" />}
+                accentColor="#7c3aed"
+                width="xl"
+                hideFooter
+            >
+                <Tabs value={editTab} onValueChange={(v) => setEditTab(v as any)}>
+                    <TabsList className="bg-slate-100 p-1 h-10 rounded-xl">
                             <TabsTrigger
                                 value="role"
                                 className="h-8 px-4 text-[11px] font-semibold rounded-lg data-[state=active]:bg-white data-[state=active]:text-violet-600"
@@ -2248,22 +2247,22 @@ export default function InterviewsPage() {
                             </div>
                         </TabsContent>
                     </Tabs>
-                </DialogContent>
-            </Dialog>
+            </SideFormSheet>
 
             {/* =========================================================== */}
             {/*  DIALOG 3: Reschedule                                       */}
             {/* =========================================================== */}
-            <Dialog open={rescheduleOpen} onOpenChange={setRescheduleOpen}>
-                <DialogContent className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md p-5">
-                    <DialogHeader className="mb-3">
-                        <DialogTitle className="text-lg font-bold text-slate-900">
-                            Reschedule Interview
-                        </DialogTitle>
-                        <DialogDescription className="text-[11px] text-slate-500">
-                            {activeInterview?.title} · current: {formatDate(activeInterview?.date ?? "")} {activeInterview?.time}
-                        </DialogDescription>
-                    </DialogHeader>
+            <SideFormSheet
+                open={rescheduleOpen}
+                onOpenChange={setRescheduleOpen}
+                title="Reschedule Interview"
+                description={`${activeInterview?.title ?? ""} · current: ${formatDate(activeInterview?.date ?? "")} ${activeInterview?.time ?? ""}`}
+                icon={<Calendar className="h-5 w-5" />}
+                accentColor="#7c3aed"
+                width="md"
+                submitLabel="Reschedule"
+                onSubmit={(e) => { e.preventDefault(); handleReschedule(); }}
+            >
                     <div className="space-y-3">
                         <div className="grid grid-cols-2 gap-3">
                             <FormField label="New Date">
@@ -2333,40 +2332,24 @@ export default function InterviewsPage() {
                             </div>
                         )}
                     </div>
-                    <DialogFooter className="mt-4">
-                        <Button
-                            variant="outline"
-                            onClick={() => setRescheduleOpen(false)}
-                            className="h-9 text-[11px] font-semibold rounded-xl"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleReschedule}
-                            className="bg-[#8B5CF6] hover:bg-violet-600 text-white h-9 rounded-xl text-[11px] font-semibold"
-                        >
-                            Reschedule
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            </SideFormSheet>
 
             {/* =========================================================== */}
             {/*  DIALOG 4: Submit Feedback                                  */}
             {/* =========================================================== */}
-            <Dialog open={feedbackOpen} onOpenChange={setFeedbackOpen}>
-                <DialogContent className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg p-5">
-                    <DialogHeader className="mb-3">
-                        <DialogTitle className="text-lg font-bold text-slate-900">
-                            Submit Feedback
-                        </DialogTitle>
-                        <DialogDescription className="text-[11px] text-slate-500">
-                            {activeInterview?.title} ·{" "}
-                            {activeInterview && candidateById(activeInterview.candidateId)
-                                ? `${candidateById(activeInterview.candidateId)?.firstName} ${candidateById(activeInterview.candidateId)?.lastName}`
-                                : ""}
-                        </DialogDescription>
-                    </DialogHeader>
+            <SideFormSheet
+                open={feedbackOpen}
+                onOpenChange={setFeedbackOpen}
+                title="Submit Feedback"
+                description={`${activeInterview?.title ?? ""}${activeInterview && candidateById(activeInterview.candidateId)
+                    ? ` · ${candidateById(activeInterview.candidateId)?.firstName} ${candidateById(activeInterview.candidateId)?.lastName}`
+                    : ""}`}
+                icon={<Star className="h-5 w-5" />}
+                accentColor="#059669"
+                width="lg"
+                submitLabel="Submit Feedback"
+                onSubmit={(e) => { e.preventDefault(); handleFeedback(); }}
+            >
                     <div className="space-y-3">
                         {Object.keys(feedbackForm.ratings).map((criterion) => (
                             <div key={criterion}>
@@ -2460,37 +2443,22 @@ export default function InterviewsPage() {
                             />
                         </FormField>
                     </div>
-                    <DialogFooter className="mt-3">
-                        <Button
-                            variant="outline"
-                            onClick={() => setFeedbackOpen(false)}
-                            className="h-9 rounded-xl text-[11px] font-semibold"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleFeedback}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white h-9 rounded-xl text-[11px] font-semibold"
-                        >
-                            Submit Feedback
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            </SideFormSheet>
 
             {/* =========================================================== */}
             {/*  DIALOG 5: Mark Outcome                                     */}
             {/* =========================================================== */}
-            <Dialog open={outcomeOpen} onOpenChange={setOutcomeOpen}>
-                <DialogContent className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md p-5">
-                    <DialogHeader className="mb-3">
-                        <DialogTitle className="text-lg font-bold text-slate-900">
-                            Mark Outcome
-                        </DialogTitle>
-                        <DialogDescription className="text-[11px] text-slate-500">
-                            Record the decision for this round.
-                        </DialogDescription>
-                    </DialogHeader>
+            <SideFormSheet
+                open={outcomeOpen}
+                onOpenChange={setOutcomeOpen}
+                title="Mark Outcome"
+                description="Record the decision for this round."
+                icon={<CheckCircle2 className="h-5 w-5" />}
+                accentColor="#4f46e5"
+                width="md"
+                submitLabel="Save Outcome"
+                onSubmit={(e) => { e.preventDefault(); handleOutcome(); }}
+            >
                     <div className="space-y-3">
                         <FormField label="Outcome">
                             <RadioGroup
@@ -2547,38 +2515,22 @@ export default function InterviewsPage() {
                             </label>
                         )}
                     </div>
-                    <DialogFooter className="mt-3">
-                        <Button
-                            variant="outline"
-                            onClick={() => setOutcomeOpen(false)}
-                            className="h-9 rounded-xl text-[11px] font-semibold"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleOutcome}
-                            className="bg-[#8B5CF6] hover:bg-violet-600 text-white h-9 rounded-xl text-[11px] font-semibold"
-                        >
-                            Save Outcome
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            </SideFormSheet>
 
             {/* =========================================================== */}
             {/*  DIALOG 6: Bulk Reschedule                                  */}
             {/* =========================================================== */}
-            <Dialog open={bulkRescheduleOpen} onOpenChange={setBulkRescheduleOpen}>
-                <DialogContent className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md p-5">
-                    <DialogHeader className="mb-3">
-                        <DialogTitle className="text-lg font-bold text-slate-900">
-                            Bulk Reschedule
-                        </DialogTitle>
-                        <DialogDescription className="text-[11px] text-slate-500">
-                            Moving {selectedIds.length} interview
-                            {selectedIds.length === 1 ? "" : "s"} to the same date.
-                        </DialogDescription>
-                    </DialogHeader>
+            <SideFormSheet
+                open={bulkRescheduleOpen}
+                onOpenChange={setBulkRescheduleOpen}
+                title="Bulk Reschedule"
+                description={`Moving ${selectedIds.length} interview${selectedIds.length === 1 ? "" : "s"} to the same date.`}
+                icon={<Calendar className="h-5 w-5" />}
+                accentColor="#7c3aed"
+                width="md"
+                submitLabel="Reschedule All"
+                onSubmit={(e) => { e.preventDefault(); handleBulkReschedule(); }}
+            >
                     <div className="space-y-3">
                         <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 space-y-1">
                             {selectedIds.slice(0, 5).map((id) => {
@@ -2629,23 +2581,7 @@ export default function InterviewsPage() {
                             />
                         </FormField>
                     </div>
-                    <DialogFooter className="mt-3">
-                        <Button
-                            variant="outline"
-                            onClick={() => setBulkRescheduleOpen(false)}
-                            className="h-9 rounded-xl text-[11px] font-semibold"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleBulkReschedule}
-                            className="bg-[#8B5CF6] hover:bg-violet-600 text-white h-9 rounded-xl text-[11px] font-semibold"
-                        >
-                            Reschedule All
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            </SideFormSheet>
 
             {/* =========================================================== */}
             {/*  DIALOG 7: Interview Detail Sheet                           */}

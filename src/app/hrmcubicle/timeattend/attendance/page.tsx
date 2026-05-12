@@ -28,7 +28,6 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { Input } from "@/shared/components/ui/input";
-import { Label } from "@/shared/components/ui/label";
 import { useAttendanceStore, AttendanceLog } from "@/shared/data/attendance-store";
 import { overrideAttendance } from "@/modules/hrm/hooks/hrmHooks";
 import {
@@ -38,15 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 
 const MasterAttendancePage = () => {
   const { toast } = useToast();
@@ -321,12 +312,12 @@ const MasterAttendancePage = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-50 bg-slate-50/30">
-                <th className="p-8 font-bold text-xs tracking-widest text-slate-400">Personnel info</th>
-                <th className="p-8 font-bold text-xs tracking-widest text-slate-400">Date & shift</th>
-                <th className="p-8 font-bold text-xs tracking-widest text-slate-400">Access log</th>
-                <th className="p-8 font-bold text-xs tracking-widest text-slate-400">Status</th>
-                <th className="p-8 font-bold text-xs tracking-widest text-slate-400">Anomalies</th>
-                <th className="p-8 font-bold text-xs tracking-widest text-slate-400 text-right">Actions</th>
+                <th className="p-8 font-bold text-base tracking-wide text-slate-600">Personnel info</th>
+                <th className="p-8 font-bold text-base tracking-wide text-slate-600">Date & shift</th>
+                <th className="p-8 font-bold text-base tracking-wide text-slate-600">Access log</th>
+                <th className="p-8 font-bold text-base tracking-wide text-slate-600">Status</th>
+                <th className="p-8 font-bold text-base tracking-wide text-slate-600">Anomalies</th>
+                <th className="p-8 font-bold text-base tracking-wide text-slate-600 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -353,56 +344,56 @@ const MasterAttendancePage = () => {
                       <Avatar className="h-12 w-12 rounded-xl bg-[#F0C1E1] text-white font-black shadow-sm group-hover:scale-110 transition-transform">
                         <AvatarFallback>{log.empName[0]}{log.empName.split(' ')[1]?.[0]}</AvatarFallback>
                       </Avatar>
-                      <div className="space-y-0.5">
-                        <h4 className="font-bold text-slate-900 text-lg leading-tight">{log.empName}</h4>
+                      <div className="space-y-1">
+                        <h4 className="font-bold text-slate-900 text-xl leading-tight">{log.empName}</h4>
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold text-slate-400">{log.empId}</span>
-                          <span className="h-1 w-1 rounded-full bg-slate-200" />
-                          <span className="text-[10px] font-bold text-[#CB9DF0]">{log.department}</span>
+                          <span className="text-sm font-bold text-slate-500">{log.empId}</span>
+                          <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+                          <span className="text-sm font-bold text-[#9b6cd0]">{log.department}</span>
                         </div>
                       </div>
                     </div>
                   </td>
                   <td className="p-8">
                     <div className="space-y-1">
-                      <p className="font-bold text-slate-700">{new Date(log.date).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
-                      <p className="text-xs font-bold text-slate-400">General (09:30 - 18:30)</p>
+                      <p className="font-bold text-slate-800 text-base">{new Date(log.date).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
+                      <p className="text-sm font-bold text-slate-500">General (09:30 - 18:30)</p>
                     </div>
                   </td>
                   <td className="p-8">
                     <div className="flex items-center gap-6">
                       <div className="text-center">
-                        <p className="text-[9px] font-black text-slate-300 tracking-widest mb-1">In</p>
-                        <p className="font-black text-slate-900 text-sm">{log.checkIn || '--:--'}</p>
+                        <p className="text-xs font-black text-slate-500 tracking-widest mb-1">In</p>
+                        <p className="font-black text-slate-900 text-base">{log.checkIn || '--:--'}</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-[9px] font-black text-slate-300 tracking-widest mb-1">Out</p>
-                        <p className="font-black text-slate-900 text-sm">{log.checkOut || '--:--'}</p>
+                        <p className="text-xs font-black text-slate-500 tracking-widest mb-1">Out</p>
+                        <p className="font-black text-slate-900 text-base">{log.checkOut || '--:--'}</p>
                       </div>
-                      <div className="text-center bg-slate-50 px-3 py-1 rounded-lg">
-                        <p className="text-[9px] font-bold text-slate-300 tracking-widest mb-1">Total</p>
-                        <p className="font-bold text-indigo-600 text-sm">{log.totalHours}</p>
+                      <div className="text-center bg-slate-50 px-4 py-2 rounded-lg">
+                        <p className="text-xs font-bold text-slate-500 tracking-widest mb-1">Total</p>
+                        <p className="font-bold text-indigo-600 text-base">{log.totalHours}</p>
                       </div>
                     </div>
                   </td>
                   <td className="p-8">
-                    <Badge className={`px-4 py-1.5 rounded-lg border-none font-bold text-[10px] shadow-sm
+                    <Badge className={`px-4 py-2 rounded-lg border-none font-bold text-sm shadow-sm
                                             ${log.status === 'Present' ? 'bg-emerald-100 text-emerald-700' :
                         log.status === 'Late' ? 'bg-amber-100 text-amber-700' :
-                          log.status === 'Absent' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-400'}`}>
+                          log.status === 'Absent' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-500'}`}>
                       {log.status}
                     </Badge>
                   </td>
                   <td className="p-8">
                     {log.isDiscrepancy ? (
-                      <div className="flex items-center gap-2 text-rose-500 bg-rose-50 px-4 py-2 rounded-xl group-hover:scale-105 transition-transform animate-pulse border border-rose-100">
-                        <AlertCircle size={14} />
-                        <span className="text-[10px] font-black tracking-tight">Anomalies detected</span>
+                      <div className="inline-flex items-center gap-2 text-rose-600 bg-rose-50 px-4 py-2 rounded-xl group-hover:scale-105 transition-transform animate-pulse border border-rose-100">
+                        <AlertCircle size={16} />
+                        <span className="text-sm font-black tracking-tight">Anomalies detected</span>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 text-emerald-500 opacity-30 group-hover:opacity-100 transition-opacity">
-                        <CheckCircle2 size={14} />
-                        <span className="text-[10px] font-black">Normalized</span>
+                      <div className="inline-flex items-center gap-2 text-emerald-600 opacity-70 group-hover:opacity-100 transition-opacity">
+                        <CheckCircle2 size={16} />
+                        <span className="text-sm font-black">Normalized</span>
                       </div>
                     )}
                   </td>
@@ -410,7 +401,7 @@ const MasterAttendancePage = () => {
                     <div className="flex items-center justify-end gap-2">
                       {log.regularizationStatus === 'Pending' ? (
                         <div className="flex items-center gap-2 bg-indigo-50 p-2 rounded-2xl border border-indigo-100 shadow-sm animate-in fade-in slide-in-from-right-4">
-                          <p className="text-[10px] font-bold text-indigo-700 px-3">Review Request</p>
+                          <p className="text-sm font-bold text-indigo-700 px-3">Review Request</p>
                           <Button
                             size="icon"
                             className="h-10 w-10 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg"
@@ -427,20 +418,20 @@ const MasterAttendancePage = () => {
                           </Button>
                         </div>
                       ) : (
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                          <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl text-slate-300 hover:text-[#CB9DF0]"
+                        <div className="flex gap-2">
+                          <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl bg-slate-100 text-slate-600 hover:bg-[#CB9DF0]/15 hover:text-[#9b6cd0] transition-colors"
                             onClick={() => openEditDialog(log)}
                             title="Edit attendance record"
                           >
                             <FileEdit size={20} />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl text-slate-300 hover:text-rose-500"
+                          <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-600 transition-colors"
                             onClick={() => handleDeleteLog(log)}
                             title="Delete attendance record"
                           >
                             <X size={20} />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl text-slate-300 hover:text-[#CB9DF0]"
+                          <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl bg-slate-100 text-slate-600 hover:bg-[#CB9DF0]/15 hover:text-[#9b6cd0] transition-colors"
                             onClick={() => router.push("/hrmcubicle/timeattend/settings")}
                             title="Open settings"
                           >
@@ -457,68 +448,59 @@ const MasterAttendancePage = () => {
         </Card>
       </div>
 
-      {/* Edit Attendance Dialog */}
-      <Dialog open={editingLog !== null} onOpenChange={(open) => { if (!open) setEditingLog(null); }}>
-        <DialogContent className="bg-white rounded-2xl border-2 border-slate-200 p-8 sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-slate-900">Edit Attendance Record</DialogTitle>
-            <DialogDescription className="text-slate-500">
-              Update punch times, status, or add a remark for {editingLog?.empName} on {editingLog?.date}.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Check In</Label>
-                <Input
-                  type="time"
-                  value={editForm.checkIn}
-                  onChange={(e) => setEditForm({ ...editForm, checkIn: e.target.value })}
-                  className="rounded-lg border border-slate-200"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Check Out</Label>
-                <Input
-                  type="time"
-                  value={editForm.checkOut}
-                  onChange={(e) => setEditForm({ ...editForm, checkOut: e.target.value })}
-                  className="rounded-lg border border-slate-200"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v as AttendanceLog["status"] })}>
-                <SelectTrigger className="rounded-lg border border-slate-200">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Present">Present</SelectItem>
-                  <SelectItem value="Absent">Absent</SelectItem>
-                  <SelectItem value="Late">Late</SelectItem>
-                  <SelectItem value="Half Day">Half Day</SelectItem>
-                  <SelectItem value="On Leave">On Leave</SelectItem>
-                  <SelectItem value="Weekend">Weekend</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Remark</Label>
+      {/* Edit Attendance */}
+      <SideFormSheet
+        open={editingLog !== null}
+        onOpenChange={(o) => { if (!o) setEditingLog(null); }}
+        title="Edit Attendance Record"
+        description={editingLog ? `Update punch times, status, or add a remark for ${editingLog.empName} on ${editingLog.date}.` : undefined}
+        icon={<FileEdit size={20} />}
+        accentColor="#7c3aed"
+        width="md"
+        submitLabel="Save Changes"
+        onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }}
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Check In">
               <Input
-                placeholder="Optional reason or note"
-                value={editForm.remark}
-                onChange={(e) => setEditForm({ ...editForm, remark: e.target.value })}
-                className="rounded-lg border border-slate-200"
+                type="time"
+                value={editForm.checkIn}
+                onChange={(e) => setEditForm({ ...editForm, checkIn: e.target.value })}
               />
-            </div>
+            </Field>
+            <Field label="Check Out">
+              <Input
+                type="time"
+                value={editForm.checkOut}
+                onChange={(e) => setEditForm({ ...editForm, checkOut: e.target.value })}
+              />
+            </Field>
           </div>
-          <DialogFooter className="flex gap-2">
-            <Button variant="ghost" onClick={() => setEditingLog(null)}>Cancel</Button>
-            <Button className="bg-[#6366f1] hover:bg-[#5558e6]" onClick={handleSaveEdit}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <Field label="Status">
+            <Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v as AttendanceLog["status"] })}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Present">Present</SelectItem>
+                <SelectItem value="Absent">Absent</SelectItem>
+                <SelectItem value="Late">Late</SelectItem>
+                <SelectItem value="Half Day">Half Day</SelectItem>
+                <SelectItem value="On Leave">On Leave</SelectItem>
+                <SelectItem value="Weekend">Weekend</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Remark">
+            <Input
+              placeholder="Optional reason or note"
+              value={editForm.remark}
+              onChange={(e) => setEditForm({ ...editForm, remark: e.target.value })}
+            />
+          </Field>
+        </div>
+      </SideFormSheet>
     </div>
   );
 };

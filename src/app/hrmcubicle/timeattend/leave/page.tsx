@@ -8,8 +8,8 @@ import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
 import { Input } from "@/shared/components/ui/input";
-import { Label } from "@/shared/components/ui/label";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/shared/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Calendar as CalendarIcon, CheckCircle2, XCircle, Plus, Search, FileText, Download, Filter, TrendingUp, AlertCircle, Info, ChevronRight, User, BookOpen, Clock, ShieldAlert, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/shared/components/ui/use-toast";
@@ -324,87 +324,12 @@ const LeavePage = () => {
                         <Button variant="outline" className="h-14 px-8 rounded-2xl border-slate-200 font-bold hover:bg-slate-50 shadow-sm" onClick={handleExport}>
                             <Download size={20} className="mr-2" /> Export CSV
                         </Button>
-                        <Dialog open={isApplyModalOpen} onOpenChange={setIsApplyModalOpen}>
-                            <DialogTrigger asChild>
-                                <Button className="bg-[#6366f1] hover:bg-[#5558e6] h-14 px-8 rounded-2xl font-bold shadow-xl shadow-indigo-100">
-                                    <Plus className="mr-2 h-5 w-5" /> Apply for leave
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-4xl rounded-[3rem] border-2 border-slate-200 p-12 bg-white shadow-3xl" style={{ zoom: '0.75' }}>
-                                <DialogHeader>
-                                    <DialogTitle className="text-3xl font-bold tracking-tight">{editingId ? "Edit Leave Request" : "New Leave Request"}</DialogTitle>
-                                    <DialogDescription className="font-bold text-slate-400 text-lg">Define your leave duration and reasoning.</DialogDescription>
-                                </DialogHeader>
-
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 py-8 font-sans">
-                                    <div className="grid gap-3">
-                                        <Label className="font-bold ml-2 text-slate-600">Leave category</Label>
-                                        <Select value={newLeave.leaveTypeId} onValueChange={(v) => setNewLeave({ ...newLeave, leaveTypeId: v })}>
-                                            <SelectTrigger className="h-16 rounded-2xl bg-white border-2 border-slate-300 px-6 font-bold text-xl">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-2xl border-2 border-slate-200 shadow-2xl p-2 font-bold">
-                                                {leaveTypes.length === 0 ? (
-                                                    <SelectItem value="" className="rounded-xl p-3">Loading...</SelectItem>
-                                                ) : (
-                                                    leaveTypes.map((lt: any) => (
-                                                        <SelectItem key={String(lt._id)} value={String(lt._id)} className="rounded-xl p-3">
-                                                            {lt.name}
-                                                        </SelectItem>
-                                                    ))
-                                                )}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="grid gap-3">
-                                        <Label className="font-bold ml-2 text-slate-600">Start date</Label>
-                                        <Input type="date" className="h-16 rounded-2xl bg-white border-2 border-slate-300 px-6 font-bold text-xl" value={newLeave.from} onChange={(e) => setNewLeave({ ...newLeave, from: e.target.value })} />
-                                    </div>
-                                    <div className="grid gap-3">
-                                        <Label className="font-bold ml-2 text-slate-600">End date</Label>
-                                        <Input type="date" className="h-16 rounded-2xl bg-white border-2 border-slate-300 px-6 font-bold text-xl" value={newLeave.to} onChange={(e) => setNewLeave({ ...newLeave, to: e.target.value })} />
-                                    </div>
-
-                                    {/* Overlap Alert Mockup */}
-                                    <div className="col-span-full">
-                                        <AnimatePresence>
-                                            {overlaps.length > 0 && (
-                                                <motion.div
-                                                    initial={{ height: 0, opacity: 0 }}
-                                                    animate={{ height: 'auto', opacity: 1 }}
-                                                    className="bg-amber-50 p-6 rounded-3xl border border-amber-100 flex gap-4"
-                                                >
-                                                    <AlertCircle className="text-amber-500 shrink-0" size={24} />
-                                                    <div>
-                                                        <p className="font-bold text-amber-900 leading-tight">Team Overlap Warning</p>
-                                                        <p className="text-sm font-bold text-amber-700/80 mt-1">{overlaps.length} members from Engineering are already off on this date.</p>
-                                                    </div>
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-                                    </div>
-
-                                    <div className="grid gap-3 col-span-full">
-                                        <Label className="font-bold ml-2 text-slate-600">Justification</Label>
-                                        <Input className="h-16 rounded-2xl bg-white border-2 border-slate-300 px-6 font-bold text-xl" value={newLeave.reason} onChange={(e) => setNewLeave({ ...newLeave, reason: e.target.value })} placeholder="Briefly explain the reason..." />
-                                    </div>
-                                </div>
-                                <DialogFooter className="mt-4 flex gap-4">
-                                    <Button
-                                        variant="ghost"
-                                        className="rounded-2xl font-bold text-slate-400 h-16 flex-1 text-lg"
-                                        onClick={() => {
-                                            setIsApplyModalOpen(false);
-                                            setEditingId(null);
-                                            setNewLeave(prev => ({ ...prev, from: "", to: "", reason: "" }));
-                                        }}
-                                    >
-                                        Cancel
-                                    </Button>
-                                    <Button className="bg-[#6366f1] h-16 rounded-2xl font-bold text-white shadow-xl shadow-indigo-100 flex-1 text-lg" onClick={handleApply}>{editingId ? "Update Request" : "Submit Request"}</Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
+                        <Button
+                            onClick={() => setIsApplyModalOpen(true)}
+                            className="bg-[#6366f1] hover:bg-[#5558e6] h-14 px-8 rounded-2xl font-bold shadow-xl shadow-indigo-100"
+                        >
+                            <Plus className="mr-2 h-5 w-5" /> Apply for leave
+                        </Button>
                     </div>
                 </div>
 
@@ -637,6 +562,74 @@ const LeavePage = () => {
                         </div>
                     </TabsContent>
                 </Tabs>
+
+                {/* Apply / Edit Leave */}
+                <SideFormSheet
+                    open={isApplyModalOpen}
+                    onOpenChange={(o) => {
+                        setIsApplyModalOpen(o);
+                        if (!o) {
+                            setEditingId(null);
+                            setNewLeave(prev => ({ ...prev, from: "", to: "", reason: "" }));
+                        }
+                    }}
+                    title={editingId ? "Edit Leave Request" : "New Leave Request"}
+                    description="Define your leave duration and reasoning."
+                    icon={<CalendarIcon size={20} />}
+                    accentColor={editingId ? "#7c3aed" : "#4f46e5"}
+                    width="lg"
+                    submitLabel={editingId ? "Update Request" : "Submit Request"}
+                    onSubmit={(e) => { e.preventDefault(); handleApply(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Leave Category" required>
+                            <Select value={newLeave.leaveTypeId} onValueChange={(v) => setNewLeave({ ...newLeave, leaveTypeId: v })}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select leave type..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {leaveTypes.length === 0 ? (
+                                        <div className="p-3 text-center text-slate-500">Loading leave types...</div>
+                                    ) : (
+                                        leaveTypes.map((lt: any) => (
+                                            <SelectItem key={String(lt._id)} value={String(lt._id)}>
+                                                {lt.name}
+                                            </SelectItem>
+                                        ))
+                                    )}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Start Date" required>
+                                <Input type="date" value={newLeave.from} onChange={(e) => setNewLeave({ ...newLeave, from: e.target.value })} />
+                            </Field>
+                            <Field label="End Date" required>
+                                <Input type="date" value={newLeave.to} onChange={(e) => setNewLeave({ ...newLeave, to: e.target.value })} />
+                            </Field>
+                        </div>
+
+                        <AnimatePresence>
+                            {overlaps.length > 0 && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    className="bg-amber-50 p-4 rounded-xl border border-amber-100 flex gap-3"
+                                >
+                                    <AlertCircle className="text-amber-500 shrink-0" size={20} />
+                                    <div>
+                                        <p className="font-bold text-amber-900 leading-tight text-sm">Team Overlap Warning</p>
+                                        <p className="text-xs font-bold text-amber-700/80 mt-1">{overlaps.length} members from Engineering are already off on this date.</p>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        <Field label="Justification">
+                            <Input value={newLeave.reason} onChange={(e) => setNewLeave({ ...newLeave, reason: e.target.value })} placeholder="Briefly explain the reason..." />
+                        </Field>
+                    </div>
+                </SideFormSheet>
 
                 {/* Log Details Dialog */}
                 <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>

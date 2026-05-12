@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { Calendar, Search, Plus, Filter, MoreVertical, MapPin, Video, Users, Clock, CalendarCheck } from "lucide-react";
@@ -111,7 +111,7 @@ export default function LeadMeetingsPage() {
                                 className="bg-white p-6 rounded-[32px] border border-zinc-200 shadow-sm hover:shadow-xl transition-all group"
                             >
                                 <div className="flex justify-between items-start mb-4">
-                                    <div className={`p-3 rounded-2xl ${meeting.status === 'completed' ? 'bg-zinc-100 text-zinc-400' : 'bg-blue-600 text-white shadow-lg shadow-blue-200'}`}>
+                                    <div className={`p-3 rounded-none ${meeting.status === 'completed' ? 'bg-zinc-100 text-zinc-400' : 'bg-blue-600 text-white shadow-lg shadow-blue-200'}`}>
                                         {meeting.type === 'virtual' ? <Video size={18} /> : <MapPin size={18} />}
                                     </div>
                                     <Badge className={`${meeting.status === 'completed' ? 'bg-zinc-50 text-zinc-400' : 'bg-blue-50 text-blue-600'} border-none text-[9px] font-black uppercase tracking-widest`}>

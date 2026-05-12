@@ -50,6 +50,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     Select,
     SelectContent,
@@ -206,6 +207,29 @@ const LettersPage = () => {
         setDeleteLetterId(null);
     };
 
+    const handleSaveDraft = () => {
+        const err = validateLetter(newLetter);
+        if (err) { toast.error(err); return; }
+        issueLetter({
+            ...newLetter,
+            employeeName: newLetter.employeeName.trim(),
+            employeeId: newLetter.employeeId.trim(),
+            issuedBy: newLetter.issuedBy.trim(),
+            status: "Draft",
+        });
+        setIsIssueDialogOpen(false);
+        setNewLetter({
+            employeeId: "",
+            employeeName: "",
+            letterType: "Offer Letter",
+            templateId: "TMP-001",
+            issuedBy: "HR Admin",
+            status: "Draft",
+            fileUrl: "#"
+        });
+        toast.success("Draft saved successfully");
+    };
+
     return (
         <div className="flex flex-col min-h-screen bg-[#f8fafc] font-sans relative" style={{ zoom: "80%" }}>
             {/* Header section */}
@@ -216,111 +240,9 @@ const LettersPage = () => {
                         <p className="text-slate-500 font-semibold text-sm mt-1">Issue and track official employee communications and legal documents.</p>
                     </div>
                     <div className="flex items-center gap-3">
-                        <Dialog open={isIssueDialogOpen} onOpenChange={setIsIssueDialogOpen}>
-                            <DialogTrigger asChild>
-                                <Button className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-11 px-6 font-bold shadow-lg shadow-indigo-100 transition-all gap-2 text-[10px] tracking-wide border-none">
-                                    <Plus className="w-4 h-4" /> Issue New Letter
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-4xl bg-white rounded-[2.5rem] border border-slate-200 p-10 shadow-3xl font-sans" style={{ zoom: "80%" }}>
-                                <DialogHeader>
-                                    <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">Issue Document</DialogTitle>
-                                    <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-tight mt-2">
-                                        Employee Communication Portal v1.4
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div className="grid grid-cols-2 gap-6 py-8">
-                                    <div className="space-y-3 text-start">
-                                        <label className="text-[10px] font-black tracking-wide text-slate-400 ml-1">Employee Name</label>
-                                        <Input
-                                            placeholder="e.g., Jane Smith"
-                                            value={newLetter.employeeName}
-                                            onChange={(e) => setNewLetter({ ...newLetter, employeeName: e.target.value })}
-                                            className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
-                                        />
-                                    </div>
-                                    <div className="space-y-3 text-start">
-                                        <label className="text-[10px] font-black tracking-wide text-slate-400 ml-1">Employee Id</label>
-                                        <Input
-                                            placeholder="e.g., EMP102"
-                                            value={newLetter.employeeId}
-                                            onChange={(e) => setNewLetter({ ...newLetter, employeeId: e.target.value })}
-                                            className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
-                                        />
-                                    </div>
-                                    <div className="space-y-3 text-start">
-                                        <label className="text-[10px] font-black tracking-wide text-slate-400 ml-1">Letter Type</label>
-                                        <Select
-                                            value={newLetter.letterType}
-                                            onValueChange={(val) => setNewLetter({ ...newLetter, letterType: val })}
-                                        >
-                                            <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs font-sans">
-                                                <SelectItem value="Offer Letter" className="rounded-xl h-10">Offer Letter</SelectItem>
-                                                <SelectItem value="Appointment Letter" className="rounded-xl h-10">Appointment Letter</SelectItem>
-                                                <SelectItem value="Experience Letter" className="rounded-xl h-10">Experience Letter</SelectItem>
-                                                <SelectItem value="Relieving Letter" className="rounded-xl h-10">Relieving Letter</SelectItem>
-                                                <SelectItem value="Promotion Letter" className="rounded-xl h-10">Promotion Letter</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-3 text-start">
-                                        <label className="text-[10px] font-black tracking-wide text-slate-400 ml-1">Select Template</label>
-                                        <Select
-                                            value={newLetter.templateId}
-                                            onValueChange={(val) => setNewLetter({ ...newLetter, templateId: val })}
-                                        >
-                                            <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm">
-                                                <SelectValue placeholder="Choose template" />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs font-sans">
-                                                {letterTemplates.length === 0 ? (
-                                                    <div className="text-[10px] text-slate-400 px-3 py-2 italic">No templates available</div>
-                                                ) : letterTemplates.map(t => (
-                                                    <SelectItem key={t.id} value={t.id} className="rounded-xl h-10">{t.name}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="col-span-2 p-6 rounded-[2rem] bg-indigo-50/50 border border-indigo-100 flex items-start gap-4 mt-2">
-                                        <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0">
-                                            <PenTool size={20} className="text-indigo-600" />
-                                        </div>
-                                        <div className="text-start">
-                                            <p className="text-[11px] font-black tracking-wide text-indigo-900 mb-1 leading-tight">E-Signature Enabled</p>
-                                            <p className="text-[10px] font-bold text-indigo-600/70 leading-relaxed tracking-tight">Choosing "Issue" will automatically trigger an e-signature request to the employee's registered email.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <DialogFooter className="gap-3">
-                                    <Button variant="ghost" onClick={() => {
-                                        const err = validateLetter(newLetter);
-                                        if (err) { toast.error(err); return; }
-                                        issueLetter({
-                                            ...newLetter,
-                                            employeeName: newLetter.employeeName.trim(),
-                                            employeeId: newLetter.employeeId.trim(),
-                                            issuedBy: newLetter.issuedBy.trim(),
-                                            status: "Draft",
-                                        });
-                                        setIsIssueDialogOpen(false);
-                                        setNewLetter({
-                                            employeeId: "",
-                                            employeeName: "",
-                                            letterType: "Offer Letter",
-                                            templateId: "TMP-001",
-                                            issuedBy: "HR Admin",
-                                            status: "Draft",
-                                            fileUrl: "#"
-                                        });
-                                        toast.success("Draft saved successfully");
-                                    }} className="h-12 rounded-xl font-bold text-[10px] tracking-wide transition-all px-6">Save Draft</Button>
-                                    <Button className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 px-10 font-bold shadow-lg shadow-indigo-100 transition-all text-[10px] tracking-wide border-none" onClick={handleIssueLetter}>Issue Document</Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
+                        <Button onClick={() => setIsIssueDialogOpen(true)} className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-11 px-6 font-bold shadow-lg shadow-indigo-100 transition-all gap-2 text-[10px] tracking-wide border-none">
+                            <Plus className="w-4 h-4" /> Issue New Letter
+                        </Button>
                     </div>
                 </div>
             </header>
@@ -588,82 +510,170 @@ const LettersPage = () => {
                 </DialogContent>
             </Dialog>
 
-            {/* Edit Letter Dialog */}
-            <Dialog open={!!editingLetter} onOpenChange={(open) => !open && setEditingLetter(null)}>
-                <DialogContent className="max-w-3xl bg-white rounded-[2rem] border border-slate-200 p-8 shadow-3xl font-sans" style={{ zoom: "80%" }}>
-                    <DialogHeader>
-                        <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">Edit Letter Details</DialogTitle>
-                        <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-tight mt-2">
-                            Update issued letter information.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid grid-cols-2 gap-6 py-6">
-                        <div className="space-y-3 text-start">
-                            <label className="text-[10px] font-black tracking-wide text-slate-400 ml-1">Employee Name</label>
+            {/* Issue New Letter Sheet */}
+            <SideFormSheet
+                open={isIssueDialogOpen}
+                onOpenChange={(o) => {
+                    setIsIssueDialogOpen(o);
+                    if (!o) setNewLetter({
+                        employeeId: "",
+                        employeeName: "",
+                        letterType: "Offer Letter",
+                        templateId: "TMP-001",
+                        issuedBy: "HR Admin",
+                        status: "Draft",
+                        fileUrl: "#"
+                    });
+                }}
+                title="Issue Document"
+                description="Employee Communication Portal v1.4"
+                icon={<PenTool size={20} />}
+                accentColor="#059669"
+                width="md"
+                onSubmit={(e) => { e.preventDefault(); handleIssueLetter(); }}
+                footer={
+                    <>
+                        <Button type="button" variant="outline" onClick={handleSaveDraft} className="h-10 px-5 rounded-lg border-[#E5E7EB] text-[#374151] hover:bg-[#F3F4F6]">
+                            Save Draft
+                        </Button>
+                        <Button type="button" variant="outline" onClick={() => setIsIssueDialogOpen(false)} className="h-10 px-5 rounded-lg border-[#E5E7EB] text-[#374151] hover:bg-[#F3F4F6]">
+                            Cancel
+                        </Button>
+                        <Button type="button" onClick={handleIssueLetter} className="h-10 px-5 rounded-lg text-white" style={{ backgroundColor: "#059669", boxShadow: "0 4px 12px #05966933" }}>
+                            Issue Document
+                        </Button>
+                    </>
+                }
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Employee Name" required>
+                            <Input
+                                placeholder="e.g., Jane Smith"
+                                value={newLetter.employeeName}
+                                onChange={(e) => setNewLetter({ ...newLetter, employeeName: e.target.value })}
+                            />
+                        </Field>
+                        <Field label="Employee Id" required>
+                            <Input
+                                placeholder="e.g., EMP102"
+                                value={newLetter.employeeId}
+                                onChange={(e) => setNewLetter({ ...newLetter, employeeId: e.target.value })}
+                            />
+                        </Field>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Letter Type" required>
+                            <Select
+                                value={newLetter.letterType}
+                                onValueChange={(val) => setNewLetter({ ...newLetter, letterType: val })}
+                            >
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Offer Letter">Offer Letter</SelectItem>
+                                    <SelectItem value="Appointment Letter">Appointment Letter</SelectItem>
+                                    <SelectItem value="Experience Letter">Experience Letter</SelectItem>
+                                    <SelectItem value="Relieving Letter">Relieving Letter</SelectItem>
+                                    <SelectItem value="Promotion Letter">Promotion Letter</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Select Template">
+                            <Select
+                                value={newLetter.templateId}
+                                onValueChange={(val) => setNewLetter({ ...newLetter, templateId: val })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Choose template" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {letterTemplates.length === 0 ? (
+                                        <div className="text-[10px] text-slate-400 px-3 py-2 italic">No templates available</div>
+                                    ) : letterTemplates.map(t => (
+                                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                    </div>
+                    <div className="p-4 rounded-xl bg-indigo-50/50 border border-indigo-100 flex items-start gap-3">
+                        <div className="h-9 w-9 bg-white rounded-lg flex items-center justify-center shadow-sm shrink-0">
+                            <PenTool size={18} className="text-indigo-600" />
+                        </div>
+                        <div className="text-start">
+                            <p className="text-[12px] font-bold text-indigo-900 mb-1 leading-tight">E-Signature Enabled</p>
+                            <p className="text-[11px] font-medium text-indigo-600/70 leading-relaxed">Choosing "Issue" will automatically trigger an e-signature request to the employee's registered email.</p>
+                        </div>
+                    </div>
+                </div>
+            </SideFormSheet>
+
+            {/* Edit Letter Sheet */}
+            <SideFormSheet
+                open={!!editingLetter}
+                onOpenChange={(o) => { if (!o) setEditingLetter(null); }}
+                title="Edit Letter Details"
+                description="Update issued letter information."
+                icon={<PenTool size={20} />}
+                accentColor="#7c3aed"
+                width="md"
+                submitLabel="Save Changes"
+                onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Employee Name" required>
                             <Input
                                 value={editingLetter?.employeeName || ""}
                                 onChange={(e) => setEditingLetter(prev => prev ? { ...prev, employeeName: e.target.value } : null)}
-                                className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
                             />
-                        </div>
-                        <div className="space-y-3 text-start">
-                            <label className="text-[10px] font-black tracking-wide text-slate-400 ml-1">Employee Id</label>
+                        </Field>
+                        <Field label="Employee Id" required>
                             <Input
                                 value={editingLetter?.employeeId || ""}
                                 onChange={(e) => setEditingLetter(prev => prev ? { ...prev, employeeId: e.target.value } : null)}
-                                className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
                             />
-                        </div>
-                        <div className="space-y-3 text-start">
-                            <label className="text-[10px] font-black tracking-wide text-slate-400 ml-1">Letter Type</label>
+                        </Field>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Letter Type" required>
                             <Select
                                 value={editingLetter?.letterType}
                                 onValueChange={(val) => setEditingLetter(prev => prev ? { ...prev, letterType: val } : null)}
                             >
-                                <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs font-sans">
-                                    <SelectItem value="Offer Letter" className="rounded-xl h-10">Offer Letter</SelectItem>
-                                    <SelectItem value="Appointment Letter" className="rounded-xl h-10">Appointment Letter</SelectItem>
-                                    <SelectItem value="Experience Letter" className="rounded-xl h-10">Experience Letter</SelectItem>
-                                    <SelectItem value="Relieving Letter" className="rounded-xl h-10">Relieving Letter</SelectItem>
-                                    <SelectItem value="Promotion Letter" className="rounded-xl h-10">Promotion Letter</SelectItem>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Offer Letter">Offer Letter</SelectItem>
+                                    <SelectItem value="Appointment Letter">Appointment Letter</SelectItem>
+                                    <SelectItem value="Experience Letter">Experience Letter</SelectItem>
+                                    <SelectItem value="Relieving Letter">Relieving Letter</SelectItem>
+                                    <SelectItem value="Promotion Letter">Promotion Letter</SelectItem>
                                 </SelectContent>
                             </Select>
-                        </div>
-                        <div className="space-y-3 text-start">
-                            <label className="text-[10px] font-black tracking-wide text-slate-400 ml-1">Status</label>
+                        </Field>
+                        <Field label="Status" required>
                             <Select
                                 value={editingLetter?.status}
                                 onValueChange={(val: IssuedLetter['status']) => setEditingLetter(prev => prev ? { ...prev, status: val } : null)}
                             >
-                                <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs font-sans">
-                                    <SelectItem value="Draft" className="rounded-xl h-10">Draft</SelectItem>
-                                    <SelectItem value="Sent" className="rounded-xl h-10">Sent</SelectItem>
-                                    <SelectItem value="Signed" className="rounded-xl h-10">Signed</SelectItem>
-                                    <SelectItem value="Archived" className="rounded-xl h-10">Archived</SelectItem>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Draft">Draft</SelectItem>
+                                    <SelectItem value="Sent">Sent</SelectItem>
+                                    <SelectItem value="Signed">Signed</SelectItem>
+                                    <SelectItem value="Archived">Archived</SelectItem>
                                 </SelectContent>
                             </Select>
-                        </div>
-                        <div className="space-y-3 text-start col-span-2">
-                            <label className="text-[10px] font-black tracking-wide text-slate-400 ml-1">Issued By</label>
-                            <Input
-                                value={editingLetter?.issuedBy || ""}
-                                onChange={(e) => setEditingLetter(prev => prev ? { ...prev, issuedBy: e.target.value } : null)}
-                                className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
-                            />
-                        </div>
+                        </Field>
                     </div>
-                    <DialogFooter className="gap-3">
-                        <Button variant="ghost" onClick={() => setEditingLetter(null)} className="h-12 rounded-xl font-bold text-[10px] tracking-wide transition-all px-6">Cancel</Button>
-                        <Button className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 px-10 font-bold shadow-lg shadow-indigo-100 transition-all text-[10px] tracking-wide border-none" onClick={handleSaveEdit}>Save Changes</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Issued By" required>
+                        <Input
+                            value={editingLetter?.issuedBy || ""}
+                            onChange={(e) => setEditingLetter(prev => prev ? { ...prev, issuedBy: e.target.value } : null)}
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             {/* Archive Confirm Dialog */}
             <Dialog open={!!archiveLetter} onOpenChange={(open) => !open && setArchiveLetter(null)}>
@@ -684,34 +694,29 @@ const LettersPage = () => {
                 </DialogContent>
             </Dialog>
 
-            {/* Email PDF Dialog */}
-            <Dialog open={!!emailLetter} onOpenChange={(open) => { if (!open) { setEmailLetter(null); setEmailRecipient(""); } }}>
-                <DialogContent className="max-w-md bg-white rounded-[2rem] border border-slate-200 p-8 shadow-3xl font-sans" style={{ zoom: "80%" }}>
-                    <DialogHeader className="text-start">
-                        <div className="h-12 w-12 bg-indigo-50 rounded-2xl flex items-center justify-center mb-3 border border-indigo-100">
-                            <Mail size={22} className="text-indigo-500" />
-                        </div>
-                        <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">Email PDF Version</DialogTitle>
-                        <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-wide mt-2">
-                            Send {emailLetter?.letterType} for {emailLetter?.employeeName} as an encrypted PDF.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-3 py-4 text-start">
-                        <label className="text-[10px] font-black tracking-wide text-slate-400 ml-1">Recipient Email</label>
+            {/* Email PDF Sheet */}
+            <SideFormSheet
+                open={!!emailLetter}
+                onOpenChange={(o) => { if (!o) { setEmailLetter(null); setEmailRecipient(""); } }}
+                title="Email PDF Version"
+                description={emailLetter ? `Send ${emailLetter.letterType} for ${emailLetter.employeeName} as an encrypted PDF.` : undefined}
+                icon={<Mail size={20} />}
+                accentColor="#4f46e5"
+                width="sm"
+                submitLabel="Send Email"
+                onSubmit={(e) => { e.preventDefault(); handleEmail(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Recipient Email" required>
                         <Input
                             type="email"
                             placeholder="employee@email.com"
                             value={emailRecipient}
                             onChange={(e) => setEmailRecipient(e.target.value)}
-                            className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
                         />
-                    </div>
-                    <DialogFooter className="gap-3">
-                        <Button variant="ghost" onClick={() => { setEmailLetter(null); setEmailRecipient(""); }} className="h-12 rounded-xl font-bold text-[10px] tracking-wide px-6">Cancel</Button>
-                        <Button className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 px-8 font-bold shadow-lg text-[10px] tracking-wide border-none" onClick={handleEmail}>Send Email</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             {/* Delete Confirm Dialog */}
             <Dialog open={!!deleteLetterId} onOpenChange={(open) => !open && setDeleteLetterId(null)}>

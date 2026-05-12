@@ -1,11 +1,11 @@
-"use client"
+﻿"use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from "react"
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
     Search,
     Download,
     Shield,
-    Activity,
+    Activity as ActivityIcon,
     LogIn,
     Settings,
     Database,
@@ -13,12 +13,17 @@ import {
     UserCog,
     ChevronLeft,
     ChevronRight,
-    Loader2,
     Trash2,
-} from "lucide-react"
-import { Button } from "@/shared/components/ui/button"
-import { Input } from "@/shared/components/ui/input"
-import { Badge } from "@/shared/components/ui/badge"
+    History,
+    Clock,
+    FileText,
+    Filter,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SmallCard, SmallCardContent } from "@/shared/components/custom/SmallCard";
+import { CustomButton } from "@/shared/components/custom/CustomButton";
+import { Input } from "@/shared/components/ui/input";
+import { Badge } from "@/shared/components/ui/badge";
 import {
     Table,
     TableBody,
@@ -26,469 +31,628 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from "@/shared/components/ui/table"
-import { showSuccess } from "@/shared/utils/toast"
-import { toast } from "sonner"
-import { getAllModuleActivities, getActivitiesByModule, deleteActivity } from "@/hooks/activityHooks"
+} from "@/shared/components/ui/table";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { showSuccess } from "@/shared/utils/toast";
+import { toast } from "sonner";
+import { getAllModuleActivities, deleteActivity } from "@/hooks/activityHooks";
+import Loader from "@/shared/components/custom/Loader";
 
-interface AuditEvent {
-    id: string
-    timestamp: string
-    activity: string
-    category: "Authentication" | "Configuration" | "Security" | "Data" | "Admin Action" | "Firm Event"
-    user: string
-    ip: string
-    status: "Success" | "Failed" | "Warning" | "Alert"
-    module?: string
-}
+type Category = "Authentication" | "Configuration" | "Security" | "Data" | "Admin Action" | "Firm Event";
+type Status = "Success" | "Warning" | "Failed" | "Alert";
 
-// Maps API activity type to a display category
-const activityToCategory = (activity: string): AuditEvent["category"] => {
-    switch (activity) {
-        case "create": return "Data"
-        case "update": return "Configuration"
-        case "delete": return "Admin Action"
-        default: return "Data"
+type AuditEvent = {
+    id: string;
+    rawCreatedAt: string;
+    timestamp: string;
+    activity: string;
+    category: Category;
+    user: string;
+    ip: string;
+    status: Status;
+    module: string;
+    rawActivity: string;
+    description: string;
+};
+
+const CATEGORIES: ("All" | Category)[] = ["All", "Authentication", "Configuration", "Security", "Data", "Admin Action", "Firm Event"];
+
+const activityToCategory = (activity: string, module: string): Category => {
+    if (module === "user") {
+        if (activity === "delete" || activity === "cancel") return "Security";
+        return "Authentication";
     }
-}
-
-// Maps API activity type to a display status
-const activityToStatus = (activity: string): AuditEvent["status"] => {
+    if (module === "firm") return "Firm Event";
     switch (activity) {
-        case "delete": return "Warning"
-        default: return "Success"
+        case "create": return "Data";
+        case "update": return "Configuration";
+        case "delete": return "Admin Action";
+        case "view": return "Data";
+        case "assign": return "Admin Action";
+        case "share": return "Data";
+        case "restore": return "Admin Action";
+        case "cancel": return "Admin Action";
+        default: return "Data";
     }
-}
+};
 
-// Maps API activity type to a readable label
+const activityToStatus = (activity: string): Status => {
+    if (activity === "delete") return "Warning";
+    if (activity === "cancel") return "Warning";
+    return "Success";
+};
+
+const titleCase = (s: string): string => {
+    if (!s) return "";
+    return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+};
+
 const activityToLabel = (activity: string, module: string): string => {
-    const mod = module.charAt(0).toUpperCase() + module.slice(1)
+    const mod = titleCase(module);
     switch (activity) {
-        case "create": return `${mod} Created`
-        case "update": return `${mod} Updated`
-        case "delete": return `${mod} Deleted`
-        default: return `${mod} ${activity}`
+        case "create": return `${mod} created`;
+        case "update": return `${mod} updated`;
+        case "delete": return `${mod} deleted`;
+        case "view": return `${mod} viewed`;
+        case "assign": return `${mod} assignment changed`;
+        case "share": return `${mod} shared`;
+        case "restore": return `${mod} restored`;
+        case "cancel": return `${mod} cancelled`;
+        default: return `${mod} ${activity}`;
     }
-}
+};
 
-// Format date to display string
-const formatDate = (dateStr: string): string => {
-    const date = new Date(dateStr)
-    return date.toLocaleDateString("en-US", {
+const formatRelative = (iso: string): string => {
+    if (!iso) return "â€”";
+    const t = new Date(iso).getTime();
+    if (!Number.isFinite(t)) return "â€”";
+    const diff = Date.now() - t;
+    const min = Math.floor(diff / 60000);
+    if (min < 1) return "Just now";
+    if (min < 60) return `${min}m ago`;
+    const hr = Math.floor(min / 60);
+    if (hr < 24) return `${hr}h ago`;
+    const days = Math.floor(hr / 24);
+    if (days < 30) return `${days}d ago`;
+    return new Date(t).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+};
+
+const formatExact = (iso: string): string => {
+    if (!iso) return "â€”";
+    const t = new Date(iso);
+    if (!Number.isFinite(t.getTime())) return "â€”";
+    return t.toLocaleString("en-US", {
         month: "short",
         day: "2-digit",
         year: "numeric",
-    }) + " " + date.toLocaleTimeString("en-US", {
         hour: "2-digit",
         minute: "2-digit",
         hour12: true,
-    })
-}
+    });
+};
 
-// Map a raw API activity to our AuditEvent interface
-const mapApiActivity = (item: any): AuditEvent => ({
-    id: item._id,
-    timestamp: formatDate(item.createdAt),
-    activity: activityToLabel(item.activity, item.module),
-    category: activityToCategory(item.activity),
-    user: item.userId?.email || item.userId?.name || "System",
-    ip: item.userId?.lastLoginIp || "-",
-    status: activityToStatus(item.activity),
-    module: item.module?.charAt(0).toUpperCase() + item.module?.slice(1),
-})
+const actorName = (userId: any): string => {
+    if (!userId) return "System";
+    if (typeof userId === "string") return "Admin";
+    const first = userId.firstName || "";
+    const last = userId.lastName || "";
+    const name = `${first} ${last}`.trim();
+    return name || userId.email || userId.name || "Admin";
+};
 
-const categories = ["All", "Authentication", "Configuration", "Security", "Data", "Admin Action", "Firm Event"] as const
-type CategoryFilter = (typeof categories)[number]
+const actorIp = (userId: any): string => {
+    if (!userId || typeof userId === "string") return "â€”";
+    return userId.lastLoginIp || "â€”";
+};
 
-// Map category filter to API module name for server-side filtering
-const categoryToModule: Record<string, string | null> = {
-    "All": null,
-    "Data": null,
-    "Configuration": null,
-    "Admin Action": null,
-    "Authentication": "user",
-    "Security": "user",
-    "Firm Event": "firm",
-}
+const mapApiActivity = (item: any): AuditEvent => {
+    const activity = (item.activity || "view").toLowerCase();
+    const module = item.module || "unknown";
+    return {
+        id: String(item._id || `${Date.now()}-${Math.random()}`),
+        rawCreatedAt: item.createdAt || "",
+        timestamp: formatRelative(item.createdAt),
+        activity: activityToLabel(activity, module),
+        category: activityToCategory(activity, module),
+        user: actorName(item.userId),
+        ip: actorIp(item.userId),
+        status: activityToStatus(activity),
+        module: titleCase(module),
+        rawActivity: activity,
+        description: item.activityDesc || activityToLabel(activity, module),
+    };
+};
 
-const categoryIcons: Record<AuditEvent["category"], React.ReactNode> = {
-    Authentication: <LogIn size={16} />,
-    Configuration: <Settings size={16} />,
-    Security: <Shield size={16} />,
-    Data: <Database size={16} />,
-    "Admin Action": <UserCog size={16} />,
-    "Firm Event": <Building2 size={16} />,
-}
+const categoryIconMap: Record<Category, typeof Shield> = {
+    Authentication: LogIn,
+    Configuration: Settings,
+    Security: Shield,
+    Data: Database,
+    "Admin Action": UserCog,
+    "Firm Event": Building2,
+};
 
-const categoryBadgeStyles: Record<AuditEvent["category"], string> = {
-    Authentication: "bg-primary/10 text-primary border-primary/20",
-    Configuration: "bg-purple-100 text-purple-700 border-purple-200",
-    Security: "bg-red-100 text-red-700 border-red-200",
-    Data: "bg-amber-100 text-amber-700 border-amber-200",
-    "Admin Action": "bg-indigo-100 text-indigo-700 border-indigo-200",
-    "Firm Event": "bg-teal-100 text-teal-700 border-teal-200",
-}
+const categoryToneMap: Record<Category, string> = {
+    Authentication: "bg-indigo-100 text-indigo-700",
+    Configuration: "bg-purple-100 text-purple-700",
+    Security: "bg-red-100 text-red-700",
+    Data: "bg-amber-100 text-amber-700",
+    "Admin Action": "bg-blue-100 text-blue-700",
+    "Firm Event": "bg-teal-100 text-teal-700",
+};
 
-const categoryIconContainerStyles: Record<AuditEvent["category"], { base: string; hover: string }> = {
-    Authentication: { base: "bg-primary/10 text-primary border-primary/20", hover: "group-hover:bg-primary group-hover:text-white" },
-    Configuration: { base: "bg-purple-100 text-purple-600 border-purple-200", hover: "group-hover:bg-purple-600 group-hover:text-white" },
-    Security: { base: "bg-red-100 text-red-600 border-red-200", hover: "group-hover:bg-red-600 group-hover:text-white" },
-    Data: { base: "bg-amber-100 text-amber-600 border-amber-200", hover: "group-hover:bg-amber-600 group-hover:text-white" },
-    "Admin Action": { base: "bg-indigo-100 text-indigo-600 border-indigo-200", hover: "group-hover:bg-indigo-600 group-hover:text-white" },
-    "Firm Event": { base: "bg-teal-100 text-teal-600 border-teal-200", hover: "group-hover:bg-teal-600 group-hover:text-white" },
-}
-
-const statusStyles: Record<AuditEvent["status"], string> = {
-    Success: "text-green-600",
-    Failed: "text-red-600",
+const statusToneMap: Record<Status, string> = {
+    Success: "text-emerald-600",
     Warning: "text-amber-600",
+    Failed: "text-red-600",
     Alert: "text-red-600",
-}
+};
 
-const ITEMS_PER_PAGE = 10
+const ITEMS_PER_PAGE = 10;
 
 export default function AuditLogsPage() {
-    const [searchQuery, setSearchQuery] = useState("")
-    const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("All")
-    const [currentPage, setCurrentPage] = useState(1)
-    const [allEvents, setAllEvents] = useState<AuditEvent[]>([])
-    const [loading, setLoading] = useState(true)
-    const [deletingId, setDeletingId] = useState<string | null>(null)
+    const [allEvents, setAllEvents] = useState<AuditEvent[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [categoryFilter, setCategoryFilter] = useState<"All" | Category>("All");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [detail, setDetail] = useState<AuditEvent | null>(null);
 
-    const fetchActivities = useCallback(async () => {
-        setLoading(true)
-        try {
-            const data = await getAllModuleActivities(1, 100)
-            const mapped = data.map(mapApiActivity)
-            setAllEvents(mapped)
-        } catch (err: any) {
-            toast.error(err?.response?.data?.message || "Failed to fetch audit logs")
-        } finally {
-            setLoading(false)
-        }
-    }, [])
-
+    const loadedRef = useRef(false);
     useEffect(() => {
-        fetchActivities()
-    }, [fetchActivities])
+        if (loadedRef.current) return;
+        loadedRef.current = true;
+
+        const safety = window.setTimeout(() => setLoading(false), 20000);
+
+        ;(async () => {
+            try {
+                const data = await getAllModuleActivities(1, 100);
+                if (Array.isArray(data)) {
+                    setAllEvents(data.map(mapApiActivity));
+                }
+            } catch (err: any) {
+                toast.error(err?.response?.data?.message || "Failed to fetch audit logs");
+            } finally {
+                window.clearTimeout(safety);
+                setLoading(false);
+            }
+        })();
+    }, []);
 
     const handleDelete = async (id: string) => {
-        setDeletingId(id)
+        setDeletingId(id);
         try {
-            await deleteActivity(id)
-            setAllEvents((prev) => prev.filter((e) => e.id !== id))
-            showSuccess("Audit event deleted successfully")
+            await deleteActivity(id);
+            setAllEvents((prev) => prev.filter((e) => e.id !== id));
+            showSuccess("Audit event deleted");
         } catch (err: any) {
-            toast.error(err?.response?.data?.message || "Failed to delete audit event")
+            toast.error(err?.response?.data?.message || "Failed to delete event");
         } finally {
-            setDeletingId(null)
+            setDeletingId(null);
         }
-    }
+    };
 
-    const filteredEvents = useMemo(() => {
-        return allEvents.filter((event) => {
-            const matchesSearch =
-                searchQuery === "" ||
-                event.activity.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                event.user.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                event.ip.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                (event.module && event.module.toLowerCase().includes(searchQuery.toLowerCase()))
-            const matchesCategory =
-                categoryFilter === "All" || event.category === categoryFilter
-            return matchesSearch && matchesCategory
-        })
-    }, [searchQuery, categoryFilter, allEvents])
+    const filtered = useMemo(() => {
+        const q = searchQuery.toLowerCase().trim();
+        return allEvents.filter((e) => {
+            if (categoryFilter !== "All" && e.category !== categoryFilter) return false;
+            if (!q) return true;
+            const haystack = `${e.activity} ${e.user} ${e.ip} ${e.module} ${e.description}`.toLowerCase();
+            return haystack.includes(q);
+        });
+    }, [allEvents, searchQuery, categoryFilter]);
 
-    // Reset page when filters change
-    const handleCategoryChange = (cat: CategoryFilter) => {
-        setCategoryFilter(cat)
-        setCurrentPage(1)
-    }
+    const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+    const paginated = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
-    const handleSearchChange = (value: string) => {
-        setSearchQuery(value)
-        setCurrentPage(1)
-    }
+    const todayCount = useMemo(() => {
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        const t0 = startOfDay.getTime();
+        return allEvents.filter((a) => new Date(a.rawCreatedAt).getTime() >= t0).length;
+    }, [allEvents]);
 
-    // Pagination
-    const totalPages = Math.ceil(filteredEvents.length / ITEMS_PER_PAGE)
-    const paginatedEvents = filteredEvents.slice(
-        (currentPage - 1) * ITEMS_PER_PAGE,
-        currentPage * ITEMS_PER_PAGE
-    )
+    const weekCount = useMemo(() => {
+        const t0 = Date.now() - 7 * 86400000;
+        return allEvents.filter((a) => new Date(a.rawCreatedAt).getTime() >= t0).length;
+    }, [allEvents]);
+
+    const moduleCount = useMemo(() => {
+        const set = new Set<string>();
+        allEvents.forEach((a) => set.add(a.module));
+        return set.size;
+    }, [allEvents]);
+
+    const categoryCounts: Record<string, number> = useMemo(() => {
+        const counts: Record<string, number> = { All: allEvents.length };
+        for (const cat of CATEGORIES) {
+            if (cat !== "All") counts[cat] = allEvents.filter((e) => e.category === cat).length;
+        }
+        return counts;
+    }, [allEvents]);
 
     const handleExport = () => {
-        showSuccess("Audit logs exported successfully")
-    }
+        if (allEvents.length === 0) {
+            toast.info("No audit events to export");
+            return;
+        }
+        const headers = ["Timestamp", "Activity", "Category", "User", "IP", "Status", "Module", "Description"];
+        const rows = allEvents.map((e) => [
+            formatExact(e.rawCreatedAt),
+            e.activity,
+            e.category,
+            e.user,
+            e.ip,
+            e.status,
+            e.module,
+            e.description,
+        ]);
+        const csv = [headers, ...rows]
+            .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
+            .join("\n");
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `audit-logs-${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showSuccess("Audit logs exported");
+    };
 
-    // Stats
-    const totalEvents = allEvents.length
-    const loginEvents = allEvents.filter((e) => e.category === "Authentication").length
-    const configChanges = allEvents.filter((e) => e.category === "Configuration").length
-    const securityAlerts = allEvents.filter((e) => e.category === "Security").length
-    const adminActions = allEvents.filter((e) => e.category === "Admin Action").length
-    const firmEvents = allEvents.filter((e) => e.category === "Firm Event").length
+    const handleCategoryChange = (cat: "All" | Category) => {
+        setCategoryFilter(cat);
+        setCurrentPage(1);
+    };
 
-    // Category counts for tab badges
-    const categoryCounts: Record<string, number> = {
-        All: totalEvents,
-        Authentication: loginEvents,
-        Configuration: configChanges,
-        Security: securityAlerts,
-        Data: allEvents.filter((e) => e.category === "Data").length,
-        "Admin Action": adminActions,
-        "Firm Event": firmEvents,
-    }
+    const handleSearchChange = (value: string) => {
+        setSearchQuery(value);
+        setCurrentPage(1);
+    };
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <div className="relative flex flex-col h-full w-full bg-slate-50/50 font-sans">
+                <Loader />
             </div>
-        )
+        );
     }
 
     return (
-        <div className="flex flex-col min-h-screen bg-transparent">
-            {/* Header */}
-            <div className="p-6 pb-0">
-                <div className="flex items-center justify-between mb-1">
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
-                            Audit Logs
-                        </h1>
-                        <p className="text-sm text-zinc-500 mt-1">
-                            Monitor all system activities, user actions, and security events across your organization.
-                        </p>
-                    </div>
-                    <Button
-                        onClick={handleExport}
-                        variant="outline"
-                        size="sm"
-                        className="h-8 gap-2 rounded-none"
-                    >
-                        <Download className="w-3.5 h-3.5" />
-                        Export
-                    </Button>
+        <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-6 overflow-y-auto font-sans">
+            {/* HEADER */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight text-slate-900">Audit Logs</h1>
+                    <p className="text-sm text-slate-500 mt-1">
+                        Monitor all activities, user actions and security events across your organization
+                    </p>
                 </div>
+                <CustomButton
+                    variant="outline"
+                    className="h-9 px-4 gap-2 rounded-xl"
+                    onClick={handleExport}
+                >
+                    <Download className="w-4 h-4" /> Export CSV
+                </CustomButton>
             </div>
 
-            <div className="flex-1 p-6 space-y-6">
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-                    {/* Total Events - gradient primary */}
-                    <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white">
-                        <div>
-                            <p className="text-white text-xs opacity-80">Total Events</p>
-                            <p className="text-white text-xl font-semibold mt-1">{totalEvents}</p>
-                            <p className="text-white text-[10px] mt-1 opacity-70">All recorded activities</p>
+            {/* TOP STATS */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-white text-xs opacity-80">Total Events</p>
+                                <p className="text-white text-2xl font-bold mt-1">{allEvents.length}</p>
+                                <p className="text-white text-[10px] mt-1 opacity-90">All recorded activities</p>
+                            </div>
+                            <History className="w-6 h-6 text-white" />
                         </div>
+                    </SmallCardContent>
+                </SmallCard>
+
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-600 text-xs">Today</p>
+                                <p className="text-2xl font-bold text-gray-900 mt-1">{todayCount}</p>
+                                <p className="text-[10px] mt-1 text-gray-600">Events since midnight</p>
+                            </div>
+                            <Clock className="w-6 h-6 text-primary" />
+                        </div>
+                    </SmallCardContent>
+                </SmallCard>
+
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-600 text-xs">Last 7 Days</p>
+                                <p className="text-2xl font-bold text-gray-900 mt-1">{weekCount}</p>
+                                <p className="text-[10px] mt-1 text-gray-600">Weekly activity</p>
+                            </div>
+                            <ActivityIcon className="w-6 h-6 text-primary" />
+                        </div>
+                    </SmallCardContent>
+                </SmallCard>
+
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-600 text-xs">Active Modules</p>
+                                <p className="text-2xl font-bold text-gray-900 mt-1">{moduleCount}</p>
+                                <p className="text-[10px] mt-1 text-gray-600">With recorded activity</p>
+                            </div>
+                            <FileText className="w-6 h-6 text-primary" />
+                        </div>
+                    </SmallCardContent>
+                </SmallCard>
+            </div>
+
+            {/* CATEGORY TABS */}
+            <Card className="border-zinc-200 shadow-md rounded-none bg-white">
+                <CardContent className="p-2 overflow-x-auto">
+                    <div className="flex items-center gap-1 min-w-max">
+                        {CATEGORIES.map((cat) => (
+                            <button
+                                key={cat}
+                                onClick={() => handleCategoryChange(cat)}
+                                className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold whitespace-nowrap rounded-lg transition-colors ${
+                                    categoryFilter === cat
+                                        ? "bg-indigo-600 text-white shadow-sm"
+                                        : "text-zinc-600 hover:bg-zinc-100"
+                                }`}
+                            >
+                                {cat}
+                                <span
+                                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                                        categoryFilter === cat
+                                            ? "bg-white/20 text-white"
+                                            : "bg-zinc-100 text-zinc-500"
+                                    }`}
+                                >
+                                    {categoryCounts[cat] || 0}
+                                </span>
+                            </button>
+                        ))}
                     </div>
+                </CardContent>
+            </Card>
 
-                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
-                        <p className="text-zinc-500 text-xs">Login Events</p>
-                        <p className="text-xl font-semibold text-zinc-900 mt-1">{loginEvents}</p>
-                        <p className="text-primary text-[10px] mt-1">Authentication</p>
-                    </div>
-
-                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
-                        <p className="text-zinc-500 text-xs">Config Changes</p>
-                        <p className="text-xl font-semibold text-zinc-900 mt-1">{configChanges}</p>
-                        <p className="text-purple-600 text-[10px] mt-1">System modifications</p>
-                    </div>
-
-                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
-                        <p className="text-zinc-500 text-xs">Security Alerts</p>
-                        <p className="text-xl font-semibold text-zinc-900 mt-1">{securityAlerts}</p>
-                        <p className="text-red-600 text-[10px] mt-1">Require attention</p>
-                    </div>
-
-                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
-                        <p className="text-zinc-500 text-xs">Admin Actions</p>
-                        <p className="text-xl font-semibold text-zinc-900 mt-1">{adminActions}</p>
-                        <p className="text-indigo-600 text-[10px] mt-1">Administrative changes</p>
-                    </div>
-
-                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
-                        <p className="text-zinc-500 text-xs">Firm Events</p>
-                        <p className="text-xl font-semibold text-zinc-900 mt-1">{firmEvents}</p>
-                        <p className="text-teal-600 text-[10px] mt-1">Business unit activity</p>
-                    </div>
-                </div>
-
-                {/* Category Tabs */}
-                <div className="flex items-center gap-1 border-b border-zinc-200 overflow-x-auto">
-                    {categories.map((cat) => (
-                        <button
-                            key={cat}
-                            onClick={() => handleCategoryChange(cat)}
-                            className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium whitespace-nowrap border-b-2 transition-colors ${
-                                categoryFilter === cat
-                                    ? "border-primary text-primary"
-                                    : "border-transparent text-zinc-500 hover:text-zinc-700 hover:border-zinc-300"
-                            }`}
-                        >
-                            {cat}
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                                categoryFilter === cat
-                                    ? "bg-primary/10 text-primary"
-                                    : "bg-zinc-100 text-zinc-500"
-                            }`}>
-                                {categoryCounts[cat]}
-                            </span>
-                        </button>
-                    ))}
-                </div>
-
-                {/* Search */}
-                <div className="flex items-center gap-3">
-                    <div className="relative flex-1 max-w-sm">
+            {/* SEARCH */}
+            <Card className="border-zinc-200 shadow-md rounded-none bg-white">
+                <CardContent className="p-4 flex flex-col md:flex-row md:items-center gap-3">
+                    <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                         <Input
                             placeholder="Search by activity, user, IP, module..."
                             value={searchQuery}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSearchChange(e.target.value)}
-                            className="pl-9 h-9 rounded-none text-sm"
+                            onChange={(e) => handleSearchChange(e.target.value)}
+                            className="pl-10 rounded-md"
                         />
                     </div>
-                </div>
-
-                {/* Audit Table */}
-                <div className="rounded-none border border-zinc-200 bg-white shadow-sm overflow-hidden">
-                    <Table>
-                        <TableHeader>
-                            <TableRow className="hover:bg-transparent border-zinc-200 bg-zinc-50">
-                                <TableHead className="w-[180px] text-xs font-semibold text-zinc-600">Timestamp</TableHead>
-                                <TableHead className="text-xs font-semibold text-zinc-600">Activity</TableHead>
-                                <TableHead className="text-xs font-semibold text-zinc-600">Category</TableHead>
-                                <TableHead className="text-xs font-semibold text-zinc-600">Initiated By</TableHead>
-                                <TableHead className="text-xs font-semibold text-zinc-600">IP Address</TableHead>
-                                <TableHead className="text-xs font-semibold text-zinc-600">Status</TableHead>
-                                <TableHead className="w-[60px] text-xs font-semibold text-zinc-600"></TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {paginatedEvents.length > 0 ? (
-                                paginatedEvents.map((event) => (
-                                    <TableRow key={event.id} className="hover:bg-zinc-50/50 border-zinc-100 group">
-                                        <TableCell className="font-mono text-xs text-zinc-500">
-                                            {event.timestamp}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-8 h-8 rounded-none border flex items-center justify-center transition-all ${categoryIconContainerStyles[event.category].base} ${categoryIconContainerStyles[event.category].hover}`}>
-                                                    {categoryIcons[event.category]}
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-sm font-medium text-zinc-900">{event.activity}</span>
-                                                    {event.module && (
-                                                        <span className="text-[11px] text-zinc-400">{event.module}</span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge
-                                                variant="outline"
-                                                className={`rounded-none text-[10px] font-medium px-2 py-0.5 border ${categoryBadgeStyles[event.category]}`}
-                                            >
-                                                {event.category}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-sm text-zinc-700">
-                                            {event.user}
-                                        </TableCell>
-                                        <TableCell className="font-mono text-xs text-zinc-500">
-                                            {event.ip}
-                                        </TableCell>
-                                        <TableCell>
-                                            <span className={`text-sm font-semibold ${statusStyles[event.status]}`}>
-                                                {event.status}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-7 w-7 p-0 text-zinc-400 hover:text-red-600"
-                                                onClick={() => handleDelete(event.id)}
-                                                disabled={deletingId === event.id}
-                                            >
-                                                {deletingId === event.id ? (
-                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                ) : (
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                )}
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell colSpan={7} className="text-center py-16">
-                                        <div className="flex flex-col items-center gap-3">
-                                            <Activity size={40} className="text-zinc-300" />
-                                            <p className="text-sm font-medium text-zinc-500">No audit events found</p>
-                                            <p className="text-xs text-zinc-400">
-                                                {searchQuery || categoryFilter !== "All"
-                                                    ? "Try adjusting your search or filter criteria"
-                                                    : "No events have been recorded yet"}
-                                            </p>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-
-                    {/* Footer with Pagination */}
-                    <div className="px-4 py-3 border-t border-zinc-200 bg-zinc-50 flex items-center justify-between">
-                        <p className="text-xs text-zinc-500">
-                            Showing {paginatedEvents.length} of {filteredEvents.length} audit events
-                            {categoryFilter !== "All" && (
-                                <span className="ml-1">
-                                    (filtered from {totalEvents} total)
-                                </span>
-                            )}
-                        </p>
-                        {totalPages > 1 && (
-                            <div className="flex items-center gap-1">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-7 w-7 p-0 rounded-none"
-                                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                                    disabled={currentPage === 1}
-                                >
-                                    <ChevronLeft className="w-3.5 h-3.5" />
-                                </Button>
-                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                                    <Button
-                                        key={page}
-                                        variant={currentPage === page ? "default" : "outline"}
-                                        size="sm"
-                                        className={`h-7 w-7 p-0 rounded-none text-xs ${
-                                            currentPage === page ? "bg-primary text-white" : ""
-                                        }`}
-                                        onClick={() => setCurrentPage(page)}
-                                    >
-                                        {page}
-                                    </Button>
-                                ))}
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-7 w-7 p-0 rounded-none"
-                                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                                    disabled={currentPage === totalPages}
-                                >
-                                    <ChevronRight className="w-3.5 h-3.5" />
-                                </Button>
-                            </div>
-                        )}
+                    <div className="flex items-center gap-2 text-xs text-zinc-500">
+                        <Filter className="w-4 h-4" />
+                        <span>{filtered.length} of {allEvents.length} events</span>
                     </div>
-                </div>
-            </div>
+                </CardContent>
+            </Card>
+
+            {/* TABLE */}
+            <Card className="border-zinc-200 shadow-xl rounded-none bg-white overflow-hidden">
+                <CardHeader className="border-b border-zinc-100">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle className="text-lg font-bold text-zinc-900 flex items-center gap-2">
+                                <History className="w-5 h-5 text-indigo-600" /> Audit Ledger
+                            </CardTitle>
+                            <p className="text-xs text-zinc-500 mt-1">Detailed action history with full traceability</p>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                    {paginated.length === 0 ? (
+                        <div className="p-12 text-center text-sm text-zinc-500 flex flex-col items-center gap-2">
+                            <History className="w-10 h-10 text-zinc-300" />
+                            {allEvents.length === 0 ? (
+                                <>
+                                    <p className="font-medium">No audit events recorded yet</p>
+                                    <p className="text-xs text-zinc-400">Actions across modules will appear here</p>
+                                </>
+                            ) : (
+                                <>
+                                    <p className="font-medium">No matches</p>
+                                    <p className="text-xs text-zinc-400">Try adjusting your search or filter</p>
+                                </>
+                            )}
+                        </div>
+                    ) : (
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="bg-zinc-50/50 hover:bg-zinc-50/50 border-zinc-100">
+                                    <TableHead className="w-[160px] text-xs font-semibold text-zinc-600">Timestamp</TableHead>
+                                    <TableHead className="text-xs font-semibold text-zinc-600">Activity</TableHead>
+                                    <TableHead className="text-xs font-semibold text-zinc-600">Category</TableHead>
+                                    <TableHead className="text-xs font-semibold text-zinc-600">Initiated by</TableHead>
+                                    <TableHead className="text-xs font-semibold text-zinc-600">IP address</TableHead>
+                                    <TableHead className="text-xs font-semibold text-zinc-600">Status</TableHead>
+                                    <TableHead className="w-[80px] text-xs font-semibold text-zinc-600 text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {paginated.map((event) => {
+                                    const Icon = categoryIconMap[event.category];
+                                    const tone = categoryToneMap[event.category];
+                                    return (
+                                        <TableRow
+                                            key={event.id}
+                                            className="hover:bg-zinc-50/50 border-zinc-100 cursor-pointer"
+                                            onClick={() => setDetail(event)}
+                                        >
+                                            <TableCell className="font-mono text-xs text-zinc-500">
+                                                {event.timestamp}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${tone}`}>
+                                                        <Icon size={16} />
+                                                    </div>
+                                                    <div className="flex flex-col min-w-0">
+                                                        <span className="text-sm font-semibold text-zinc-900 truncate">{event.activity}</span>
+                                                        <span className="text-[11px] text-zinc-400">{event.module}</span>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge
+                                                    variant="outline"
+                                                    className={`rounded-md text-[10px] font-semibold px-2 py-0.5 border-0 ${tone}`}
+                                                >
+                                                    {event.category}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-sm text-zinc-700">
+                                                {event.user}
+                                            </TableCell>
+                                            <TableCell className="font-mono text-xs text-zinc-500">
+                                                {event.ip}
+                                            </TableCell>
+                                            <TableCell>
+                                                <span className={`text-sm font-semibold ${statusToneMap[event.status]}`}>
+                                                    {event.status}
+                                                </span>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <CustomButton
+                                                    variant="ghost"
+                                                    className="h-8 w-8 p-0 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                                                    onClick={(e: React.MouseEvent) => {
+                                                        e.stopPropagation();
+                                                        handleDelete(event.id);
+                                                    }}
+                                                    disabled={deletingId === event.id}
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </CustomButton>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+                            </TableBody>
+                        </Table>
+                    )}
+
+                    {paginated.length > 0 && (
+                        <div className="px-4 py-3 border-t border-zinc-100 bg-zinc-50/50 flex items-center justify-between">
+                            <p className="text-xs text-zinc-500">
+                                Showing {paginated.length} of {filtered.length} events
+                                {categoryFilter !== "All" && (
+                                    <span className="ml-1">(filtered from {allEvents.length} total)</span>
+                                )}
+                            </p>
+                            {totalPages > 1 && (
+                                <div className="flex items-center gap-1">
+                                    <CustomButton
+                                        variant="outline"
+                                        className="h-8 w-8 p-0 rounded-lg"
+                                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                        disabled={currentPage === 1}
+                                    >
+                                        <ChevronLeft className="w-3.5 h-3.5" />
+                                    </CustomButton>
+                                    {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                                        const start = Math.max(1, Math.min(currentPage - 3, totalPages - 6));
+                                        const page = start + i;
+                                        if (page > totalPages) return null;
+                                        return (
+                                            <CustomButton
+                                                key={page}
+                                                variant={currentPage === page ? "default" : "outline"}
+                                                className={`h-8 w-8 p-0 rounded-lg text-xs font-semibold ${
+                                                    currentPage === page ? "bg-indigo-600 text-white hover:bg-indigo-700" : ""
+                                                }`}
+                                                onClick={() => setCurrentPage(page)}
+                                            >
+                                                {page}
+                                            </CustomButton>
+                                        );
+                                    })}
+                                    <CustomButton
+                                        variant="outline"
+                                        className="h-8 w-8 p-0 rounded-lg"
+                                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                        disabled={currentPage === totalPages}
+                                    >
+                                        <ChevronRight className="w-3.5 h-3.5" />
+                                    </CustomButton>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            {/* DETAIL DIALOG */}
+            <Dialog open={!!detail} onOpenChange={(open) => !open && setDetail(null)}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <History className="w-5 h-5 text-indigo-600" /> Audit Event Detail
+                        </DialogTitle>
+                        <DialogDescription>
+                            Full details of the recorded event
+                        </DialogDescription>
+                    </DialogHeader>
+                    {detail && (
+                        <div className="space-y-3 pt-2">
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                                <div>
+                                    <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-widest">Module</p>
+                                    <p className="font-semibold text-zinc-900 mt-0.5">{detail.module}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-widest">Category</p>
+                                    <p className="font-semibold text-zinc-900 mt-0.5">{detail.category}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-widest">Performed by</p>
+                                    <p className="font-semibold text-zinc-900 mt-0.5">{detail.user}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-widest">Status</p>
+                                    <p className={`font-semibold mt-0.5 ${statusToneMap[detail.status]}`}>{detail.status}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-widest">When</p>
+                                    <p className="font-semibold text-zinc-900 mt-0.5">{formatExact(detail.rawCreatedAt)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-widest">IP address</p>
+                                    <p className="font-semibold text-zinc-900 mt-0.5 font-mono">{detail.ip}</p>
+                                </div>
+                            </div>
+                            <div>
+                                <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-widest">Description</p>
+                                <p className="text-sm text-zinc-800 mt-0.5 p-3 rounded-lg bg-zinc-50 border border-zinc-100">
+                                    {detail.description}
+                                </p>
+                            </div>
+                            <p className="text-[10px] text-zinc-400 font-mono">Event ID: {detail.id}</p>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
-    )
+    );
 }

@@ -1,13 +1,36 @@
 "use client";
 
 import React, { useState } from "react";
-import { AlertTriangle, Plus, Search, ChevronRight } from "lucide-react";
+import {
+    AlertTriangle,
+    Plus,
+    Search,
+    ChevronRight,
+    MoreVertical,
+    Edit,
+    Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogFooter } from "@/shared/components/ui/dialog";
-import { Label } from "@/shared/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/shared/components/ui/select";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu";
+import { Textarea } from "@/shared/components/ui/textarea";
+import { toast } from "sonner";
 
 export default function ErrorHandlingPage() {
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -16,6 +39,57 @@ export default function ErrorHandlingPage() {
         { id: "2", errorType: "API Failure", action: "Log & Alert", notification: "Dev Team", severity: "Critical" },
         { id: "3", errorType: "Validation Error", action: "Skip & Continue", notification: "None", severity: "Low" },
     ]);
+
+    const [form, setForm] = useState({
+        errorType: "",
+        action: "",
+        notification: "",
+        severity: "",
+        notes: "",
+    });
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [saving, setSaving] = useState(false);
+
+    const resetForm = () => {
+        setForm({ errorType: "", action: "", notification: "", severity: "", notes: "" });
+        setErrors({});
+    };
+
+    const validate = () => {
+        const next: Record<string, string> = {};
+        if (!form.errorType) next.errorType = "Select an error type";
+        if (!form.action) next.action = "Select an action";
+        if (!form.notification) next.notification = "Choose who to notify";
+        if (!form.severity) next.severity = "Choose a severity";
+        setErrors(next);
+        return Object.keys(next).length === 0;
+    };
+
+    const handleCreate = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!validate()) return;
+        setSaving(true);
+        setTimeout(() => {
+            setHandlers(prev => [
+                ...prev,
+                {
+                    id: String(Date.now()),
+                    errorType: form.errorType,
+                    action: form.action,
+                    notification: form.notification,
+                    severity: form.severity,
+                },
+            ]);
+            toast.success("Error handler added");
+            setSaving(false);
+            setShowCreateModal(false);
+            resetForm();
+        }, 600);
+    };
+
+    const deleteHandler = (id: string) => {
+        setHandlers(prev => prev.filter(h => h.id !== id));
+    };
 
     return (
         <div className="space-y-6 text-[#1A1A1A]">
@@ -67,6 +141,7 @@ export default function ErrorHandlingPage() {
                                 <th className="px-6 py-4 text-xs font-bold text-gray-600">Action</th>
                                 <th className="px-6 py-4 text-xs font-bold text-gray-600">Notification</th>
                                 <th className="px-6 py-4 text-xs font-bold text-gray-600">Severity</th>
+                                <th className="px-6 py-4 text-xs font-bold text-gray-600 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100">
@@ -87,6 +162,26 @@ export default function ErrorHandlingPage() {
                                             {handler.severity}
                                         </Badge>
                                     </td>
+                                    <td className="px-6 py-4 text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" className="h-8 w-8 p-0 rounded-none hover:bg-zinc-100"><MoreVertical size={16} /></Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="rounded-none border-zinc-200 shadow-xl p-2 min-w-[180px]">
+                                                <DropdownMenuLabel className="text-xs font-bold text-gray-600">Actions</DropdownMenuLabel>
+                                                <DropdownMenuItem className="text-sm p-2 flex items-center gap-2 focus:bg-blue-600 focus:text-white cursor-pointer">
+                                                    <Edit size={14} /> Edit Handler
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator className="my-2" />
+                                                <DropdownMenuItem
+                                                    onClick={() => deleteHandler(handler.id)}
+                                                    className="text-sm p-2 text-red-600 focus:bg-red-600 focus:text-white flex items-center gap-2 cursor-pointer"
+                                                >
+                                                    <Trash2 size={14} /> Delete
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -98,28 +193,106 @@ export default function ErrorHandlingPage() {
                 </div>
             </div>
 
-            <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-                <DialogContent className="max-w-2xl rounded-none p-0 overflow-hidden shadow-2xl border-none">
-                    <div className="bg-gradient-to-r from-red-700 to-orange-800 p-8 text-white relative">
-                        <h2 className="text-2xl font-bold flex items-center gap-3"><Plus size={24} /> Add Error Handler</h2>
-                        <p className="text-sm opacity-80 mt-2">Define how specific errors should be handled.</p>
+            {/* Add Error Handler — side sheet */}
+            <SideFormSheet
+                open={showCreateModal}
+                onOpenChange={(o) => {
+                    setShowCreateModal(o);
+                    if (!o) resetForm();
+                }}
+                title="Add Error Handler"
+                description="Define how specific automation errors should be handled."
+                icon={<AlertTriangle className="w-5 h-5" />}
+                accentColor="#DC2626"
+                width="lg"
+                loading={saving}
+                onSubmit={handleCreate}
+                submitLabel="Add Handler"
+            >
+                <div className="space-y-5">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Error Type" required error={errors.errorType}>
+                            <Select
+                                value={form.errorType}
+                                onValueChange={(v) => setForm(p => ({ ...p, errorType: v }))}
+                            >
+                                <SelectTrigger className="h-11 rounded-lg border-slate-200">
+                                    <SelectValue placeholder="Select error type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Timeout Error">Timeout Error</SelectItem>
+                                    <SelectItem value="API Failure">API Failure</SelectItem>
+                                    <SelectItem value="Validation Error">Validation Error</SelectItem>
+                                    <SelectItem value="Permission Denied">Permission Denied</SelectItem>
+                                    <SelectItem value="Network Error">Network Error</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Action" required error={errors.action}>
+                            <Select
+                                value={form.action}
+                                onValueChange={(v) => setForm(p => ({ ...p, action: v }))}
+                            >
+                                <SelectTrigger className="h-11 rounded-lg border-slate-200">
+                                    <SelectValue placeholder="Select action" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Retry 3 times">Retry 3 times</SelectItem>
+                                    <SelectItem value="Retry 5 times">Retry 5 times</SelectItem>
+                                    <SelectItem value="Log & Alert">Log & Alert</SelectItem>
+                                    <SelectItem value="Skip & Continue">Skip & Continue</SelectItem>
+                                    <SelectItem value="Halt Execution">Halt Execution</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
                     </div>
-                    <div className="p-8 space-y-6 bg-white">
-                        <div className="space-y-3">
-                            <Label className="text-xs font-bold text-gray-600">Error Type</Label>
-                            <Select><SelectTrigger className="rounded-none border-zinc-200 h-12"><SelectValue placeholder="Select error type" /></SelectTrigger><SelectContent className="rounded-none"><SelectItem value="timeout">Timeout Error</SelectItem><SelectItem value="api">API Failure</SelectItem><SelectItem value="validation">Validation Error</SelectItem></SelectContent></Select>
-                        </div>
-                        <div className="space-y-3">
-                            <Label className="text-xs font-bold text-gray-600">Action</Label>
-                            <Select><SelectTrigger className="rounded-none border-zinc-200 h-12"><SelectValue placeholder="Select action" /></SelectTrigger><SelectContent className="rounded-none"><SelectItem value="retry">Retry</SelectItem><SelectItem value="log">Log & Alert</SelectItem><SelectItem value="skip">Skip & Continue</SelectItem></SelectContent></Select>
-                        </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Notification Target" required error={errors.notification}>
+                            <Select
+                                value={form.notification}
+                                onValueChange={(v) => setForm(p => ({ ...p, notification: v }))}
+                            >
+                                <SelectTrigger className="h-11 rounded-lg border-slate-200">
+                                    <SelectValue placeholder="Who to notify" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="None">None</SelectItem>
+                                    <SelectItem value="Admin">Admin</SelectItem>
+                                    <SelectItem value="Dev Team">Dev Team</SelectItem>
+                                    <SelectItem value="Owner">Owner</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Severity" required error={errors.severity}>
+                            <Select
+                                value={form.severity}
+                                onValueChange={(v) => setForm(p => ({ ...p, severity: v }))}
+                            >
+                                <SelectTrigger className="h-11 rounded-lg border-slate-200">
+                                    <SelectValue placeholder="Select severity" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Low">Low</SelectItem>
+                                    <SelectItem value="Medium">Medium</SelectItem>
+                                    <SelectItem value="High">High</SelectItem>
+                                    <SelectItem value="Critical">Critical</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
                     </div>
-                    <DialogFooter className="p-8 bg-zinc-50 border-t border-zinc-100 gap-4 sm:justify-end">
-                        <Button variant="ghost" onClick={() => setShowCreateModal(false)} className="rounded-none text-sm text-gray-600">Cancel</Button>
-                        <Button className="bg-red-600 hover:bg-red-700 rounded-none text-sm px-10 h-12 shadow-xl shadow-red-100">Add Handler</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+
+                    <Field label="Internal Notes" hint="Optional. Document the recovery playbook for this handler.">
+                        <Textarea
+                            placeholder="Recovery steps, escalation chain, runbook link..."
+                            value={form.notes}
+                            onChange={(e) => setForm(p => ({ ...p, notes: e.target.value }))}
+                            className="min-h-[100px] rounded-lg bg-white border-slate-200 focus:border-primary text-[13px]"
+                            maxLength={500}
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
         </div>
     );
 }

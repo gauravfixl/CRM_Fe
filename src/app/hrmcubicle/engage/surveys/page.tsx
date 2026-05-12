@@ -36,6 +36,7 @@ import {
 import { useEngageStore, type Survey, type SurveyQuestion } from "@/shared/data/engage-store";
 import { required, minLength, maxLength, isFutureOrToday, runValidators } from "@/shared/utils/engage-validation";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
@@ -367,215 +368,183 @@ const SurveysEngagePage = () => {
                 </div>
             </div>
 
-            {/* Builder Modal - Vibrant */}
-            <Dialog open={isCreateDialogOpen} onOpenChange={(val) => { if (!val) resetForm(); setIsCreateDialogOpen(val); }}>
-                <DialogContent className="max-w-5xl p-0 overflow-hidden border-2 border-slate-300 rounded-[3rem] shadow-3xl bg-white text-start" style={{ zoom: "67%" }}>
-                    <div className="bg-gradient-to-br from-emerald-600 to-teal-700 p-10 text-white">
-                        <DialogHeader>
-                            <div className="flex items-center gap-6 mb-2">
-                                <div className="h-16 w-16 bg-white/10 backdrop-blur-md rounded-3xl flex items-center justify-center border border-white/20 shadow-2xl">
-                                    <Rocket size={32} />
-                                </div>
-                                <div>
-                                    <DialogTitle className="text-3xl font-bold tracking-tighter text-white">{selectedSurvey ? "Edit Pulse" : "The Pulse Builder"}</DialogTitle>
-                                    <DialogDescription className="text-white/40 font-medium text-xs tracking-widest mt-2 capitalize">Data-driven, human-focused pulse station</DialogDescription>
-                                </div>
-                            </div>
-                        </DialogHeader>
+            {/* Survey Builder - SideFormSheet */}
+            <SideFormSheet
+                open={isCreateDialogOpen}
+                onOpenChange={(val) => { setIsCreateDialogOpen(val); if (!val) resetForm(); }}
+                title={selectedSurvey ? "Edit Pulse" : "Pulse Builder"}
+                description="Data-driven, human-focused pulse station."
+                icon={<Rocket size={20} />}
+                accentColor={selectedSurvey ? "#7c3aed" : "#059669"}
+                width="xl"
+                submitLabel={selectedSurvey ? "Save Changes" : "Launch Pulse"}
+                onSubmit={(e) => { e.preventDefault(); handleSave(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Headline" required hint={`${(formData.title ?? "").length}/120`}>
+                        <Input
+                            placeholder="Make it snap! e.g. Friday Lunch Poll"
+                            value={formData.title}
+                            maxLength={120}
+                            onChange={e => setFormData({ ...formData, title: e.target.value })}
+                        />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Category">
+                            <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v as any })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {["Engagement", "Wellness", "Pulse", "Custom"].map(cat => (
+                                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Expires On" required>
+                            <Input
+                                type="date"
+                                value={formData.endDate}
+                                min={new Date().toISOString().split("T")[0]}
+                                onChange={e => setFormData({ ...formData, endDate: e.target.value })}
+                            />
+                        </Field>
                     </div>
 
-                    <ScrollArea className="max-h-[70vh]">
-                        <div className="p-10 space-y-10">
-                            {/* Horizontal Grid for Survey Fields */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                                {/* Left Side: Branding & Timeline */}
-                                <div className="space-y-8">
-                                    <div className="space-y-4">
-                                        <Label className="text-[10px] font-black text-slate-400 tracking-widest ml-1">The Headline</Label>
-                                        <Input
-                                            placeholder="Make it snap! e.g. Friday Lunch Poll 🥗"
-                                            value={formData.title}
-                                            maxLength={120}
-                                            onChange={e => setFormData({ ...formData, title: e.target.value })}
-                                            className="h-16 border-slate-300 bg-slate-50/50 rounded-2xl px-6 font-black text-lg text-slate-900 focus:ring-4 focus:ring-emerald-50 transition-all shadow-inner"
-                                        />
-                                        <p className="text-[10px] text-slate-400 font-bold ml-2">{(formData.title ?? "").length}/120</p>
-                                    </div>
+                    <Field label="Context" required hint={`${(formData.description ?? "").length}/1000 • min 10`}>
+                        <Textarea
+                            className="min-h-[120px]"
+                            placeholder="Describe why we are polling..."
+                            value={formData.description}
+                            maxLength={1000}
+                            onChange={e => setFormData({ ...formData, description: e.target.value })}
+                        />
+                    </Field>
 
-                                    <div className="grid grid-cols-2 gap-6">
-                                        <div className="space-y-4">
-                                            <Label className="text-[10px] font-black text-slate-400 tracking-widest ml-1">Category</Label>
-                                            <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v as any })}>
-                                                <SelectTrigger className="h-14 border-slate-300 bg-white rounded-2xl px-6 font-bold text-slate-600"><SelectValue /></SelectTrigger>
-                                                <SelectContent className="rounded-2xl border-none shadow-2xl font-bold">
-                                                    {["Engagement", "Wellness", "Pulse", "Custom"].map(cat => (
-                                                        <SelectItem key={cat} value={cat} className="rounded-xl my-1">{cat}</SelectItem>
-                                                    ))}
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Status">
+                            <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v as Survey["status"] })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Draft">Draft (Save for later)</SelectItem>
+                                    <SelectItem value="Active">Active (Publish)</SelectItem>
+                                    <SelectItem value="Closed">Closed</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200 mt-[22px]">
+                            <div className="flex items-center gap-3">
+                                <div className="h-9 w-9 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-500">
+                                    <Lock size={16} />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold text-slate-900 leading-none">Anonymous</p>
+                                    <p className="text-[11px] text-slate-500 mt-0.5">Hide responder identity</p>
+                                </div>
+                            </div>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant={formData.anonymous ? "default" : "outline"}
+                                className={formData.anonymous ? "bg-emerald-500 hover:bg-emerald-600 text-white h-8" : "h-8"}
+                                onClick={() => setFormData({ ...formData, anonymous: !formData.anonymous })}
+                            >
+                                {formData.anonymous ? "ON" : "OFF"}
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-100">
+                        <div className="flex items-center justify-between mb-3">
+                            <div>
+                                <p className="text-[13px] font-semibold text-slate-700">Questions</p>
+                                <p className="text-[11px] text-slate-500">Build the survey flow. Minimum 1 question required.</p>
+                            </div>
+                            <Button type="button" size="sm" onClick={handleAddQuestion} className="bg-emerald-500 hover:bg-emerald-600 text-white h-8">
+                                <Plus size={14} className="mr-1" /> Add Question
+                            </Button>
+                        </div>
+                        <div className="space-y-3">
+                            {(formData.questions ?? []).length === 0 && (
+                                <div className="bg-slate-50 rounded-xl border border-dashed border-slate-300 p-6 text-center text-slate-400 text-sm">
+                                    No questions yet. Click "Add Question" to begin.
+                                </div>
+                            )}
+                            {(formData.questions ?? []).map((q, idx) => (
+                                <div key={q.id} className="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-3">
+                                    <div className="flex items-start gap-2">
+                                        <div className="h-7 w-7 rounded-full bg-emerald-100 text-emerald-600 font-bold flex items-center justify-center text-xs shrink-0 mt-1">
+                                            {idx + 1}
+                                        </div>
+                                        <div className="flex-1 grid grid-cols-1 md:grid-cols-[1fr_160px] gap-2">
+                                            <Input
+                                                placeholder="Enter question..."
+                                                value={q.question}
+                                                maxLength={300}
+                                                onChange={(e) => handleUpdateQuestion(q.id, { question: e.target.value })}
+                                                className="bg-white"
+                                            />
+                                            <Select value={q.type} onValueChange={(v) => handleUpdateQuestion(q.id, { type: v as SurveyQuestion["type"] })}>
+                                                <SelectTrigger className="bg-white"><SelectValue /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="MCQ">Multiple Choice</SelectItem>
+                                                    <SelectItem value="Rating">Rating (1-5)</SelectItem>
+                                                    <SelectItem value="Text">Text Answer</SelectItem>
+                                                    <SelectItem value="Boolean">Yes / No</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
-                                        <div className="space-y-4">
-                                            <Label className="text-[10px] font-black text-slate-400 tracking-widest ml-1">Expires On</Label>
-                                            <Input
-                                                type="date"
-                                                value={formData.endDate}
-                                                min={new Date().toISOString().split("T")[0]}
-                                                onChange={e => setFormData({ ...formData, endDate: e.target.value })}
-                                                className="h-14 border-slate-300 bg-white rounded-2xl px-6 font-bold text-slate-600"
-                                            />
-                                        </div>
+                                        <Button
+                                            type="button"
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-8 w-8 text-rose-400 hover:text-rose-500"
+                                            onClick={() => handleRemoveQuestion(q.id)}
+                                        >
+                                            <Trash2 size={14} />
+                                        </Button>
                                     </div>
-                                </div>
 
-                                {/* Right Side: The Context */}
-                                <div className="space-y-4 flex flex-col h-full">
-                                    <Label className="text-[10px] font-black text-slate-400 tracking-widest ml-1">Context</Label>
-                                    <Textarea
-                                        placeholder="Describe why we are polling..."
-                                        value={formData.description}
-                                        maxLength={1000}
-                                        onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                        className="flex-1 min-h-[160px] border-slate-300 bg-slate-50/50 rounded-[2rem] p-6 font-bold text-sm leading-relaxed focus:ring-4 focus:ring-emerald-50 resize-none shadow-inner"
-                                    />
-                                    <p className="text-[10px] text-slate-400 font-bold ml-2">{(formData.description ?? "").length}/1000 • min 10</p>
-                                </div>
-                            </div>
-
-                            {/* Status + Anonymous */}
-                            <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-300 grid grid-cols-1 md:grid-cols-2 gap-6 shadow-inner">
-                                <div className="space-y-3">
-                                    <Label className="text-[10px] font-black text-slate-400 tracking-widest">Status</Label>
-                                    <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v as Survey["status"] })}>
-                                        <SelectTrigger className="h-12 bg-white rounded-xl"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Draft">Draft (Save for later)</SelectItem>
-                                            <SelectItem value="Active">Active (Publish)</SelectItem>
-                                            <SelectItem value="Closed">Closed</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="flex items-center justify-between bg-white rounded-2xl border border-slate-100 px-5">
-                                    <div className="flex items-center gap-4">
-                                        <div className="h-12 w-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500">
-                                            <Lock size={20} />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-black text-slate-900 leading-none">Anonymous</p>
-                                            <p className="text-[10px] font-bold text-slate-400 mt-1">Hide responder identity</p>
-                                        </div>
-                                    </div>
-                                    <Button
-                                        type="button"
-                                        variant={formData.anonymous ? "default" : "outline"}
-                                        className={formData.anonymous ? "bg-emerald-500 hover:bg-emerald-600 text-white" : ""}
-                                        onClick={() => setFormData({ ...formData, anonymous: !formData.anonymous })}
-                                    >
-                                        {formData.anonymous ? "ON" : "OFF"}
-                                    </Button>
-                                </div>
-                            </div>
-
-                            {/* Question Builder */}
-                            <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-300 space-y-6 shadow-inner">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <Label className="text-[10px] font-black text-slate-400 tracking-widest">Questions</Label>
-                                        <p className="text-xs text-slate-500 mt-1">Build the survey flow. Minimum 1 question required.</p>
-                                    </div>
-                                    <Button type="button" size="sm" onClick={handleAddQuestion} className="bg-emerald-500 hover:bg-emerald-600 text-white">
-                                        <Plus size={14} className="mr-1" /> Add Question
-                                    </Button>
-                                </div>
-                                <div className="space-y-4">
-                                    {(formData.questions ?? []).length === 0 && (
-                                        <div className="bg-white rounded-xl border border-dashed border-slate-300 p-8 text-center text-slate-400 text-sm">
-                                            No questions yet. Click "Add Question" to begin.
+                                    {q.type === "MCQ" && (
+                                        <div className="pl-9 space-y-2">
+                                            {(q.options ?? []).map((opt, oi) => (
+                                                <div key={oi} className="flex items-center gap-2">
+                                                    <Input
+                                                        placeholder={`Option ${oi + 1}`}
+                                                        value={opt}
+                                                        maxLength={100}
+                                                        onChange={(e) => handleUpdateOption(q.id, oi, e.target.value)}
+                                                        className="h-9 bg-white"
+                                                    />
+                                                    {(q.options?.length ?? 0) > 2 && (
+                                                        <Button type="button" size="icon" variant="ghost" className="h-9 w-9 text-rose-400" onClick={() => handleRemoveOption(q.id, oi)}>
+                                                            <X size={14} />
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            ))}
+                                            <Button type="button" size="sm" variant="outline" onClick={() => handleAddOption(q.id)}>
+                                                <Plus size={12} className="mr-1" /> Add Option
+                                            </Button>
                                         </div>
                                     )}
-                                    {(formData.questions ?? []).map((q, idx) => (
-                                        <div key={q.id} className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
-                                            <div className="flex items-start gap-3">
-                                                <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-600 font-bold flex items-center justify-center text-xs shrink-0 mt-1">
-                                                    {idx + 1}
-                                                </div>
-                                                <div className="flex-1 grid grid-cols-1 md:grid-cols-[1fr_180px] gap-3">
-                                                    <Input
-                                                        placeholder="Enter question..."
-                                                        value={q.question}
-                                                        maxLength={300}
-                                                        onChange={(e) => handleUpdateQuestion(q.id, { question: e.target.value })}
-                                                        className="bg-slate-50"
-                                                    />
-                                                    <Select value={q.type} onValueChange={(v) => handleUpdateQuestion(q.id, { type: v as SurveyQuestion["type"] })}>
-                                                        <SelectTrigger className="bg-slate-50"><SelectValue /></SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="MCQ">Multiple Choice</SelectItem>
-                                                            <SelectItem value="Rating">Rating (1-5)</SelectItem>
-                                                            <SelectItem value="Text">Text Answer</SelectItem>
-                                                            <SelectItem value="Boolean">Yes / No</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                                <Button
-                                                    type="button"
-                                                    size="icon"
-                                                    variant="ghost"
-                                                    className="h-8 w-8 text-rose-400 hover:text-rose-500"
-                                                    onClick={() => handleRemoveQuestion(q.id)}
-                                                >
-                                                    <Trash2 size={14} />
-                                                </Button>
-                                            </div>
 
-                                            {q.type === "MCQ" && (
-                                                <div className="pl-11 space-y-2">
-                                                    {(q.options ?? []).map((opt, oi) => (
-                                                        <div key={oi} className="flex items-center gap-2">
-                                                            <Input
-                                                                placeholder={`Option ${oi + 1}`}
-                                                                value={opt}
-                                                                maxLength={100}
-                                                                onChange={(e) => handleUpdateOption(q.id, oi, e.target.value)}
-                                                                className="h-9 bg-slate-50"
-                                                            />
-                                                            {(q.options?.length ?? 0) > 2 && (
-                                                                <Button type="button" size="icon" variant="ghost" className="h-9 w-9 text-rose-400" onClick={() => handleRemoveOption(q.id, oi)}>
-                                                                    <X size={14} />
-                                                                </Button>
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                    <Button type="button" size="sm" variant="outline" onClick={() => handleAddOption(q.id)}>
-                                                        <Plus size={12} className="mr-1" /> Add Option
-                                                    </Button>
-                                                </div>
-                                            )}
-
-                                            <div className="pl-11 flex items-center gap-2">
-                                                <input
-                                                    type="checkbox"
-                                                    id={`req-${q.id}`}
-                                                    checked={q.required}
-                                                    onChange={(e) => handleUpdateQuestion(q.id, { required: e.target.checked })}
-                                                    className="rounded"
-                                                />
-                                                <label htmlFor={`req-${q.id}`} className="text-xs font-bold text-slate-500">Required</label>
-                                            </div>
-                                        </div>
-                                    ))}
+                                    <div className="pl-9 flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            id={`req-${q.id}`}
+                                            checked={q.required}
+                                            onChange={(e) => handleUpdateQuestion(q.id, { required: e.target.checked })}
+                                            className="rounded"
+                                        />
+                                        <label htmlFor={`req-${q.id}`} className="text-xs font-medium text-slate-500">Required</label>
+                                    </div>
                                 </div>
-                            </div>
+                            ))}
                         </div>
-                    </ScrollArea>
-
-                    <DialogFooter className="p-10 bg-slate-50 border-t border-slate-100 flex gap-4">
-                        <Button variant="ghost" onClick={() => setIsCreateDialogOpen(false)} className="h-14 px-8 font-black text-slate-400 text-[10px] capitalize tracking-[0.2em] hover:text-slate-600">Cancel</Button>
-                        <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-[1.5rem] h-14 px-12 font-black text-xs tracking-widest shadow-xl flex-1">
-                            {selectedSurvey ? "Save Changes" : "Cast the Net 🌐"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    </div>
+                </div>
+            </SideFormSheet>
 
             {/* Insights Side Drawer */}
             <Sheet open={isAnalyticsOpen} onOpenChange={setIsAnalyticsOpen}>

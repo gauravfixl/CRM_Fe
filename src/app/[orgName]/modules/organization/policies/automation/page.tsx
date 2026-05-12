@@ -1,6 +1,6 @@
-"use client"
+﻿"use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import {
     Zap,
     Workflow,
@@ -42,51 +42,101 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
+import {
+    listAutomationRules,
+    createAutomationRule,
+    updateAutomationRule,
+} from "@/hooks/orgAdminHooks"
 
-const initialRules = [
-    { id: "AP-001", name: "Auto-Assign Enterprise Leads", engine: "CRM Core", status: "Running", success: 98.4, triggers: 1204, load: "Low" },
-    { id: "AP-002", name: "Invoice Reminder Protocol", engine: "Billing Nexus", status: "Running", success: 92.1, triggers: 452, load: "Medium" },
-    { id: "AP-003", name: "Dormant Client Archival", engine: "Data Policy", status: "Paused", success: 100, triggers: 82, load: "Idle" },
-    { id: "AP-004", name: "Security Breach Lockdown", engine: "Identity Guard", status: "Running", success: 100, triggers: 1, load: "Critical" },
-]
+type AutomationRule = {
+    id: string;
+    _id?: string;
+    name: string;
+    engine: string;
+    status: "Running" | "Paused";
+    success: number;
+    triggers: number;
+    load: string;
+};
+
+const initialRules: AutomationRule[] = []
 
 export default function AutomationPoliciesPage() {
-    const [rules, setRules] = useState(initialRules)
+    const [rules, setRules] = useState<AutomationRule[]>(initialRules)
     const [isNewRuleOpen, setIsNewRuleOpen] = useState(false)
+    const [creating, setCreating] = useState(false)
+    const [togglingId, setTogglingId] = useState<string | null>(null)
 
-    const handleToggleRule = (id: string, current: string) => {
-        const newStatus = current === "Running" ? "Paused" : "Running"
-        setRules(rules.map(r => r.id === id ? { ...r, status: newStatus } : r))
-        toast.info(`Engine ${id} is now ${newStatus.toLowerCase()}`)
+    const fetchRules = async () => {
+        try {
+            const res = await listAutomationRules()
+            const list = res?.data?.data?.rules || res?.data?.rules || res?.data?.data || res?.data || []
+            const arr = Array.isArray(list) ? list : []
+            setRules(
+                arr.map((r: any) => ({
+                    id: r._id || r.id || "",
+                    _id: r._id,
+                    name: r.name || "Untitled",
+                    engine: r.module || r.engine || "â€”",
+                    status: r.enabled === false ? "Paused" : "Running",
+                    success: typeof r.successRate === "number" ? r.successRate : 100,
+                    triggers: typeof r.triggerCount === "number" ? r.triggerCount : 0,
+                    load: r.load || "Low",
+                }))
+            )
+        } catch (err) {
+            // Silent â€” table just stays empty
+        }
     }
 
-    const handleCreateRule = (e: React.FormEvent<HTMLFormElement>) => {
+    useEffect(() => {
+        fetchRules()
+    }, [])
+
+    const handleToggleRule = async (id: string, current: string) => {
+        const newEnabled = current !== "Running"
+        const prevRules = rules
+        setTogglingId(id)
+        setRules(rules.map(r => (r.id === id ? { ...r, status: newEnabled ? "Running" : "Paused" } : r)))
+        try {
+            await updateAutomationRule(id, { enabled: newEnabled })
+            toast.info(`Engine is now ${newEnabled ? "running" : "paused"}`)
+        } catch (err: any) {
+            console.error("Failed to toggle rule:", err)
+            setRules(prevRules)
+            toast.error(err?.response?.data?.message || "Failed to update rule")
+        } finally {
+            setTogglingId(null)
+        }
+    }
+
+    const handleCreateRule = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
         const formData = new FormData(e.currentTarget)
-        const name = formData.get("ruleName") as string
+        const name = (formData.get("ruleName") as string)?.trim()
         const engine = formData.get("engineType") as string
 
-        if (!name) return toast.error("Rule name is required")
+        if (!name || name.length < 2) return toast.error("Rule name is required (min 2 chars)")
 
-        const newRule = {
-            id: `AP-00${rules.length + 1}`,
-            name,
-            engine,
-            status: "Running",
-            success: 100,
-            triggers: 0,
-            load: "Low"
+        try {
+            setCreating(true)
+            await createAutomationRule({
+                name,
+                module: engine || "automation",
+                description: (formData.get("logicSnippet") as string) || undefined,
+                trigger: { event: "manual", source: "ui" },
+                actions: [{ type: "noop" }],
+                enabled: true,
+            })
+            toast.success(`${name} automation is now live.`)
+            setIsNewRuleOpen(false)
+            await fetchRules()
+        } catch (err: any) {
+            console.error("Failed to create rule:", err)
+            toast.error(err?.response?.data?.message || "Compilation failed. Check syntax.")
+        } finally {
+            setCreating(false)
         }
-
-        toast.promise(new Promise(res => setTimeout(res, 2000)), {
-            loading: "Compiling business logic and deploying to edge...",
-            success: () => {
-                setRules([newRule, ...rules])
-                setIsNewRuleOpen(false)
-                return `${name} automation is now live.`
-            },
-            error: "Compilation failed. Check syntax."
-        })
     }
 
     return (
@@ -109,7 +159,7 @@ export default function AutomationPoliciesPage() {
                                 New Policy Engine
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden border-none rounded-3xl shadow-2xl">
+                        <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden border-none rounded-none shadow-2xl">
                             <div className="bg-indigo-600 p-8 text-white relative">
                                 <Activity className="absolute right-4 top-4 w-12 h-12 text-white opacity-10 animate-pulse" />
                                 <DialogHeader>
@@ -156,7 +206,7 @@ export default function AutomationPoliciesPage() {
                                     </div>
                                     <div className="space-y-2">
                                         <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Logic snippet (YAML/Pseudocode)</Label>
-                                        <Textarea placeholder="on: lead.created { action: assign_to_firm_pool }" className="min-h-[100px] rounded-xl bg-slate-50 border-slate-100 font-mono text-xs" />
+                                        <Textarea name="logicSnippet" placeholder="on: lead.created { action: assign_to_firm_pool }" className="min-h-[100px] rounded-xl bg-slate-50 border-slate-100 font-mono text-xs" />
                                     </div>
                                 </div>
                                 <DialogFooter className="pt-4 flex items-center justify-between">
@@ -164,8 +214,8 @@ export default function AutomationPoliciesPage() {
                                         <div className="w-2 h-2 rounded-full bg-emerald-500" />
                                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Dry-run validated</span>
                                     </div>
-                                    <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 font-black uppercase text-[10px] tracking-widest h-12 rounded-xl shadow-lg shadow-indigo-100">
-                                        Commit Protocol
+                                    <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 font-black uppercase text-[10px] tracking-widest h-12 rounded-xl shadow-lg shadow-indigo-100" disabled={creating}>
+                                        {creating ? "Committing..." : "Commit Protocol"}
                                     </Button>
                                 </DialogFooter>
                             </form>
@@ -247,7 +297,7 @@ export default function AutomationPoliciesPage() {
                                     <tr key={rule.id} className="hover:bg-slate-50/50 transition-colors group">
                                         <td className="px-6 py-5">
                                             <div className="flex items-center gap-4">
-                                                <div className={`h-11 w-11 rounded-2xl bg-white border border-slate-200 flex items-center justify-center transition-colors shadow-sm ${rule.status === 'Running' ? 'text-indigo-600' : 'text-slate-300'}`}>
+                                                <div className={`h-11 w-11 rounded-none bg-white border border-slate-200 flex items-center justify-center transition-colors shadow-sm ${rule.status === 'Running' ? 'text-indigo-600' : 'text-slate-300'}`}>
                                                     <Cpu className="w-5 h-5" />
                                                 </div>
                                                 <div>
@@ -278,7 +328,7 @@ export default function AutomationPoliciesPage() {
                                                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Engine State</p>
                                                     <p className={`text-[10px] font-black mt-0.5 uppercase ${rule.status === 'Running' ? 'text-emerald-500' : 'text-amber-500'}`}>{rule.status}</p>
                                                 </div>
-                                                <Switch checked={rule.status === 'Running'} onCheckedChange={() => handleToggleRule(rule.id, rule.status)} />
+                                                <Switch checked={rule.status === 'Running'} onCheckedChange={() => handleToggleRule(rule.id, rule.status)} disabled={togglingId === rule.id} />
                                             </div>
                                         </td>
                                     </tr>
@@ -289,10 +339,10 @@ export default function AutomationPoliciesPage() {
                 </CardContent>
             </Card>
 
-            <div className="p-4 bg-blue-50/40 border border-blue-100 rounded-2xl flex items-center gap-4 border-dashed">
+            <div className="p-4 bg-blue-50/40 border border-blue-100 rounded-none flex items-center gap-4 border-dashed">
                 <Settings2 className="w-5 h-5 text-blue-500 shrink-0" />
                 <p className="text-[11px] font-medium text-blue-700 leading-relaxed font-sans">
-                    Institutional policies use the <span className="font-bold">Edge-First Engine®</span>. New rules are compiled and synchronized across all distributed business units within 300ms.
+                    Institutional policies use the <span className="font-bold">Edge-First EngineÂ®</span>. New rules are compiled and synchronized across all distributed business units within 300ms.
                 </p>
             </div>
         </div>

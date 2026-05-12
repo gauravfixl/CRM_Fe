@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Smartphone,
   ShieldCheck,
@@ -18,14 +18,48 @@ import {
 import { Button } from "@/shared/components/ui/button";
 import { Switch } from "@/shared/components/ui/switch";
 import { Badge } from "@/shared/components/ui/badge";
-import { showSuccess } from "@/utils/toast";
+import { showSuccess, showError } from "@/utils/toast";
 import SubHeader from "@/shared/components/custom/SubHeader";
 import { SmallCard, SmallCardContent } from "@/shared/components/custom/SmallCard";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card";
 import { Separator } from "@/shared/components/ui/separator";
+import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks";
 
 export default function MFAPage() {
   const [globalMFA, setGlobalMFA] = useState(true);
+  const [savingMFA, setSavingMFA] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await getOrgAdminSettings();
+        const data: any = res?.data?.data || res?.data || {};
+        if (typeof data?.security?.enforceMFA === "boolean") {
+          setGlobalMFA(data.security.enforceMFA);
+        }
+      } catch {
+        // Silent fallback
+      }
+    })();
+  }, []);
+
+  const handleGlobalMFAChange = async (newValue: boolean) => {
+    if (savingMFA) return;
+    const previous = globalMFA;
+    setGlobalMFA(newValue);
+    setSavingMFA(true);
+    try {
+      await updateOrgAdminSettings({
+        security: { enforceMFA: newValue },
+      });
+      showSuccess(newValue ? "MFA enforcement enabled" : "MFA enforcement disabled");
+    } catch (err: any) {
+      setGlobalMFA(previous);
+      showError(err?.response?.data?.message || "Failed to update MFA enforcement");
+    } finally {
+      setSavingMFA(false);
+    }
+  };
   const [methods, setMethods] = useState([
     {
       name: "Authenticator app (TOTP)",
@@ -92,7 +126,8 @@ export default function MFAPage() {
             <span className="text-sm font-semibold tracking-wide">Global enforcement</span>
             <Switch
               checked={globalMFA}
-              onCheckedChange={setGlobalMFA}
+              onCheckedChange={handleGlobalMFAChange}
+              disabled={savingMFA}
               className="data-[state=checked]:bg-emerald-500 data-[state=unchecked]:bg-white/20 border border-white/10 shadow-inner"
             />
           </div>
@@ -102,7 +137,7 @@ export default function MFAPage() {
       <div className="p-4 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <SmallCard className="border bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-2xl">
+          <SmallCard className="border bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-none">
             <SmallCardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
@@ -117,7 +152,7 @@ export default function MFAPage() {
             </SmallCardContent>
           </SmallCard>
 
-          <SmallCard className="border bg-white dark:bg-zinc-900 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-2xl overflow-hidden group">
+          <SmallCard className="border bg-white dark:bg-zinc-900 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-none overflow-hidden group">
             <SmallCardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
@@ -132,7 +167,7 @@ export default function MFAPage() {
             </SmallCardContent>
           </SmallCard>
 
-          <SmallCard className="border bg-white dark:bg-zinc-900 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-2xl overflow-hidden group">
+          <SmallCard className="border bg-white dark:bg-zinc-900 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-none overflow-hidden group">
             <SmallCardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
@@ -147,7 +182,7 @@ export default function MFAPage() {
             </SmallCardContent>
           </SmallCard>
 
-          <SmallCard className="border bg-white dark:bg-zinc-900 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-2xl overflow-hidden group">
+          <SmallCard className="border bg-white dark:bg-zinc-900 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-none overflow-hidden group">
             <SmallCardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
@@ -164,7 +199,7 @@ export default function MFAPage() {
         </div>
 
         {/* Authentication Methods */}
-        <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl overflow-hidden">
+        <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-none shadow-xl overflow-hidden">
           <CardHeader className="px-8 py-6 border-b border-zinc-100 dark:border-zinc-800">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center">
@@ -213,10 +248,10 @@ export default function MFAPage() {
         </Card>
 
         {/* Recovery Options */}
-        <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl overflow-hidden">
+        <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-none shadow-xl overflow-hidden">
           <div className="px-8 py-8 flex flex-col md:flex-row items-center justify-between gap-8">
             <div className="flex items-start gap-6">
-              <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600">
+              <div className="flex-shrink-0 w-14 h-14 rounded-none bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600">
                 <Key size={28} />
               </div>
               <div className="space-y-1">

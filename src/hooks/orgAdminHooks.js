@@ -9,7 +9,7 @@ import { axiosInstance as axios } from "@/lib/axios";
  *   - Data management jobs (list/create)
  *   - Data management backups (list/create)
  *
- * Backend mounts these at /api/organization/... so all paths below start with /organization.
+ * Backend mounts these at /api/org-admin/... (see CRM_Tech_Be/server.js: app.use("/api/org-admin", OrgAdminRouter)).
  */
 
 /* ------------------------------------------------------------------ */
@@ -17,12 +17,12 @@ import { axiosInstance as axios } from "@/lib/axios";
 /* ------------------------------------------------------------------ */
 
 export const getOrgAdminSettings = async () => {
-  const response = await axios.get("/organization/settings");
+  const response = await axios.get("/org-admin/settings");
   return response;
 };
 
 export const updateOrgAdminSettings = async (form) => {
-  const response = await axios.patch("/organization/settings", form);
+  const response = await axios.patch("/org-admin/settings", form);
   return response;
 };
 
@@ -31,27 +31,27 @@ export const updateOrgAdminSettings = async (form) => {
 /* ------------------------------------------------------------------ */
 
 export const listAutomationRules = async () => {
-  const response = await axios.get("/organization/automation-rules");
+  const response = await axios.get("/org-admin/automation-rules");
   return response;
 };
 
 export const createAutomationRule = async (form) => {
-  const response = await axios.post("/organization/automation-rules", form);
+  const response = await axios.post("/org-admin/automation-rules", form);
   return response;
 };
 
 export const updateAutomationRule = async (ruleId, form) => {
-  const response = await axios.patch(`/organization/automation-rules/${ruleId}`, form);
+  const response = await axios.patch(`/org-admin/automation-rules/${ruleId}`, form);
   return response;
 };
 
 export const deleteAutomationRule = async (ruleId) => {
-  const response = await axios.delete(`/organization/automation-rules/${ruleId}`);
+  const response = await axios.delete(`/org-admin/automation-rules/${ruleId}`);
   return response;
 };
 
 export const executeAutomationRule = async (ruleId) => {
-  const response = await axios.post(`/organization/automation-rules/${ruleId}/execute`);
+  const response = await axios.post(`/org-admin/automation-rules/${ruleId}/execute`);
   return response;
 };
 
@@ -60,22 +60,22 @@ export const executeAutomationRule = async (ruleId) => {
 /* ------------------------------------------------------------------ */
 
 export const listWebhooks = async () => {
-  const response = await axios.get("/organization/integrations/webhooks");
+  const response = await axios.get("/org-admin/integrations/webhooks");
   return response;
 };
 
 export const createWebhook = async (form) => {
-  const response = await axios.post("/organization/integrations/webhooks", form);
+  const response = await axios.post("/org-admin/integrations/webhooks", form);
   return response;
 };
 
 export const updateWebhook = async (webhookId, form) => {
-  const response = await axios.patch(`/organization/integrations/webhooks/${webhookId}`, form);
+  const response = await axios.patch(`/org-admin/integrations/webhooks/${webhookId}`, form);
   return response;
 };
 
 export const deleteWebhook = async (webhookId) => {
-  const response = await axios.delete(`/organization/integrations/webhooks/${webhookId}`);
+  const response = await axios.delete(`/org-admin/integrations/webhooks/${webhookId}`);
   return response;
 };
 
@@ -84,17 +84,17 @@ export const deleteWebhook = async (webhookId) => {
 /* ------------------------------------------------------------------ */
 
 export const listApiKeys = async () => {
-  const response = await axios.get("/organization/integrations/api-keys");
+  const response = await axios.get("/org-admin/integrations/api-keys");
   return response;
 };
 
 export const createApiKey = async (form) => {
-  const response = await axios.post("/organization/integrations/api-keys", form);
+  const response = await axios.post("/org-admin/integrations/api-keys", form);
   return response;
 };
 
 export const revokeApiKey = async (keyId) => {
-  const response = await axios.post(`/organization/integrations/api-keys/${keyId}/revoke`);
+  const response = await axios.post(`/org-admin/integrations/api-keys/${keyId}/revoke`);
   return response;
 };
 
@@ -103,12 +103,12 @@ export const revokeApiKey = async (keyId) => {
 /* ------------------------------------------------------------------ */
 
 export const listDataJobs = async () => {
-  const response = await axios.get("/organization/data-management/jobs");
+  const response = await axios.get("/org-admin/data-management/jobs");
   return response;
 };
 
 export const createDataJob = async (form) => {
-  const response = await axios.post("/organization/data-management/jobs", form);
+  const response = await axios.post("/org-admin/data-management/jobs", form);
   return response;
 };
 
@@ -117,11 +117,11 @@ export const createDataJob = async (form) => {
 /* ------------------------------------------------------------------ */
 
 export const listBackups = async () => {
-  const response = await axios.get("/organization/data-management/backups");
+  const response = await axios.get("/org-admin/data-management/backups");
   return response;
 };
 
 export const createBackup = async (form) => {
-  const response = await axios.post("/organization/data-management/backups", form);
+  const response = await axios.post("/org-admin/data-management/backups", form);
   return response;
 };

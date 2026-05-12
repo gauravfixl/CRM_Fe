@@ -1,8 +1,25 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { DollarSign, Users, CreditCard, Activity } from 'lucide-react'
+"use client"
+
+import { DollarSign, CreditCard, Activity } from 'lucide-react'
 import { SmallCard, SmallCardContent, SmallCardHeader } from "../custom/SmallCard"
 
-export function StatsCards() {
+interface StatsCardsProps {
+  revenue: number
+  sales: number
+  activeNow: number
+}
+
+function formatCurrency(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) return "+0"
+  return `+${Math.round(value).toLocaleString()}`
+}
+
+function formatCount(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) return "+0"
+  return `+${value.toLocaleString()}`
+}
+
+export function StatsCards({ revenue, sales, activeNow }: StatsCardsProps) {
   return (
     <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
       <SmallCard className="shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
@@ -11,8 +28,8 @@ export function StatsCards() {
           <DollarSign className="w-4 h-4 text-gray-400" />
         </SmallCardHeader>
         <SmallCardContent className="pt-0">
-          <p className="text-lg font-semibold">+2,350</p>
-          <p className="text-[11px] text-gray-500">+180.1% from last month</p>
+          <p className="text-lg font-semibold">{formatCurrency(revenue)}</p>
+          <p className="text-[11px] text-gray-500">Paid invoices total</p>
         </SmallCardContent>
       </SmallCard>
 
@@ -22,8 +39,8 @@ export function StatsCards() {
           <CreditCard className="w-4 h-4 text-gray-400" />
         </SmallCardHeader>
         <SmallCardContent className="pt-0">
-          <p className="text-lg font-semibold">+12,234</p>
-          <p className="text-[11px] text-gray-500">+19% from last month</p>
+          <p className="text-lg font-semibold">{formatCount(sales)}</p>
+          <p className="text-[11px] text-gray-500">Total invoices issued</p>
         </SmallCardContent>
       </SmallCard>
 
@@ -33,8 +50,8 @@ export function StatsCards() {
           <Activity className="w-4 h-4 text-gray-400" />
         </SmallCardHeader>
         <SmallCardContent className="pt-0">
-          <p className="text-lg font-semibold">+573</p>
-          <p className="text-[11px] text-gray-500">+201 since last hour</p>
+          <p className="text-lg font-semibold">{formatCount(activeNow)}</p>
+          <p className="text-[11px] text-gray-500">Live sessions</p>
         </SmallCardContent>
       </SmallCard>
     </div>

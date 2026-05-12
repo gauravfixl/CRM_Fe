@@ -28,10 +28,10 @@ import {
     Dialog,
     DialogContent,
     DialogDescription,
-    DialogFooter,
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -469,89 +469,81 @@ const TravelManagementPage = () => {
                 </Card>
             )}
 
-            {/* New / Edit Travel Request Dialog */}
-            <Dialog open={isRequestDialogOpen} onOpenChange={(o) => { setIsRequestDialogOpen(o); if (!o) { setEditingRequest(null); setTravelForm(emptyForm); } }}>
-                <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto border-2 border-slate-200">
-                    <DialogHeader>
-                        <DialogTitle>{editingRequest ? `Edit Travel Request ${editingRequest.id}` : 'New Travel Request'}</DialogTitle>
-                        <DialogDescription>{editingRequest ? 'Update the travel details below.' : 'Plan your trip and submit for approval.'}</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-slate-500">Purpose *</Label>
-                            <Input placeholder="Purpose of travel" value={travelForm.purpose} onChange={(e) => setTravelForm({ ...travelForm, purpose: e.target.value })} />
-                        </div>
-                        <div className="grid grid-cols-3 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Destination *</Label>
-                                <Input placeholder="City" value={travelForm.destination} onChange={(e) => setTravelForm({ ...travelForm, destination: e.target.value })} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Departure *</Label>
-                                <Input type="date" value={travelForm.departureDate} onChange={(e) => setTravelForm({ ...travelForm, departureDate: e.target.value })} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Return *</Label>
-                                <Input type="date" value={travelForm.returnDate} onChange={(e) => setTravelForm({ ...travelForm, returnDate: e.target.value })} />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Estimated Budget (INR)</Label>
-                                <Input type="number" min="0" step="0.01" placeholder="0.00" value={travelForm.estimatedBudget} onChange={(e) => setTravelForm({ ...travelForm, estimatedBudget: e.target.value })} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Advance Request (INR)</Label>
-                                <Input type="number" min="0" step="0.01" placeholder="0.00" value={travelForm.advanceRequested} onChange={(e) => setTravelForm({ ...travelForm, advanceRequested: e.target.value })} />
-                            </div>
-                        </div>
-
-                        {/* Itinerary Builder */}
-                        <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <Label className="text-xs font-bold text-slate-500">Itinerary</Label>
-                                <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={addItineraryRow}>
-                                    <Plus className="h-3 w-3" /> Add Leg
-                                </Button>
-                            </div>
-                            {travelForm.itinerary.length === 0 ? (
-                                <div className="border border-dashed border-slate-200 rounded-xl p-4 text-center text-xs text-slate-400">
-                                    No itinerary added. Click "Add Leg" to build your travel plan.
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    {travelForm.itinerary.map((item, idx) => (
-                                        <div key={idx} className="grid grid-cols-[1fr_1fr_auto_auto_auto_auto] gap-2 items-end">
-                                            <Input placeholder="From" value={item.from} onChange={(e) => updateItineraryRow(idx, 'from', e.target.value)} className="text-sm" />
-                                            <Input placeholder="To" value={item.to} onChange={(e) => updateItineraryRow(idx, 'to', e.target.value)} className="text-sm" />
-                                            <Input type="date" value={item.date} onChange={(e) => updateItineraryRow(idx, 'date', e.target.value)} className="text-sm w-[130px]" />
-                                            <Select value={item.mode} onValueChange={(v) => updateItineraryRow(idx, 'mode', v)}>
-                                                <SelectTrigger className="w-[100px] text-sm"><SelectValue /></SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="Flight">Flight</SelectItem>
-                                                    <SelectItem value="Train">Train</SelectItem>
-                                                    <SelectItem value="Bus">Bus</SelectItem>
-                                                    <SelectItem value="Cab">Cab</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <Input type="number" min="0" placeholder="Cost" value={item.cost} onChange={(e) => updateItineraryRow(idx, 'cost', e.target.value)} className="text-sm w-[90px]" />
-                                            <Button variant="ghost" size="sm" className="h-9 w-9 p-0 text-red-400" onClick={() => removeItineraryRow(idx)}>
-                                                <Trash2 className="h-3.5 w-3.5" />
-                                            </Button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+            {/* New / Edit Travel Request Sheet */}
+            <SideFormSheet
+                open={isRequestDialogOpen}
+                onOpenChange={(o) => { setIsRequestDialogOpen(o); if (!o) { setEditingRequest(null); setTravelForm(emptyForm); } }}
+                title={editingRequest ? `Edit Travel Request ${editingRequest.id}` : 'New Travel Request'}
+                description={editingRequest ? 'Update the travel details below.' : 'Plan your trip and submit for approval.'}
+                icon={editingRequest ? <Edit3 size={20} /> : <Plane size={20} />}
+                accentColor={editingRequest ? "#7c3aed" : "#0ea5e9"}
+                width="xl"
+                submitLabel={editingRequest ? 'Update Request' : 'Submit Request'}
+                onSubmit={(e) => { e.preventDefault(); handleSaveRequest(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Purpose" required>
+                        <Input placeholder="Purpose of travel" value={travelForm.purpose} onChange={(e) => setTravelForm({ ...travelForm, purpose: e.target.value })} />
+                    </Field>
+                    <div className="grid grid-cols-3 gap-3">
+                        <Field label="Destination" required>
+                            <Input placeholder="City" value={travelForm.destination} onChange={(e) => setTravelForm({ ...travelForm, destination: e.target.value })} />
+                        </Field>
+                        <Field label="Departure" required>
+                            <Input type="date" value={travelForm.departureDate} onChange={(e) => setTravelForm({ ...travelForm, departureDate: e.target.value })} />
+                        </Field>
+                        <Field label="Return" required>
+                            <Input type="date" value={travelForm.returnDate} onChange={(e) => setTravelForm({ ...travelForm, returnDate: e.target.value })} />
+                        </Field>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsRequestDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={handleSaveRequest} className="bg-[#8B5CF6] hover:bg-[#7C3AED]">
-                            {editingRequest ? 'Update Request' : 'Submit Request'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Estimated Budget (INR)">
+                            <Input type="number" min="0" step="0.01" placeholder="0.00" value={travelForm.estimatedBudget} onChange={(e) => setTravelForm({ ...travelForm, estimatedBudget: e.target.value })} />
+                        </Field>
+                        <Field label="Advance Request (INR)">
+                            <Input type="number" min="0" step="0.01" placeholder="0.00" value={travelForm.advanceRequested} onChange={(e) => setTravelForm({ ...travelForm, advanceRequested: e.target.value })} />
+                        </Field>
+                    </div>
+
+                    {/* Itinerary Builder */}
+                    <div>
+                        <div className="flex items-center justify-between mb-2">
+                            <label className="text-[13px] font-semibold text-[#374151]">Itinerary</label>
+                            <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={addItineraryRow}>
+                                <Plus className="h-3 w-3" /> Add Leg
+                            </Button>
+                        </div>
+                        {travelForm.itinerary.length === 0 ? (
+                            <div className="border border-dashed border-slate-200 rounded-xl p-4 text-center text-xs text-slate-400">
+                                No itinerary added. Click "Add Leg" to build your travel plan.
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                {travelForm.itinerary.map((item, idx) => (
+                                    <div key={idx} className="grid grid-cols-[1fr_1fr_auto_auto_auto_auto] gap-2 items-end">
+                                        <Input placeholder="From" value={item.from} onChange={(e) => updateItineraryRow(idx, 'from', e.target.value)} className="text-sm" />
+                                        <Input placeholder="To" value={item.to} onChange={(e) => updateItineraryRow(idx, 'to', e.target.value)} className="text-sm" />
+                                        <Input type="date" value={item.date} onChange={(e) => updateItineraryRow(idx, 'date', e.target.value)} className="text-sm w-[130px]" />
+                                        <Select value={item.mode} onValueChange={(v) => updateItineraryRow(idx, 'mode', v)}>
+                                            <SelectTrigger className="w-[100px] text-sm"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="Flight">Flight</SelectItem>
+                                                <SelectItem value="Train">Train</SelectItem>
+                                                <SelectItem value="Bus">Bus</SelectItem>
+                                                <SelectItem value="Cab">Cab</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <Input type="number" min="0" placeholder="Cost" value={item.cost} onChange={(e) => updateItineraryRow(idx, 'cost', e.target.value)} className="text-sm w-[90px]" />
+                                        <Button type="button" variant="ghost" size="sm" className="h-9 w-9 p-0 text-red-400" onClick={() => removeItineraryRow(idx)}>
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </SideFormSheet>
 
             {/* Detail Dialog */}
             <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>

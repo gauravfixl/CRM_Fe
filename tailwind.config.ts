@@ -3,6 +3,11 @@ import type { Config } from "tailwindcss"
 const config: Config = {
   darkMode: ["class"],
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}", "*.{js,ts,jsx,tsx,mdx}"],
+  safelist: [
+    { pattern: /^bg-(indigo|emerald|amber|blue|rose|violet|slate)-(50|100|200|500|600|700)$/ },
+    { pattern: /^text-(indigo|emerald|amber|blue|rose|violet|slate)-(50|100|200|500|600|700)$/ },
+    { pattern: /^border-(indigo|emerald|amber|blue|rose|violet|slate)-(50|100|200|500|600|700)$/ },
+  ],
   prefix: "",
   theme: {
     container: {

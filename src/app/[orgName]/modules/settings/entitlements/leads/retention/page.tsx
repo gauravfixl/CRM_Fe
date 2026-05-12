@@ -46,6 +46,8 @@ import { SmallCard, SmallCardContent, SmallCardHeader } from "@/shared/component
 import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
 import { toast } from "sonner"
+import { useEffect } from "react"
+import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks"
 
 export default function LeadDataRetentionPage() {
     const params = useParams()
@@ -59,12 +61,34 @@ export default function LeadDataRetentionPage() {
         gdprHook: true
     })
 
-    const handleAction = (msg: string) => {
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await getOrgAdminSettings()
+                const s: any = res?.data?.settings || res?.data?.data || res?.data || {}
+                const days = s?.organizationPolicies?.retentionDays
+                if (typeof days === "number" && days > 0) {
+                    setRetentionMonths([Math.max(1, Math.round(days / 30))])
+                }
+            } catch {
+                // Silent fallback
+            }
+        })()
+    }, [])
+
+    const handleAction = async (msg: string) => {
         setIsLoading(true)
-        setTimeout(() => {
-            setIsLoading(false)
+        try {
+            const days = Math.min(3650, Math.max(1, Math.round(retentionMonths[0] * 30)))
+            await updateOrgAdminSettings({
+                organizationPolicies: { retentionDays: days },
+            })
             toast.success(msg)
-        }, 1200)
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to save retention policy")
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     const handleScan = () => {

@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -50,7 +50,11 @@ import { useMeStore } from "@/shared/data/me-store";
 const MyAssetsPage = () => {
     const { toast } = useToast();
     const router = useRouter();
-    const { assets: storeAssets } = useMeStore();
+    const { assets: storeAssets, loadMyAssets } = useMeStore();
+
+    useEffect(() => {
+        loadMyAssets().catch(() => { /* silent fallback to seeded data */ });
+    }, [loadMyAssets]);
 
     const [isRequestOpen, setIsRequestOpen] = React.useState(false);
     const [isPoliciesOpen, setIsPoliciesOpen] = React.useState(false);
@@ -354,53 +358,54 @@ const MyAssetsPage = () => {
             </div>
 
             {/* Dialogs */}
-            <Dialog open={isRequestOpen} onOpenChange={setIsRequestOpen}>
-                <DialogContent className="bg-white rounded-2xl border-none p-8 max-w-lg">
-                    <DialogHeader className="space-y-3">
-                        <div className="h-12 w-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
-                            <Plus size={24} />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold tracking-tight">Request Hardware</DialogTitle>
-                        <DialogDescription className="font-medium text-slate-500">Submit a request for new equipment or hardware upgrades.</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-6 space-y-5">
-                        <div className="space-y-2 text-start">
-                            <Label className="text-xs font-bold text-slate-400 capitalize tracking-tight ml-1 block">Asset Category</Label>
-                            <Select value={requestForm.category} onValueChange={v => setRequestForm({ ...requestForm, category: v })}>
-                                <SelectTrigger className="rounded-xl bg-slate-50 border-none h-12">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Laptop">High Performance Laptop</SelectItem>
-                                    <SelectItem value="Monitor">4K External Monitor</SelectItem>
-                                    <SelectItem value="Peripherals">Ergonomic Peripherals</SelectItem>
-                                    <SelectItem value="Other">Other Equipment</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2 text-start">
-                            <Label className="text-xs font-bold text-slate-400 capitalize tracking-tight ml-1 block">Business Justification *</Label>
-                            <Textarea
-                                className="rounded-xl bg-slate-50 border-none min-h-[100px] font-medium p-4"
-                                placeholder="Explain why this asset is required..."
-                                value={requestForm.reason}
-                                onChange={e => setRequestForm({ ...requestForm, reason: e.target.value })}
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter className="gap-3 pt-4 border-t border-slate-50">
-                        <Button variant="ghost" className="rounded-xl h-12 font-bold px-8 text-slate-500 capitalize" onClick={() => { setIsRequestOpen(false); }}>Cancel</Button>
-                        <Button className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-indigo-100" onClick={() => {
-                            if (!requestForm.reason) {
-                                toast({ title: "Error", description: "Justification is required", variant: "destructive" });
-                                return;
-                            }
-                            setIsRequestOpen(false);
-                            toast({ title: "Submitted", description: "Request is now under review." });
-                        }}>Submit Request</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <SideFormSheet
+                open={isRequestOpen}
+                onOpenChange={setIsRequestOpen}
+                title="Request Hardware"
+                description="Submit a request for new equipment or hardware upgrades."
+                icon={<Plus size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                submitLabel="Submit Request"
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    const reason = requestForm.reason.trim();
+                    if (!reason) {
+                        toast({ title: "Justification required", description: "Please explain why this asset is needed.", variant: "destructive" });
+                        return;
+                    }
+                    if (reason.length < 20) {
+                        toast({ title: "More detail needed", description: "Justification must be at least 20 characters.", variant: "destructive" });
+                        return;
+                    }
+                    setIsRequestOpen(false);
+                    setRequestForm({ category: 'Laptop', reason: '', urgency: 'Medium' });
+                    toast({ title: "Submitted", description: "Request is now under review." });
+                }}
+            >
+                <div className="space-y-4">
+                    <Field label="Asset Category">
+                        <Select value={requestForm.category} onValueChange={v => setRequestForm({ ...requestForm, category: v })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Laptop">High Performance Laptop</SelectItem>
+                                <SelectItem value="Monitor">4K External Monitor</SelectItem>
+                                <SelectItem value="Peripherals">Ergonomic Peripherals</SelectItem>
+                                <SelectItem value="Other">Other Equipment</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field label="Business Justification" required hint={`${requestForm.reason.length}/1000 chars · min 20 chars`}>
+                        <Textarea
+                            className="min-h-[120px]"
+                            placeholder="Explain why this asset is required..."
+                            maxLength={1000}
+                            value={requestForm.reason}
+                            onChange={e => setRequestForm({ ...requestForm, reason: e.target.value })}
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             <Dialog open={isPoliciesOpen} onOpenChange={setIsPoliciesOpen}>
                 <DialogContent className="bg-white rounded-2xl border-none p-8 max-w-lg">
@@ -435,39 +440,36 @@ const MyAssetsPage = () => {
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={isReportOpen} onOpenChange={setIsReportOpen}>
-                <DialogContent className="bg-white rounded-2xl border-none p-8 max-w-lg">
-                    <DialogHeader className="space-y-3">
-                        <div className="h-12 w-12 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600">
-                            <AlertCircle size={24} />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold tracking-tight">Report Issue</DialogTitle>
-                        <DialogDescription className="font-medium text-slate-500">Log a malfunction for immediate triage.</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-6 space-y-5 text-start">
-                        <div className="space-y-2">
-                            <Label className="text-xs font-bold text-slate-400 capitalize tracking-tight ml-1 block">Describe the Problem *</Label>
-                            <Textarea
-                                className="rounded-xl bg-slate-50 border-none min-h-[120px] font-medium p-4 focus:ring-2 focus:ring-rose-100 transition-all"
-                                placeholder="e.g. Screen flickering, overheating..."
-                            />
-                        </div>
-                        <div className="p-4 rounded-xl bg-amber-50 border border-amber-100 flex items-start gap-3">
-                            <Zap size={16} className="text-amber-500 shrink-0 mt-0.5" />
-                            <p className="text-[11px] font-medium text-amber-700 leading-relaxed">
-                                Critical issues receive attention within 15 minutes.
-                            </p>
-                        </div>
+            <SideFormSheet
+                open={isReportOpen}
+                onOpenChange={setIsReportOpen}
+                title="Report Issue"
+                description="Log a malfunction for immediate triage."
+                icon={<AlertCircle size={20} />}
+                accentColor="#e11d48"
+                width="md"
+                submitLabel="Report Incident"
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    setIsReportOpen(false);
+                    toast({ title: "Incident Logged", description: "IT Support ticket has been raised." });
+                }}
+            >
+                <div className="space-y-4">
+                    <Field label="Describe the Problem" required>
+                        <Textarea
+                            className="min-h-[140px]"
+                            placeholder="e.g. Screen flickering, overheating..."
+                        />
+                    </Field>
+                    <div className="p-4 rounded-xl bg-amber-50 border border-amber-100 flex items-start gap-3">
+                        <Zap size={16} className="text-amber-500 shrink-0 mt-0.5" />
+                        <p className="text-[11px] font-medium text-amber-700 leading-relaxed">
+                            Critical issues receive attention within 15 minutes.
+                        </p>
                     </div>
-                    <DialogFooter className="gap-3">
-                        <Button variant="ghost" className="rounded-xl h-12 font-bold px-8 text-slate-500 capitalize" onClick={() => setIsReportOpen(false)}>Cancel</Button>
-                        <Button className="flex-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-rose-100" onClick={() => {
-                            setIsReportOpen(false);
-                            toast({ title: "Incident Logged", description: "IT Support ticket has been raised." });
-                        }}>Report Incident</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                </div>
+            </SideFormSheet>
 
             {/* Hardware Verification Dialog */}
             <Dialog open={isVerifyOpen} onOpenChange={setIsVerifyOpen}>

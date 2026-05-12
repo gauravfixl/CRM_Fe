@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { Network, Plus, Search, MoreVertical, Users, User, ChevronRight, Filter, Building2, LayoutGrid, List, Mail, Phone, MapPin, Globe, UserCheck, Loader2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -125,7 +125,7 @@ export default function BusinessUnits() {
                                     Add Business Unit
                                 </CustomButton>
                             </DialogTrigger>
-                            <DialogContent className="sm:max-w-[600px] rounded-3xl border-0 shadow-2xl p-0 overflow-hidden">
+                            <DialogContent className="sm:max-w-[600px] rounded-none border-0 shadow-2xl p-0 overflow-hidden">
                                 <div className="h-2 bg-blue-600 w-full" />
                                 <div className="p-6 sm:p-8 space-y-6">
                                     <DialogHeader>
@@ -248,7 +248,7 @@ export default function BusinessUnits() {
                             <p className="font-medium">Fetching units...</p>
                         </div>
                     ) : units.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed rounded-3xl text-zinc-400 bg-zinc-50/50">
+                        <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed rounded-none text-zinc-400 bg-zinc-50/50">
                             <Building2 className="w-12 h-12 mb-4 opacity-20" />
                             <p className="font-bold text-zinc-500">No Business Units Found</p>
                             <p className="text-sm">Click "Add Business Unit" to create your first operational unit.</p>

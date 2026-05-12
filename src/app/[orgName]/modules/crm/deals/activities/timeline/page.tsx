@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import {
@@ -142,7 +142,7 @@ export default function DealTimelinePage() {
 
                                     <div className="flex items-center justify-between pt-6 border-t border-zinc-50">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-2xl bg-zinc-50 border border-zinc-100 flex items-center justify-center">
+                                            <div className="w-10 h-10 rounded-none bg-zinc-50 border border-zinc-100 flex items-center justify-center">
                                                 <Briefcase className="h-4 w-4 text-zinc-400" />
                                             </div>
                                             <div>

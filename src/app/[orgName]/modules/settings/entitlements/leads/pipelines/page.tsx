@@ -42,15 +42,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { SmallCard, SmallCardContent, SmallCardHeader } from "@/shared/components/custom/SmallCard"
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import { toast } from "sonner"
 import { getLeadListByOrg } from "@/hooks/leadHooks"
 
@@ -95,6 +87,19 @@ export default function LeadPipelinesPage() {
     const [createDialogOpen, setCreateDialogOpen] = useState(false)
     const [newViewName, setNewViewName] = useState("")
     const [newViewSource, setNewViewSource] = useState("")
+    const [viewNameTouched, setViewNameTouched] = useState(false)
+    const [creatingView, setCreatingView] = useState(false)
+
+    const viewNameError = useMemo(() => {
+        if (!viewNameTouched) return ""
+        const name = newViewName.trim()
+        if (!name) return "View name is required"
+        if (name.length < 3) return "Name must be at least 3 characters"
+        if (name.length > 60) return "Name too long (max 60)"
+        if (!/^[A-Za-z0-9\s&+-]+$/.test(name))
+            return "Only letters, numbers, spaces, & + -"
+        return ""
+    }, [newViewName, viewNameTouched])
 
     const fetchLeads = async () => {
         setIsFetching(true)
@@ -187,29 +192,48 @@ export default function LeadPipelinesPage() {
         toast.success("Pipeline data refreshed from server")
     }
 
-    const handleCreatePipeline = () => {
-        if (!newViewName.trim()) {
+    const handleCreatePipeline = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setViewNameTouched(true)
+        const name = newViewName.trim()
+        if (!name) {
             toast.error("Please enter a pipeline view name")
             return
         }
-        const now = new Date()
-        const dateStr = now.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
-        const newView = {
-            id: `view-${Date.now()}`,
-            name: newViewName.trim(),
-            appliesTo: newViewSource ? `Source: ${newViewSource}` : "All Firms",
-            status: "Active" as const,
-            isDefault: false,
-            stages: LEAD_STAGES.length,
-            lastModified: dateStr,
-            modifiedBy: "Current User",
-            filterSource: newViewSource || undefined,
+        if (name.length < 3) {
+            toast.error("Name must be at least 3 characters")
+            return
         }
-        setFilteredViews(prev => [...prev, newView])
-        setNewViewName("")
-        setNewViewSource("")
-        setCreateDialogOpen(false)
-        toast.success(`Pipeline view "${newView.name}" created`)
+        if (!/^[A-Za-z0-9\s&+-]+$/.test(name)) {
+            toast.error("View name contains invalid characters")
+            return
+        }
+
+        setCreatingView(true)
+        try {
+            await new Promise((r) => setTimeout(r, 300))
+            const now = new Date()
+            const dateStr = now.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+            const newView = {
+                id: `view-${Date.now()}`,
+                name,
+                appliesTo: newViewSource ? `Source: ${newViewSource}` : "All Firms",
+                status: "Active" as const,
+                isDefault: false,
+                stages: LEAD_STAGES.length,
+                lastModified: dateStr,
+                modifiedBy: "Current User",
+                filterSource: newViewSource || undefined,
+            }
+            setFilteredViews(prev => [...prev, newView])
+            setNewViewName("")
+            setNewViewSource("")
+            setViewNameTouched(false)
+            setCreateDialogOpen(false)
+            toast.success(`Pipeline view "${newView.name}" created`)
+        } finally {
+            setCreatingView(false)
+        }
     }
 
     const defaultPipeline = useMemo(() => {
@@ -255,48 +279,16 @@ export default function LeadPipelinesPage() {
                         <RefreshCcw className={`w-4 h-4 mr-2 ${isFetching ? "animate-spin" : ""}`} />
                         Sync Standards
                     </Button>
-                    <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button
-                                className="h-10 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-6 rounded-xl shadow-lg shadow-blue-200 active:scale-95 transition-all"
-                            >
-                                <Plus className="w-4 h-4 mr-2" />
-                                Create Pipeline
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-md">
-                            <DialogHeader>
-                                <DialogTitle>Create Pipeline View</DialogTitle>
-                                <DialogDescription>
-                                    Create a filtered pipeline view. All views use the same backend stages (New through Closed).
-                                </DialogDescription>
-                            </DialogHeader>
-                            <div className="flex flex-col gap-4 py-4">
-                                <div className="flex flex-col gap-1.5">
-                                    <label className="text-xs font-medium text-gray-700">View Name</label>
-                                    <Input
-                                        placeholder="e.g., Enterprise Deals"
-                                        value={newViewName}
-                                        onChange={(e) => setNewViewName(e.target.value)}
-                                        className="h-9 text-xs"
-                                    />
-                                </div>
-                                <div className="flex flex-col gap-1.5">
-                                    <label className="text-xs font-medium text-gray-700">Filter by Source (optional)</label>
-                                    <Input
-                                        placeholder="e.g., Website, Referral"
-                                        value={newViewSource}
-                                        onChange={(e) => setNewViewSource(e.target.value)}
-                                        className="h-9 text-xs"
-                                    />
-                                </div>
-                            </div>
-                            <DialogFooter>
-                                <Button variant="outline" onClick={() => setCreateDialogOpen(false)} className="text-xs">Cancel</Button>
-                                <Button onClick={handleCreatePipeline} className="bg-blue-600 hover:bg-blue-700 text-white text-xs">Create View</Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
+                    <Button
+                        onClick={() => {
+                            setViewNameTouched(false)
+                            setCreateDialogOpen(true)
+                        }}
+                        className="h-10 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-6 rounded-xl shadow-lg shadow-blue-200 active:scale-95 transition-all"
+                    >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Pipeline
+                    </Button>
                 </div>
             </div>
 
@@ -502,6 +494,60 @@ export default function LeadPipelinesPage() {
                     </div>
                 )}
             </div>
+
+            {/* Create Pipeline View — side sheet */}
+            <SideFormSheet
+                open={createDialogOpen}
+                onOpenChange={(o) => {
+                    setCreateDialogOpen(o)
+                    if (!o) {
+                        setNewViewName("")
+                        setNewViewSource("")
+                        setViewNameTouched(false)
+                    }
+                }}
+                title="Create Pipeline View"
+                description="Create a filtered pipeline view. All views use the same backend stages (New through Closed)."
+                icon={<Plus className="w-5 h-5" />}
+                width="md"
+                onSubmit={handleCreatePipeline}
+                submitLabel="Create View"
+                loading={creatingView}
+            >
+                <div className="space-y-4">
+                    <Field
+                        label="View Name"
+                        required
+                        error={viewNameError}
+                        hint="3-60 characters; letters, numbers, spaces, & + -"
+                    >
+                        <Input
+                            placeholder="e.g. Enterprise Deals"
+                            value={newViewName}
+                            onChange={(e) => setNewViewName(e.target.value.replace(/[^A-Za-z0-9\s&+-]/g, ""))}
+                            onBlur={() => setViewNameTouched(true)}
+                            className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary"
+                            maxLength={60}
+                        />
+                    </Field>
+
+                    <Field label="Filter by Source" hint="Optional — filter this view to leads from one source">
+                        <Input
+                            placeholder="e.g. Website, Referral"
+                            value={newViewSource}
+                            onChange={(e) => setNewViewSource(e.target.value.replace(/[^A-Za-z0-9\s,&-]/g, ""))}
+                            className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary"
+                            maxLength={80}
+                        />
+                    </Field>
+
+                    <div className="p-3 bg-[#F0F7FF] border border-[#DBEAFE] rounded-lg">
+                        <p className="text-[11.5px] text-[#475569] leading-relaxed">
+                            This view will include all {LEAD_STAGES.length} pipeline stages. You can refine filters after creation.
+                        </p>
+                    </div>
+                </div>
+            </SideFormSheet>
         </div>
     )
 }

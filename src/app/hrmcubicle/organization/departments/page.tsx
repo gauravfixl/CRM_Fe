@@ -38,6 +38,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -426,208 +427,134 @@ const DepartmentsPage = () => {
             </main>
 
             {/* Add Department Dialog */}
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                <DialogContent className="bg-white rounded-3xl border border-slate-300 p-8 max-w-4xl shadow-3xl max-h-[90vh] overflow-y-auto my-4 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                    <DialogHeader className="space-y-1">
-                        <div className="h-9 w-9 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600 mb-1 shadow-inner">
-                            <Plus size={20} />
-                        </div>
-                        <DialogTitle className="text-xl font-bold tracking-tight text-slate-900">Add Department</DialogTitle>
-                        <DialogDescription className="text-slate-500 font-medium text-[10px]">
-                            Create a new organizational unit or functional division.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="py-6 space-y-6">
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Department Name *</Label>
-                                        <Input
-                                            className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.name ? "border-rose-500" : "border-slate-300"}`}
-                                            placeholder="e.g., Engineering"
-                                            maxLength={60}
-                                            value={formData.name}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        />
-                                        {errors.name && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.name}</p>}
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Department Code *</Label>
-                                        <Input
-                                            className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.code ? "border-rose-500" : "border-slate-300"}`}
-                                            placeholder="ENG"
-                                            maxLength={10}
-                                            value={formData.code}
-                                            onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                                        />
-                                        {errors.code && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.code}</p>}
-                                    </div>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Department Head</Label>
-                                    <Select value={formData.headId || "none"} onValueChange={(v) => setFormData({ ...formData, headId: v === "none" ? "" : v })}>
-                                        <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors">
-                                            <SelectValue placeholder="Select head" />
-                                        </SelectTrigger>
-                                        <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-1 font-bold max-h-[300px]">
-                                            <SelectItem value="none" className="rounded-lg h-8 text-xs">No Head Assigned</SelectItem>
-                                            {employees.filter(e => e.status === 'Active').map(emp => (
-                                                <SelectItem key={emp.id} value={emp.id} className="rounded-lg h-8 text-xs">
-                                                    {emp.firstName} {emp.lastName}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Parent Department</Label>
-                                    <Select value={formData.parentDepartmentId || "none"} onValueChange={(v) => setFormData({ ...formData, parentDepartmentId: v === "none" ? "" : v })}>
-                                        <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors">
-                                            <SelectValue placeholder="Select parent" />
-                                        </SelectTrigger>
-                                        <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-1 font-bold">
-                                            <SelectItem value="none" className="rounded-lg h-8 text-xs">None (Top Level)</SelectItem>
-                                            {departments.filter(d => d.id !== selectedDepartment?.id).map(dept => (
-                                                <SelectItem key={dept.id} value={dept.id} className="rounded-lg h-8 text-xs">
-                                                    {dept.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-
-                            <div className="space-y-1">
-                                <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Department Description</Label>
-                                <Textarea
-                                    className={`rounded-lg bg-slate-50 border min-h-[148px] p-4 font-medium text-xs focus:border-indigo-500 transition-colors ${errors.description ? "border-rose-500" : "border-slate-300"}`}
-                                    placeholder="Describe the department's core focus and responsibilities..."
-                                    maxLength={500}
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                />
-                                <div className="flex justify-between items-center">
-                                    {errors.description ? <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.description}</p> : <span />}
-                                    <p className="text-[9px] font-bold text-slate-400 mr-1">{(formData.description || "").length}/500</p>
-                                </div>
-                            </div>
-                        </div>
+            <SideFormSheet
+                open={isAddDialogOpen}
+                onOpenChange={(o) => { setIsAddDialogOpen(o); if (!o) resetForm(); }}
+                title="Add Department"
+                description="Create a new organizational unit or functional division."
+                icon={<Plus size={20} />}
+                accentColor="#4f46e5"
+                width="lg"
+                loading={isSaving}
+                submitLabel={isSaving ? "Creating..." : "Create Department"}
+                onSubmit={(e) => { e.preventDefault(); handleAddDepartment(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Department Name" required error={errors.name || undefined}>
+                            <Input
+                                placeholder="e.g., Engineering"
+                                maxLength={60}
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            />
+                        </Field>
+                        <Field label="Department Code" required error={errors.code || undefined}>
+                            <Input
+                                placeholder="ENG"
+                                maxLength={10}
+                                value={formData.code}
+                                onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                            />
+                        </Field>
                     </div>
+                    <Field label="Department Head">
+                        <Select value={formData.headId || "none"} onValueChange={(v) => setFormData({ ...formData, headId: v === "none" ? "" : v })}>
+                            <SelectTrigger><SelectValue placeholder="Select head" /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">No Head Assigned</SelectItem>
+                                {employees.filter(e => e.status === 'Active').map(emp => (
+                                    <SelectItem key={emp.id} value={emp.id}>{emp.firstName} {emp.lastName}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field label="Parent Department">
+                        <Select value={formData.parentDepartmentId || "none"} onValueChange={(v) => setFormData({ ...formData, parentDepartmentId: v === "none" ? "" : v })}>
+                            <SelectTrigger><SelectValue placeholder="Select parent" /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">None (Top Level)</SelectItem>
+                                {departments.filter(d => d.id !== selectedDepartment?.id).map(dept => (
+                                    <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field
+                        label="Department Description"
+                        error={errors.description || undefined}
+                        hint={errors.description ? undefined : `${(formData.description || "").length}/500`}
+                    >
+                        <Textarea
+                            className="min-h-[140px]"
+                            placeholder="Describe the department's core focus and responsibilities..."
+                            maxLength={500}
+                            value={formData.description}
+                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-                    <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
-                        <Button
-                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all disabled:opacity-50"
-                            onClick={handleAddDepartment}
-                            disabled={isSaving}
-                        >
-                            {isSaving ? "Creating..." : "Create Department"}
-                        </Button>
-                        <Button variant="outline" className="h-11 px-6 rounded-xl font-bold border-slate-200 text-slate-600 text-xs" onClick={() => { setIsAddDialogOpen(false); resetForm(); }} disabled={isSaving}>
-                            Cancel
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Edit Department Dialog */}
-            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent className="bg-white rounded-3xl border border-slate-300 p-8 max-w-4xl shadow-3xl max-h-[90vh] overflow-y-auto my-4 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                    <DialogHeader className="space-y-1">
-                        <div className="h-9 w-9 bg-purple-50 rounded-lg flex items-center justify-center text-purple-600 mb-1 shadow-inner">
-                            <Edit size={20} />
-                        </div>
-                        <DialogTitle className="text-xl font-bold tracking-tight text-slate-900">Edit Department</DialogTitle>
-                        <DialogDescription className="text-slate-500 font-medium text-[10px]">
-                            Update department details and configuration.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="py-6 space-y-6">
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Department Name *</Label>
-                                        <Input
-                                            className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
-                                            value={formData.name}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Department Code *</Label>
-                                        <Input
-                                            className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
-                                            value={formData.code}
-                                            onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Department Head</Label>
-                                    <Select value={formData.headId || "none"} onValueChange={(v) => setFormData({ ...formData, headId: v === "none" ? undefined : v })}>
-                                        <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-1 font-bold max-h-[300px]">
-                                            <SelectItem value="none" className="rounded-lg h-8 text-xs">No Head Assigned</SelectItem>
-                                            {employees.filter(e => e.status === 'Active').map(emp => (
-                                                <SelectItem key={emp.id} value={emp.id} className="rounded-lg h-8 text-xs">
-                                                    {emp.firstName} {emp.lastName}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Parent Department</Label>
-                                    <Select value={formData.parentDepartmentId || "none"} onValueChange={(v) => setFormData({ ...formData, parentDepartmentId: v === "none" ? "" : v })}>
-                                        <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors">
-                                            <SelectValue placeholder="None (Top Level)" />
-                                        </SelectTrigger>
-                                        <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-1 font-bold">
-                                            <SelectItem value="none" className="rounded-lg h-8 text-xs">None (Top Level)</SelectItem>
-                                            {departments.filter(d => d.id !== selectedDepartment?.id).map(dept => (
-                                                <SelectItem key={dept.id} value={dept.id} className="rounded-lg h-8 text-xs">
-                                                    {dept.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-
-                            <div className="space-y-1">
-                                <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Description</Label>
-                                <Textarea
-                                    className="rounded-lg bg-slate-50 border border-slate-300 min-h-[144px] p-4 font-medium text-xs focus:border-indigo-500 transition-colors"
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                />
-                            </div>
-                        </div>
+            {/* Edit Department Sheet */}
+            <SideFormSheet
+                open={isEditDialogOpen}
+                onOpenChange={(o) => { setIsEditDialogOpen(o); if (!o) resetForm(); }}
+                title="Edit Department"
+                description="Update department details and configuration."
+                icon={<Edit size={20} />}
+                accentColor="#7c3aed"
+                width="lg"
+                loading={isSaving}
+                submitLabel={isSaving ? "Saving..." : "Save Changes"}
+                onSubmit={(e) => { e.preventDefault(); handleUpdateDepartment(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Department Name" required>
+                            <Input
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            />
+                        </Field>
+                        <Field label="Department Code" required>
+                            <Input
+                                value={formData.code}
+                                onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                            />
+                        </Field>
                     </div>
-
-                    <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
-                        <Button
-                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all disabled:opacity-50"
-                            onClick={handleUpdateDepartment}
-                            disabled={isSaving}
-                        >
-                            {isSaving ? "Saving..." : "Save Changes"}
-                        </Button>
-                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => { setIsEditDialogOpen(false); resetForm(); }} disabled={isSaving}>
-                            Cancel
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Department Head">
+                        <Select value={formData.headId || "none"} onValueChange={(v) => setFormData({ ...formData, headId: v === "none" ? undefined : v })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">No Head Assigned</SelectItem>
+                                {employees.filter(e => e.status === 'Active').map(emp => (
+                                    <SelectItem key={emp.id} value={emp.id}>{emp.firstName} {emp.lastName}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field label="Parent Department">
+                        <Select value={formData.parentDepartmentId || "none"} onValueChange={(v) => setFormData({ ...formData, parentDepartmentId: v === "none" ? "" : v })}>
+                            <SelectTrigger><SelectValue placeholder="None (Top Level)" /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">None (Top Level)</SelectItem>
+                                {departments.filter(d => d.id !== selectedDepartment?.id).map(dept => (
+                                    <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field label="Description">
+                        <Textarea
+                            className="min-h-[140px]"
+                            value={formData.description}
+                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             {/* View Members Dialog */}
             < Dialog open={isViewMembersDialogOpen} onOpenChange={setIsViewMembersDialogOpen} >

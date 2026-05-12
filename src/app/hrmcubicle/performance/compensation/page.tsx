@@ -72,6 +72,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/shared/components/ui/tabs";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { cn } from "@/lib/utils";
 
 interface CompReview {
@@ -522,115 +523,101 @@ const CompensationReviewPage = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Create / Edit Dialog */}
-      <Dialog open={!!formDialog} onOpenChange={(open) => { if (!open) { setFormDialog(null); setEditId(null); setFormData(emptyForm); setFormErrors({}); } }}>
-        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{formDialog === "edit" ? `Edit Compensation — ${formData.employeeName}` : "New Compensation Review"}</DialogTitle>
-            <DialogDescription>Create or adjust a compensation review record.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Employee Name *</Label>
-                <Input
-                  maxLength={100}
-                  value={formData.employeeName}
-                  onChange={(e) => setFormData({ ...formData, employeeName: e.target.value })}
-                  className={formErrors.employeeName ? "border-rose-400" : ""}
-                />
-                {formErrors.employeeName && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {formErrors.employeeName}</p>}
-              </div>
-              <div><Label>Employee ID</Label><Input maxLength={50} value={formData.employeeId} placeholder="E###" onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })} /></div>
-              <div>
-                <Label>Role *</Label>
-                <Input
-                  maxLength={100}
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  className={formErrors.role ? "border-rose-400" : ""}
-                />
-                {formErrors.role && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {formErrors.role}</p>}
-              </div>
-              <div>
-                <Label>Department</Label>
-                <Select value={formData.department} onValueChange={(v) => setFormData({ ...formData, department: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Engineering">Engineering</SelectItem>
-                    <SelectItem value="Marketing">Marketing</SelectItem>
-                    <SelectItem value="Sales">Sales</SelectItem>
-                    <SelectItem value="HR">HR</SelectItem>
-                    <SelectItem value="Finance">Finance</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Current CTC (₹) *</Label>
-                <Input
-                  type="number" min={0}
-                  value={formData.currentCTC}
-                  onChange={(e) => setFormData({ ...formData, currentCTC: Math.max(0, parseInt(e.target.value) || 0) })}
-                  className={formErrors.currentCTC ? "border-rose-400" : ""}
-                />
-                {formErrors.currentCTC && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {formErrors.currentCTC}</p>}
-              </div>
-              <div>
-                <Label>Rating *</Label>
-                <Select value={String(formData.rating)} onValueChange={(v) => setFormData({ ...formData, rating: parseInt(v) })}>
-                  <SelectTrigger className={formErrors.rating ? "border-rose-400" : ""}><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="5">5 — Exceptional</SelectItem>
-                    <SelectItem value="4">4 — Exceeds</SelectItem>
-                    <SelectItem value="3">3 — Meets</SelectItem>
-                    <SelectItem value="2">2 — Below</SelectItem>
-                    <SelectItem value="1">1 — Needs Improvement</SelectItem>
-                  </SelectContent>
-                </Select>
-                {formErrors.rating && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {formErrors.rating}</p>}
-              </div>
-              <div>
-                <Label>Increment % *</Label>
-                <Input
-                  type="number" min={0} max={100}
-                  value={formData.recommendedIncrement}
-                  onChange={(e) => setFormData({ ...formData, recommendedIncrement: Math.max(0, Math.min(100, parseInt(e.target.value) || 0)) })}
-                  className={formErrors.recommendedIncrement ? "border-rose-400" : ""}
-                />
-                <p className="text-[10px] text-slate-400 mt-1">
-                  Recommended for rating {formData.rating}: {incrementRanges[formData.rating]?.label}
-                </p>
-                {formErrors.recommendedIncrement && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {formErrors.recommendedIncrement}</p>}
-              </div>
-              <div>
-                <Label>Status</Label>
-                <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v as CompReview["status"] })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Pending">Pending</SelectItem>
-                    <SelectItem value="Manager Approved">Manager Approved</SelectItem>
-                    <SelectItem value="HR Approved">HR Approved</SelectItem>
-                    <SelectItem value="Final Approved">Final Approved</SelectItem>
-                    <SelectItem value="Rejected">Rejected</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-lg text-xs">
-              Proposed CTC will be:{" "}
-              <strong>{formatCurrency(syncProposedCTC(formData.currentCTC, formData.recommendedIncrement))}</strong>
-            </div>
+      {/* Create / Edit SideFormSheet */}
+      <SideFormSheet
+        open={!!formDialog}
+        onOpenChange={(open) => { if (!open) { setFormDialog(null); setEditId(null); setFormData(emptyForm); setFormErrors({}); } }}
+        title={formDialog === "edit" ? `Edit Compensation — ${formData.employeeName}` : "New Compensation Review"}
+        description="Create or adjust a compensation review record."
+        icon={formDialog === "edit" ? <Edit size={20} /> : <Plus size={20} />}
+        accentColor={formDialog === "edit" ? "#7c3aed" : "#4f46e5"}
+        width="lg"
+        submitLabel={formDialog === "edit" ? "Save Changes" : "Create Review"}
+        onSubmit={(e) => { e.preventDefault(); handleSaveForm(); }}
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Employee Name" required error={formErrors.employeeName || undefined}>
+              <Input
+                maxLength={100}
+                value={formData.employeeName}
+                onChange={(e) => setFormData({ ...formData, employeeName: e.target.value })}
+              />
+            </Field>
+            <Field label="Employee ID">
+              <Input maxLength={50} value={formData.employeeId} placeholder="E###" onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })} />
+            </Field>
+            <Field label="Role" required error={formErrors.role || undefined}>
+              <Input
+                maxLength={100}
+                value={formData.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              />
+            </Field>
+            <Field label="Department">
+              <Select value={formData.department} onValueChange={(v) => setFormData({ ...formData, department: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Engineering">Engineering</SelectItem>
+                  <SelectItem value="Marketing">Marketing</SelectItem>
+                  <SelectItem value="Sales">Sales</SelectItem>
+                  <SelectItem value="HR">HR</SelectItem>
+                  <SelectItem value="Finance">Finance</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setFormDialog(null); setEditId(null); setFormData(emptyForm); setFormErrors({}); }}>Cancel</Button>
-            <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white" onClick={handleSaveForm}>
-              {formDialog === "edit" ? "Save Changes" : "Create Review"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Current CTC (₹)" required error={formErrors.currentCTC || undefined}>
+              <Input
+                type="number" min={0}
+                value={formData.currentCTC}
+                onChange={(e) => setFormData({ ...formData, currentCTC: Math.max(0, parseInt(e.target.value) || 0) })}
+              />
+            </Field>
+            <Field label="Rating" required error={formErrors.rating || undefined}>
+              <Select value={String(formData.rating)} onValueChange={(v) => setFormData({ ...formData, rating: parseInt(v) })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5 — Exceptional</SelectItem>
+                  <SelectItem value="4">4 — Exceeds</SelectItem>
+                  <SelectItem value="3">3 — Meets</SelectItem>
+                  <SelectItem value="2">2 — Below</SelectItem>
+                  <SelectItem value="1">1 — Needs Improvement</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field
+              label="Increment %"
+              required
+              error={formErrors.recommendedIncrement || undefined}
+              hint={`Recommended for rating ${formData.rating}: ${incrementRanges[formData.rating]?.label}`}
+            >
+              <Input
+                type="number" min={0} max={100}
+                value={formData.recommendedIncrement}
+                onChange={(e) => setFormData({ ...formData, recommendedIncrement: Math.max(0, Math.min(100, parseInt(e.target.value) || 0)) })}
+              />
+            </Field>
+            <Field label="Status">
+              <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v as CompReview["status"] })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="Manager Approved">Manager Approved</SelectItem>
+                  <SelectItem value="HR Approved">HR Approved</SelectItem>
+                  <SelectItem value="Final Approved">Final Approved</SelectItem>
+                  <SelectItem value="Rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+          </div>
+          <div className="p-3 bg-slate-50 rounded-lg text-xs">
+            Proposed CTC will be:{" "}
+            <strong>{formatCurrency(syncProposedCTC(formData.currentCTC, formData.recommendedIncrement))}</strong>
+          </div>
+        </div>
+      </SideFormSheet>
 
       {/* Reject Confirmation */}
       <AlertDialog open={!!rejectTarget} onOpenChange={(open) => { if (!open) setRejectTarget(null); }}>

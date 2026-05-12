@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import {
@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useBrandingStore } from "../../../../../../lib/useBrandingStore";
 import { useTheme } from "next-themes";
+import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks";
 
 export default function ThemeSettingsPage() {
     const {
@@ -40,6 +41,7 @@ export default function ThemeSettingsPage() {
     const [borderRadius, setBorderRadius] = useState(storeBorderRadius);
     const [mode, setMode] = useState(storeThemeMode);
     const [mounted, setMounted] = useState(false);
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         setMounted(true);
@@ -51,14 +53,39 @@ export default function ThemeSettingsPage() {
         setMode(storeThemeMode)
     }, [storePrimaryColor, storeBorderRadius, storeThemeMode])
 
-    const handleSave = () => {
-        setBranding({
-            primaryColor,
-            borderRadius,
-            themeMode: mode as any
-        })
-        setTheme(mode)
-        toast.success("Theme configuration saved globally!")
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await getOrgAdminSettings()
+                const s = res?.data?.settings || res?.data?.data || res?.data || {}
+                const remoteColor = s?.branding?.primaryColor
+                if (remoteColor) {
+                    setPrimaryColor(remoteColor)
+                    setBranding({ primaryColor: remoteColor })
+                }
+            } catch (err) {
+                // Silent â€” fall back to Zustand store
+            }
+        })()
+    }, [setBranding])
+
+    const handleSave = async () => {
+        try {
+            setSaving(true)
+            await updateOrgAdminSettings({ branding: { primaryColor } })
+            setBranding({
+                primaryColor,
+                borderRadius,
+                themeMode: mode as any
+            })
+            setTheme(mode)
+            toast.success("Theme configuration saved globally!")
+        } catch (err: any) {
+            console.error("Failed to save theme:", err)
+            toast.error(err?.response?.data?.message || "Failed to save theme")
+        } finally {
+            setSaving(false)
+        }
     };
 
     const handleReset = () => {
@@ -90,10 +117,11 @@ export default function ThemeSettingsPage() {
                     <Button
                         className="h-9 bg-primary text-primary-foreground gap-2 font-bold shadow-lg shadow-primary/20 transition-all hover:translate-y-[-1px] active:scale-95"
                         onClick={handleSave}
+                        disabled={saving}
                         style={{ backgroundColor: primaryColor }}
                     >
                         <Save className="w-4 h-4" />
-                        Apply Theme
+                        {saving ? "Saving..." : "Apply Theme"}
                     </Button>
                 </div>
             </div>
@@ -177,7 +205,7 @@ export default function ThemeSettingsPage() {
                                         { val: "0.25", label: "Compact", class: "rounded-sm" },
                                         { val: "0.5", label: "Smooth", class: "rounded-md" },
                                         { val: "0.75", label: "Default", class: "rounded-lg" },
-                                        { val: "1.25", label: "Curvy", class: "rounded-2xl" }
+                                        { val: "1.25", label: "Curvy", class: "rounded-none" }
                                     ].map((rad) => (
                                         <button
                                             key={rad.val}

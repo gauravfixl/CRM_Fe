@@ -1,279 +1,583 @@
-"use client";
+﻿"use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
     Building2,
-    Camera,
+    Save,
     Mail,
     Phone,
     MapPin,
     Globe,
-    Save,
-    X,
-    Upload
+    Calendar,
+    Users,
+    Briefcase,
+    Package,
+    Clock,
+    User as UserIcon,
+    CheckCircle2,
+    XCircle,
+    Edit3,
+    DollarSign,
+    Languages,
+    Database,
+    ChevronRight,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useParams, useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { toast } from "sonner";
-import { Separator } from "@/components/ui/separator";
-
+import { Badge } from "@/components/ui/badge";
+import { CustomButton } from "@/shared/components/custom/CustomButton";
 import { axiosInstance } from "@/lib/axios";
-import { getOrgDetails } from "@/hooks/orgHooks";
+import { getOrgDetails, updateOrgDetails } from "@/hooks/orgHooks";
+import { showError, showSuccess } from "@/utils/toast";
+import Loader from "@/shared/components/custom/Loader";
 
-export default function OrgProfilePage() {
-    const [orgName, setOrgName] = useState("");
-    const [description, setDescription] = useState("");
-    const [logoUrl, setLogoUrl] = useState("/placeholder-logo.png");
-    const logoInputRef = React.useRef<HTMLInputElement>(null);
+const formatDateLong = (input: string | undefined): string => {
+    if (!input) return "â€”";
+    const t = new Date(input).getTime();
+    if (!Number.isFinite(t)) return "â€”";
+    return new Date(t).toLocaleDateString("en-US", { month: "long", day: "2-digit", year: "numeric" });
+};
 
-    const [contactEmail, setContactEmail] = useState("");
-    const [contactPhone, setContactPhone] = useState("");
-    const [contactName, setContactName] = useState("");
+export default function OrgSettingsProfilePage() {
+    const router = useRouter();
+    const params = useParams() as { orgName?: string };
+    const orgName = params.orgName || "default";
 
-    const [streetAddress, setStreetAddress] = useState("");
-    const [city, setCity] = useState("");
-    const [stateName, setStateName] = useState("");
-    const [zip, setZip] = useState("");
-    const [country, setCountry] = useState("");
+    const [org, setOrg] = useState<any>(null);
+    const [users, setUsers] = useState<any[]>([]);
+    const [firms, setFirms] = useState<any[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [saving, setSaving] = useState<boolean>(false);
+    const [editing, setEditing] = useState<boolean>(false);
 
-    const builtAddress = useMemo(() => {
-        const parts = [streetAddress, city, stateName, zip]
-            .map((p) => (p || "").trim())
-            .filter(Boolean);
-        return parts.join(", ");
-    }, [streetAddress, city, stateName, zip]);
+    const [form, setForm] = useState({
+        name: "",
+        contactEmail: "",
+        contactPhone: "",
+        contactName: "",
+        address: "",
+        orgCountry: "",
+    });
 
+    const loadedRef = useRef(false);
     useEffect(() => {
-        const load = async () => {
+        if (loadedRef.current) return;
+        loadedRef.current = true;
+
+        const safety = window.setTimeout(() => setLoading(false), 20000);
+
+        ;(async () => {
             try {
-                const res = await getOrgDetails();
-                const o = res?.data?.organization;
-                if (!o) return;
+                const [orgRes, usersRes, firmsRes] = await Promise.allSettled([
+                    getOrgDetails(),
+                    axiosInstance.get("/organization/users/all"),
+                    axiosInstance.get("/firm/getAllFirm"),
+                ]);
 
-                setOrgName(o.name ?? "");
-                setContactEmail(o.contactEmail ?? "");
-                setContactPhone(o.contactPhone ?? "");
-                setContactName(o.contactName ?? "");
-
-                // backend: address, orgCity, orgState, orgCountry
-                setStreetAddress(o.address ?? "");
-                setCity(o.orgCity ?? "");
-                setStateName(o.orgState ?? "");
-                setCountry(o.orgCountry ?? "");
-
-                // frontend page uses description locally; backend doesn't expose it in this controller response
-                setDescription("");
-            } catch {
-                // keep empty defaults
+                if (orgRes.status === "fulfilled") {
+                    const orgData = orgRes.value?.data?.organization ?? null;
+                    setOrg(orgData);
+                    if (orgData) {
+                        setForm({
+                            name: orgData.name || "",
+                            contactEmail: orgData.contactEmail || "",
+                            contactPhone: orgData.contactPhone || "",
+                            contactName: orgData.contactName || "",
+                            address: orgData.address || "",
+                            orgCountry: orgData.orgCountry || "",
+                        });
+                    }
+                }
+                if (usersRes.status === "fulfilled") {
+                    const d: any = usersRes.value?.data || {};
+                    const arr: any[] = Array.isArray(d) ? d : d.users || d.data || [];
+                    setUsers(Array.isArray(arr) ? arr : []);
+                }
+                if (firmsRes.status === "fulfilled") {
+                    const arr = firmsRes.value?.data?.firms ?? [];
+                    setFirms(Array.isArray(arr) ? arr : []);
+                }
+            } finally {
+                window.clearTimeout(safety);
+                setLoading(false);
             }
-        };
-
-        load();
+        })();
     }, []);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        if (file.size > 2 * 1024 * 1024) {
-            toast.error("File size must be less than 2MB");
-            return;
-        }
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setLogoUrl(reader.result as string);
-            toast.success("Logo updated locally (Save to persist).");
-        };
-        reader.readAsDataURL(file);
+    const totalUsers = users.length;
+    const activeFirmsCount = useMemo(() => firms.filter((f: any) => !f.isDeleted).length, [firms]);
+    const enabledModules: string[] = Array.isArray(org?.modules) ? org.modules : [];
+
+    const hasRealLogo = !!(
+        org?.OrgLogo?.url &&
+        !org.OrgLogo.url.includes("encrypted-tbn0.gstatic.com") &&
+        !org.OrgLogo.url.includes("gstatic.com/images")
+    );
+    const orgInitials = useMemo(() => {
+        const name = (org?.name || orgName || "Org").trim();
+        const parts = name.split(/\s+/).filter(Boolean);
+        if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+        return name.substring(0, 2).toUpperCase();
+    }, [org, orgName]);
+
+    const handleChange = (key: keyof typeof form, value: string) => {
+        setForm((prev) => ({ ...prev, [key]: value }));
     };
 
     const handleSave = async () => {
-        // Validation
+        if (!form.name.trim()) {
+            showError("Organization name is required");
+            return;
+        }
+        if (!form.contactEmail.trim()) {
+            showError("Contact email is required");
+            return;
+        }
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        const phoneRegex = /^\+?[\d\s-]{10,}$/;
-
-        if (!orgName.trim()) {
-            toast.error("Organization Name is required");
+        if (!emailRegex.test(form.contactEmail.trim())) {
+            showError("Please enter a valid email address");
             return;
         }
-
-        if (/\d/.test(orgName)) {
-            toast.error("Organization Name should not contain numbers");
-            return;
-        }
-
-        if (contactName && /\d/.test(contactName)) {
-            toast.error("Contact person name should not contain numbers");
-            return;
-        }
-
-        if (contactEmail && !emailRegex.test(contactEmail)) {
-            toast.error("Please enter a valid email address");
-            return;
-        }
-
-        if (contactPhone && !phoneRegex.test(contactPhone)) {
-            toast.error("Please enter a valid phone number");
-            return;
+        if (form.contactPhone) {
+            const phoneRegex = /^\+?[\d\s-]{7,}$/;
+            if (!phoneRegex.test(form.contactPhone.trim())) {
+                showError("Please enter a valid phone number");
+                return;
+            }
         }
 
         try {
-            await axiosInstance.patch("/organization/update/details", {
-                name: orgName.trim(),
-                contactEmail: contactEmail.trim(),
-                contactPhone: contactPhone.trim(),
-                contactName: contactName.trim(),
-                address: builtAddress || streetAddress,
-                orgCountry: country,
-            });
-
-            toast.success("Profile updated successfully.");
-        } catch (e: any) {
-            toast.error(e?.response?.data?.message || "Failed to update profile.");
+            setSaving(true);
+            await updateOrgDetails(form);
+            showSuccess("Organization details updated");
+            setEditing(false);
+            const refreshed = await getOrgDetails();
+            setOrg(refreshed?.data?.organization ?? null);
+        } catch (err: any) {
+            showError(err?.response?.data?.message || "Failed to update organization");
+        } finally {
+            setSaving(false);
         }
     };
 
+    const handleCancel = () => {
+        if (org) {
+            setForm({
+                name: org.name || "",
+                contactEmail: org.contactEmail || "",
+                contactPhone: org.contactPhone || "",
+                contactName: org.contactName || "",
+                address: org.address || "",
+                orgCountry: org.orgCountry || "",
+            });
+        }
+        setEditing(false);
+    };
+
+    if (loading) {
+        return (
+            <div className="relative flex flex-col h-full w-full bg-slate-50/50 font-sans">
+                <Loader />
+            </div>
+        );
+    }
+
     return (
-        <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-6 overflow-y-auto">
+        <div className="flex flex-col h-full w-full bg-slate-50/50 overflow-y-auto font-sans pb-8">
             {/* HEADER */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-                        <Building2 className="w-6 h-6 text-slate-600" />
-                        Organization Profile
-                    </h1>
-                    <p className="text-sm text-slate-500 mt-1">Manage public facing details and contact information.</p>
+            <div className="relative w-full h-44 shadow-2xl overflow-hidden flex items-center px-8 border-b-4 border-indigo-200">
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-700 via-blue-800 to-indigo-900" />
+                <div className="absolute -right-20 -top-20 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
+                <div className="relative z-10 flex items-center gap-6">
+                    <div className="h-24 w-24 rounded-none border-4 border-white/40 flex items-center justify-center overflow-hidden shadow-2xl ring-4 ring-white/10 bg-gradient-to-br from-indigo-400 via-purple-500 to-pink-500">
+                        {hasRealLogo ? (
+                            <img src={org.OrgLogo.url} alt={org?.name || "Org"} className="w-full h-full object-cover" />
+                        ) : (
+                            <span className="text-3xl font-black text-white tracking-tight drop-shadow-md select-none">
+                                {orgInitials}
+                            </span>
+                        )}
+                    </div>
+                    <div>
+                        <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest">Organization Settings</p>
+                        <h1 className="text-3xl font-black text-white drop-shadow-xl">{org?.name || orgName}</h1>
+                        {(org?.createdAt || typeof org?.isActive !== "undefined" || org?.contactEmail) && (
+                            <div className="flex items-center gap-3 mt-2 text-white/80 text-xs flex-wrap">
+                                {org?.createdAt && (
+                                    <span className="flex items-center gap-1">
+                                        <Calendar className="w-3 h-3" /> Founded {formatDateLong(org.createdAt)}
+                                    </span>
+                                )}
+                                {org?.contactEmail && (
+                                    <span className="flex items-center gap-1">
+                                        <Mail className="w-3 h-3" /> {org.contactEmail}
+                                    </span>
+                                )}
+                                {typeof org?.isActive !== "undefined" && (
+                                    <Badge className={`text-[10px] font-bold uppercase ${
+                                        org.isActive ? "bg-emerald-500 hover:bg-emerald-500" : "bg-red-500 hover:bg-red-500"
+                                    } text-white border-0`}>
+                                        {org.isActive ? "Active" : "Inactive"}
+                                    </Badge>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" className="h-9 border-slate-200 font-bold rounded-lg hover:bg-slate-100">
-                        Cancel
-                    </Button>
-                    <Button
-                        className="h-9 bg-slate-900 hover:bg-slate-800 text-white gap-2 font-bold shadow-lg shadow-slate-200 rounded-lg transition-all hover:translate-y-[-1px]"
-                        onClick={handleSave}
-                    >
-                        <Save className="w-4 h-4" />
-                        Save Changes
-                    </Button>
+                <div className="ml-auto relative z-10">
+                    {!editing ? (
+                        <CustomButton
+                            className="bg-white text-indigo-700 hover:bg-white/90 font-bold rounded-xl px-5 h-10"
+                            onClick={() => setEditing(true)}
+                        >
+                            <Edit3 className="w-4 h-4 mr-2" /> Edit Profile
+                        </CustomButton>
+                    ) : (
+                        <div className="flex items-center gap-2">
+                            <CustomButton
+                                variant="outline"
+                                className="bg-white/15 backdrop-blur-lg text-white border-white/20 hover:bg-white/25 hover:text-white rounded-xl px-4 h-10"
+                                onClick={handleCancel}
+                                disabled={saving}
+                            >
+                                Cancel
+                            </CustomButton>
+                            <CustomButton
+                                className="bg-white text-indigo-700 hover:bg-white/90 font-bold rounded-xl px-5 h-10"
+                                onClick={handleSave}
+                                disabled={saving}
+                            >
+                                <Save className="w-4 h-4 mr-2" /> {saving ? "Saving..." : "Save Changes"}
+                            </CustomButton>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* LOGO & IDENTITY */}
-                <Card className="border-slate-200 shadow-sm rounded-xl hover:shadow-md transition-shadow bg-white overflow-visible relative flex flex-col">
-                    <div className="h-32 bg-gradient-to-br from-indigo-500 via-purple-500 to-blue-600 w-full rounded-t-xl relative shrink-0">
-                        <div className="absolute -bottom-12 w-full flex justify-center">
-                            <div className="relative group cursor-pointer" onClick={() => logoInputRef.current?.click()}>
-                                <input type="file" ref={logoInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
-                                <Avatar className="h-24 w-24 rounded-2xl border-4 border-white shadow-lg bg-white overflow-hidden transition-transform group-hover:scale-105 duration-300">
-                                    <AvatarImage src={logoUrl} className="object-contain p-2" />
-                                    <AvatarFallback className="text-3xl font-black bg-slate-50 text-indigo-300 rounded-2xl">AC</AvatarFallback>
-                                </Avatar>
-                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl z-10 backdrop-blur-sm">
-                                    <Camera className="w-6 h-6 text-white" />
-                                </div>
-                            </div>
+            {/* QUICK STATS */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 px-6 mt-6">
+                <Card className="border bg-white shadow-md rounded-none">
+                    <CardContent className="p-4 flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                            <Users className="w-5 h-5" />
                         </div>
-                    </div>
-
-                    <CardContent className="pt-20 px-6 pb-6 space-y-6 flex-1 flex flex-col">
-                        <div className="space-y-5 flex-1">
-                            <div className="space-y-2 text-center">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Display Name</Label>
-                                <Input
-                                    value={orgName}
-                                    onChange={(e) => setOrgName(e.target.value)}
-                                    className="font-black text-xl rounded-lg h-12 text-center border-slate-200 shadow-sm focus-visible:ring-indigo-500 placeholder:font-normal placeholder:text-slate-300 placeholder:italic"
-                                    placeholder="Company Name"
-                                />
-                            </div>
-                            <Separator className="bg-slate-100" />
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center justify-between">
-                                    Description <span className="font-normal normal-case">0/250</span>
-                                </Label>
-                                <Textarea
-                                    value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
-                                    className="text-sm rounded-lg min-h-[120px] resize-none border-slate-200 focus-visible:ring-indigo-500 leading-relaxed"
-                                    placeholder="Enter a brief description of your organization..."
-                                />
-                            </div>
+                        <div>
+                            <p className="text-xs text-zinc-500">Total Users</p>
+                            <p className="text-xl font-bold text-zinc-900">{totalUsers}</p>
                         </div>
                     </CardContent>
                 </Card>
+                <Card className="border bg-white shadow-md rounded-none">
+                    <CardContent className="p-4 flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                            <Briefcase className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-xs text-zinc-500">Active Firms</p>
+                            <p className="text-xl font-bold text-zinc-900">{activeFirmsCount}</p>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="border bg-white shadow-md rounded-none">
+                    <CardContent className="p-4 flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
+                            <Package className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-xs text-zinc-500">Active Modules</p>
+                            <p className="text-xl font-bold text-zinc-900">{enabledModules.length}</p>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="border bg-white shadow-md rounded-none">
+                    <CardContent className="p-4 flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
+                            <Clock className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-xs text-zinc-500">Timezone</p>
+                            <p className="text-base font-bold text-zinc-900">{org?.timezone || "UTC"}</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
 
-                {/* CONTACT INFO */}
-                <Card className="lg:col-span-2 border-slate-200 shadow-sm rounded-xl overflow-hidden flex flex-col">
-                    <CardHeader className="bg-slate-50/50 border-b border-slate-100 p-6">
-                        <CardTitle className="text-base font-bold text-slate-800 flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-indigo-500" />
-                            Contact & Location Details
+            {/* GENERAL INFORMATION + AT A GLANCE */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-6 mt-6">
+                <Card className="lg:col-span-2 border-zinc-200 shadow-xl rounded-none bg-white">
+                    <CardHeader className="border-b border-zinc-100">
+                        <CardTitle className="text-lg font-bold text-zinc-900 flex items-center gap-2">
+                            <Building2 className="w-5 h-5 text-indigo-600" /> General Information
+                        </CardTitle>
+                        <CardDescription>Official details about your registered organization</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-6 space-y-5">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div className="space-y-2">
+                                <Label className="text-zinc-700">Organization Name *</Label>
+                                <Input
+                                    value={form.name}
+                                    onChange={(e) => handleChange("name", e.target.value)}
+                                    disabled={!editing}
+                                    className="rounded-md"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-zinc-700">Contact Person</Label>
+                                <Input
+                                    value={form.contactName}
+                                    onChange={(e) => handleChange("contactName", e.target.value)}
+                                    disabled={!editing}
+                                    placeholder="Primary contact name"
+                                    className="rounded-md"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-zinc-700">Contact Email *</Label>
+                                <Input
+                                    type="email"
+                                    value={form.contactEmail}
+                                    onChange={(e) => handleChange("contactEmail", e.target.value)}
+                                    disabled={!editing}
+                                    className="rounded-md"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-zinc-700">Contact Phone</Label>
+                                <Input
+                                    value={form.contactPhone}
+                                    onChange={(e) => handleChange("contactPhone", e.target.value)}
+                                    disabled={!editing}
+                                    placeholder="+1 555-1234"
+                                    className="rounded-md"
+                                />
+                            </div>
+                            <div className="space-y-2 md:col-span-2">
+                                <Label className="text-zinc-700">Address</Label>
+                                <Textarea
+                                    value={form.address}
+                                    onChange={(e) => handleChange("address", e.target.value)}
+                                    disabled={!editing}
+                                    placeholder="Street address, building, suite..."
+                                    className="rounded-md min-h-[80px]"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-zinc-700">Country</Label>
+                                <Input
+                                    value={form.orgCountry}
+                                    onChange={(e) => handleChange("orgCountry", e.target.value)}
+                                    disabled={!editing}
+                                    placeholder="e.g. India"
+                                    className="rounded-md"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-zinc-700">Timezone</Label>
+                                <Input
+                                    value={org?.timezone || "UTC"}
+                                    disabled
+                                    className="rounded-md bg-zinc-50"
+                                />
+                                <p className="text-[10px] text-zinc-400">Set during org creation</p>
+                            </div>
+                        </div>
+
+                        {(org?.orgCity || org?.orgState) && (
+                            <div className="pt-4 border-t border-zinc-100">
+                                <p className="text-xs text-zinc-500 font-semibold uppercase tracking-widest mb-2">Location (read-only)</p>
+                                <div className="flex items-center gap-4 text-sm text-zinc-700">
+                                    {org?.orgCity && (
+                                        <span className="flex items-center gap-1.5">
+                                            <MapPin className="w-3.5 h-3.5 text-zinc-400" /> {org.orgCity}
+                                        </span>
+                                    )}
+                                    {org?.orgState && (
+                                        <span className="flex items-center gap-1.5">
+                                            <Globe className="w-3.5 h-3.5 text-zinc-400" /> {org.orgState}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                <Card className="border-zinc-200 shadow-xl rounded-none bg-white">
+                    <CardHeader className="border-b border-zinc-100">
+                        <CardTitle className="text-lg font-bold text-zinc-900 flex items-center gap-2">
+                            <UserIcon className="w-5 h-5 text-indigo-600" /> At a Glance
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8 flex-1">
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Public Email</Label>
-                            <div className="relative">
-                                <Mail className="absolute left-3 top-3 h-4 w-4 text-indigo-400" />
-                                <Input
-                                    className="pl-10 rounded-lg font-medium h-10 border-slate-200 focus-visible:ring-indigo-500"
-                                    placeholder="contact@acme.com"
-                                    value={contactEmail}
-                                    onChange={(e) => setContactEmail(e.target.value)}
-                                />
+                    <CardContent className="p-6 space-y-4">
+                        {org?.createdAt && (
+                            <div className="flex items-start gap-3">
+                                <div className="h-9 w-9 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center flex-shrink-0">
+                                    <Calendar className="w-4 h-4" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-xs text-zinc-500">Founded</p>
+                                    <p className="text-sm font-semibold text-zinc-900">{formatDateLong(org.createdAt)}</p>
+                                </div>
+                            </div>
+                        )}
+                        <div className="flex items-start gap-3">
+                            <div className="h-9 w-9 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0">
+                                <Mail className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-xs text-zinc-500">Primary Email</p>
+                                <p className="text-sm font-semibold text-zinc-900 truncate">{org?.contactEmail || "â€”"}</p>
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Phone Number</Label>
-                            <div className="relative">
-                                <Phone className="absolute left-3 top-3 h-4 w-4 text-indigo-400" />
-                                <Input
-                                    className="pl-10 rounded-lg font-medium h-10 border-slate-200 focus-visible:ring-indigo-500"
-                                    placeholder="+1 (555) 000-0000"
-                                    value={contactPhone}
-                                    onChange={(e) => setContactPhone(e.target.value)}
-                                />
+                        <div className="flex items-start gap-3">
+                            <div className="h-9 w-9 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0">
+                                <Phone className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-xs text-zinc-500">Primary Phone</p>
+                                <p className="text-sm font-semibold text-zinc-900">{org?.contactPhone || "â€”"}</p>
                             </div>
                         </div>
-                        <div className="space-y-2 md:col-span-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Website URL</Label>
-                            <div className="relative">
-                                <Globe className="absolute left-3 top-3 h-4 w-4 text-indigo-400" />
-                                <Input className="pl-10 rounded-lg font-medium text-indigo-600 h-10 border-slate-200 focus-visible:ring-indigo-500" placeholder="https://acme.com" />
+                        <div className="flex items-start gap-3">
+                            <div className="h-9 w-9 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0">
+                                <MapPin className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-xs text-zinc-500">Address</p>
+                                <p className="text-sm font-semibold text-zinc-900 break-words">
+                                    {org?.address || "â€”"}
+                                    {org?.orgCity && `, ${org.orgCity}`}
+                                    {org?.orgState && `, ${org.orgState}`}
+                                    {org?.orgCountry && `, ${org.orgCountry}`}
+                                </p>
                             </div>
                         </div>
 
-                        <Separator className="md:col-span-2 my-1" />
-
-                        <div className="space-y-3 md:col-span-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Headquarters Address</Label>
-                            <Input
-                                className="rounded-lg font-medium mb-3 border-slate-200 h-10 focus-visible:ring-indigo-500"
-                                placeholder="Street Address"
-                                value={streetAddress}
-                                onChange={(e) => setStreetAddress(e.target.value)}
-                            />
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                                <Input className="rounded-lg font-medium border-slate-200 h-10 focus-visible:ring-indigo-500" placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} />
-                                <Input
-                                    className="rounded-lg font-medium border-slate-200 h-10 focus-visible:ring-indigo-500"
-                                    placeholder="State / Province"
-                                    value={stateName}
-                                    onChange={(e) => setStateName(e.target.value)}
-                                />
-                                <Input className="rounded-lg font-medium border-slate-200 h-10 focus-visible:ring-indigo-500" placeholder="Zip / Postal" value={zip} onChange={(e) => setZip(e.target.value)} />
-                                <Input
-                                    className="rounded-lg font-medium border-slate-200 h-10 focus-visible:ring-indigo-500"
-                                    placeholder="Country"
-                                    value={country}
-                                    onChange={(e) => setCountry(e.target.value)}
-                                />
+                        {(typeof org?.isActive !== "undefined" || typeof org?.isDeleted !== "undefined") && (
+                            <div className="pt-4 border-t border-zinc-100">
+                                <p className="text-xs text-zinc-500 font-semibold uppercase tracking-widest mb-3">Status</p>
+                                <div className="space-y-2">
+                                    {typeof org?.isActive !== "undefined" && (
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-zinc-600">Organization</span>
+                                            <span className={`flex items-center gap-1 font-bold ${org.isActive ? "text-emerald-600" : "text-red-600"}`}>
+                                                {org.isActive ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                                                {org.isActive ? "Active" : "Inactive"}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {typeof org?.isDeleted !== "undefined" && (
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-zinc-600">Deletion</span>
+                                            <span className={`flex items-center gap-1 font-bold ${!org.isDeleted ? "text-emerald-600" : "text-red-600"}`}>
+                                                {!org.isDeleted ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                                                {!org.isDeleted ? "Not deleted" : "Deleted"}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* MODULES + OTHER SETTINGS */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 px-6 mt-6">
+                <Card className="border-zinc-200 shadow-xl rounded-none bg-white">
+                    <CardHeader className="border-b border-zinc-100">
+                        <CardTitle className="text-lg font-bold text-zinc-900 flex items-center gap-2">
+                            <Package className="w-5 h-5 text-indigo-600" /> Active Modules
+                        </CardTitle>
+                        <CardDescription>Modules currently enabled for this organization</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                        {enabledModules.length === 0 ? (
+                            <div className="text-center py-8 text-sm text-zinc-500">
+                                <Package className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
+                                No modules activated yet
+                                <CustomButton
+                                    className="mt-3 h-8 text-xs block mx-auto"
+                                    onClick={() => router.push(`/${orgName}/modules/organization/units`)}
+                                >
+                                    Manage Modules
+                                </CustomButton>
+                            </div>
+                        ) : (
+                            <div className="flex flex-wrap gap-2">
+                                {enabledModules.map((mod) => (
+                                    <Badge
+                                        key={mod}
+                                        className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-3 py-1.5 text-xs font-semibold capitalize border-0"
+                                    >
+                                        {mod}
+                                    </Badge>
+                                ))}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                <Card className="border-zinc-200 shadow-xl rounded-none bg-white">
+                    <CardHeader className="border-b border-zinc-100">
+                        <CardTitle className="text-lg font-bold text-zinc-900 flex items-center gap-2">
+                            <Globe className="w-5 h-5 text-indigo-600" /> Other Settings
+                        </CardTitle>
+                        <CardDescription>Configure regional and data preferences for this org</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-4 space-y-2">
+                        {[
+                            {
+                                title: "Timezone & Locale",
+                                hint: org?.timezone ? `Currently ${org.timezone}` : "Set regional timezone",
+                                icon: Clock,
+                                tone: "bg-indigo-100 text-indigo-600",
+                                href: `/${orgName}/modules/organization/settings/locale`,
+                            },
+                            {
+                                title: "Default Currency",
+                                hint: "Used in invoices and pricing",
+                                icon: DollarSign,
+                                tone: "bg-emerald-100 text-emerald-600",
+                                href: `/${orgName}/modules/organization/settings/currency`,
+                            },
+                            {
+                                title: "Default Language",
+                                hint: "Default UI language for new users",
+                                icon: Languages,
+                                tone: "bg-amber-100 text-amber-600",
+                                href: `/${orgName}/modules/organization/settings/language`,
+                            },
+                            {
+                                title: "Data Region",
+                                hint: "Where your org data is stored",
+                                icon: Database,
+                                tone: "bg-blue-100 text-blue-600",
+                                href: `/${orgName}/modules/organization/settings/region`,
+                            },
+                        ].map((item) => {
+                            const Icon = item.icon;
+                            return (
+                                <button
+                                    key={item.title}
+                                    onClick={() => router.push(item.href)}
+                                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-zinc-50 transition-all text-left group"
+                                >
+                                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 ${item.tone}`}>
+                                        <Icon className="w-5 h-5" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-semibold text-zinc-900">{item.title}</p>
+                                        <p className="text-xs text-zinc-500 truncate">{item.hint}</p>
+                                    </div>
+                                    <ChevronRight className="w-4 h-4 text-zinc-300 group-hover:text-indigo-600 transition-colors" />
+                                </button>
+                            );
+                        })}
                     </CardContent>
                 </Card>
             </div>

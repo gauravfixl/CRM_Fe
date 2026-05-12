@@ -17,9 +17,9 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
 } from "@/shared/components/ui/dialog"
-import { Label } from "@/shared/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
 import { Textarea } from "@/shared/components/ui/textarea"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import { cn } from "@/lib/utils"
 
 const TODAY = new Date().toISOString().split('T')[0]
@@ -228,44 +228,39 @@ const ExitManagementPage = () => {
         </div>
       </Card>
 
-      {/* Initiate Exit Dialog */}
-      <Dialog open={isInitiateOpen} onOpenChange={setIsInitiateOpen}>
-        <DialogContent className="max-w-lg rounded-2xl border-2 border-slate-200 p-6 bg-white shadow-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-slate-900">Initiate Separation</DialogTitle>
-            <DialogDescription className="text-xs font-bold text-slate-400">Start the offboarding process for an active employee.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div>
-              <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1 block">Select Employee</Label>
-              <Select value={selectedEmpId} onValueChange={setSelectedEmpId}>
-                <SelectTrigger className="rounded-xl h-10 bg-slate-50 border border-slate-100 text-xs font-bold"><SelectValue placeholder="Choose employee..." /></SelectTrigger>
-                <SelectContent className="rounded-xl font-bold">
-                  {activeEmployees.length === 0 ? (
-                    <div className="px-3 py-2 text-xs font-bold text-slate-400">No eligible employees</div>
-                  ) : activeEmployees.map(e => (
-                    <SelectItem key={e.id} value={e.id} className="text-xs">{e.name} — {e.role}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1 block">Last Working Day</Label>
-              <Input type="date" min={TODAY} className="rounded-xl h-10 bg-slate-50 border border-slate-100 text-xs font-bold" value={lwd} onChange={(e) => setLwd(e.target.value)} />
-            </div>
-            <div>
-              <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1 block">Reason for Exit</Label>
-              <Textarea placeholder="Specify resignation details..." className="rounded-xl bg-slate-50 border border-slate-100 p-3 text-xs font-medium resize-none min-h-[90px] focus-visible:ring-0" value={exitReason} onChange={(e) => setExitReason(e.target.value)} />
-            </div>
-          </div>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" className="rounded-xl h-10 font-bold text-xs" onClick={() => setIsInitiateOpen(false)}>Cancel</Button>
-            <Button className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold h-10 text-xs flex-1" onClick={handleInitiateReview}>
-              Review & Confirm
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Initiate Exit Side Form */}
+      <SideFormSheet
+        open={isInitiateOpen}
+        onOpenChange={setIsInitiateOpen}
+        title="Initiate Separation"
+        description="Start the offboarding process for an active employee."
+        icon={<LogOut size={20} />}
+        accentColor="#e11d48"
+        width="lg"
+        submitLabel="Review & Confirm"
+        onSubmit={(e) => { e.preventDefault(); handleInitiateReview(); }}
+      >
+        <div className="space-y-4">
+          <Field label="Select Employee" required>
+            <Select value={selectedEmpId} onValueChange={setSelectedEmpId}>
+              <SelectTrigger><SelectValue placeholder="Choose employee..." /></SelectTrigger>
+              <SelectContent>
+                {activeEmployees.length === 0 ? (
+                  <div className="px-3 py-2 text-xs font-bold text-slate-400">No eligible employees</div>
+                ) : activeEmployees.map(e => (
+                  <SelectItem key={e.id} value={e.id} className="text-xs">{e.name} — {e.role}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Last Working Day" required>
+            <Input type="date" min={TODAY} value={lwd} onChange={(e) => setLwd(e.target.value)} />
+          </Field>
+          <Field label="Reason for Exit" required>
+            <Textarea placeholder="Specify resignation details..." className="min-h-[90px] resize-none" value={exitReason} onChange={(e) => setExitReason(e.target.value)} />
+          </Field>
+        </div>
+      </SideFormSheet>
 
       {/* Final Confirm Exit */}
       <Dialog open={isConfirmExitOpen} onOpenChange={setIsConfirmExitOpen}>

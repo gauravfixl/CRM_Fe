@@ -223,7 +223,7 @@ export default function M365GroupsPage() {
             </div>
 
             <CreateGroupModal open={createGroupOpen} onOpenChange={setCreateGroupOpen} defaultType="M365" onGroupCreated={handleGroupCreated} />
-            <AddMembersModal open={addMembersOpen} onOpenChange={setAddMembersOpen} groupName={selectedGroup?.name} />
+            <AddMembersModal open={addMembersOpen} onOpenChange={setAddMembersOpen} groupName={selectedGroup?.name} groupId={selectedGroup?.id} />
             <AssignAccessModal open={assignAccessOpen} onOpenChange={setAssignAccessOpen} groupName={selectedGroup?.name} />
             <ReleaseGroupModal open={releaseGroupOpen} onOpenChange={setReleaseGroupOpen} groupName={selectedGroup?.name} groupId={selectedGroup?.id} onGroupReleased={handleGroupReleased} />
             <GroupProfileModal open={groupProfileOpen} onOpenChange={setGroupProfileOpen} group={selectedGroup || undefined} onGroupUpdated={handleGroupUpdated} />

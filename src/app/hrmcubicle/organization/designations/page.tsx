@@ -38,6 +38,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -457,224 +458,154 @@ const DesignationsPage = () => {
                 )}
             </main>
 
-            {/* Add Designation Dialog */}
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                <DialogContent className="bg-white rounded-3xl border border-slate-300 p-8 max-w-4xl shadow-3xl max-h-[90vh] overflow-y-auto my-4 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                    <DialogHeader className="space-y-1">
-                        <div className="h-9 w-9 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600 mb-1 shadow-inner">
-                            <Briefcase size={20} />
-                        </div>
-                        <DialogTitle className="text-xl font-bold tracking-tight text-slate-900">Add Designation</DialogTitle>
-                        <DialogDescription className="text-slate-500 font-medium text-[10px]">
-                            Create a new role in your career framework.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="py-6 space-y-6">
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Designation Title *</Label>
-                                        <Input
-                                            className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.title ? "border-rose-500" : "border-slate-300"}`}
-                                            placeholder="e.g., Senior Software Engineer"
-                                            maxLength={60}
-                                            value={formData.title}
-                                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                        />
-                                        {errors.title && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.title}</p>}
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Code *</Label>
-                                        <Input
-                                            className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.code ? "border-rose-500" : "border-slate-300"}`}
-                                            placeholder="SSE"
-                                            maxLength={10}
-                                            value={formData.code}
-                                            onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                                        />
-                                        {errors.code && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.code}</p>}
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-3 gap-3">
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Career Level *</Label>
-                                        <Select value={formData.level?.toString()} onValueChange={(v) => setFormData({ ...formData, level: parseInt(v) })}>
-                                            <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-1 font-bold">
-                                                <SelectItem value="1" className="rounded-lg h-8 text-xs">L1 - Entry</SelectItem>
-                                                <SelectItem value="2" className="rounded-lg h-8 text-xs">L2 - Mid</SelectItem>
-                                                <SelectItem value="3" className="rounded-lg h-8 text-xs">L3 - Senior</SelectItem>
-                                                <SelectItem value="4" className="rounded-lg h-8 text-xs">L4 - Lead</SelectItem>
-                                                <SelectItem value="5" className="rounded-lg h-8 text-xs">L5 - Executive</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Grade</Label>
-                                        <Input
-                                            className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.grade ? "border-rose-500" : "border-slate-300"}`}
-                                            placeholder="e.g., M2"
-                                            maxLength={8}
-                                            value={formData.grade}
-                                            onChange={(e) => setFormData({ ...formData, grade: e.target.value.toUpperCase() })}
-                                        />
-                                        {errors.grade && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.grade}</p>}
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Department *</Label>
-                                        <Select value={formData.departmentId || ""} onValueChange={(v) => setFormData({ ...formData, departmentId: v })}>
-                                            <SelectTrigger className={`h-10 rounded-lg bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.departmentId ? "border-rose-500" : "border-slate-300"}`}>
-                                                <SelectValue placeholder="Select" />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-1 font-bold">
-                                                {departments.map(dept => (
-                                                    <SelectItem key={dept.id} value={dept.id} className="rounded-lg h-8 text-xs">{dept.name}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        {errors.departmentId && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.departmentId}</p>}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-1">
-                                <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Role Description</Label>
-                                <Textarea
-                                    className={`rounded-lg bg-slate-50 border min-h-[148px] p-4 font-medium text-xs focus:border-indigo-500 transition-colors ${errors.description ? "border-rose-500" : "border-slate-300"}`}
-                                    placeholder="Describe the core responsibilities and expectations for this role..."
-                                    maxLength={500}
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                />
-                                <div className="flex justify-between items-center">
-                                    {errors.description ? <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.description}</p> : <span />}
-                                    <p className="text-[9px] font-bold text-slate-400 mr-1">{(formData.description || "").length}/500</p>
-                                </div>
-                            </div>
-                        </div>
+            {/* Add Designation Sheet */}
+            <SideFormSheet
+                open={isAddDialogOpen}
+                onOpenChange={(o) => { setIsAddDialogOpen(o); if (!o) resetForm(); }}
+                title="Add Designation"
+                description="Create a new role in your career framework."
+                icon={<Briefcase size={20} />}
+                accentColor="#4f46e5"
+                width="lg"
+                loading={isSaving}
+                submitLabel={isSaving ? "Creating..." : "Create Designation"}
+                onSubmit={(e) => { e.preventDefault(); handleAddDesignation(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Designation Title" required error={errors.title || undefined}>
+                            <Input
+                                placeholder="e.g., Senior Software Engineer"
+                                maxLength={60}
+                                value={formData.title}
+                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                            />
+                        </Field>
+                        <Field label="Code" required error={errors.code || undefined}>
+                            <Input
+                                placeholder="SSE"
+                                maxLength={10}
+                                value={formData.code}
+                                onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                            />
+                        </Field>
                     </div>
-
-                    <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
-                        <Button
-                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all disabled:opacity-50"
-                            onClick={handleAddDesignation}
-                            disabled={isSaving}
-                        >
-                            {isSaving ? "Creating..." : "Create Designation"}
-                        </Button>
-                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => { setIsAddDialogOpen(false); resetForm(); }} disabled={isSaving}>
-                            Cancel
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Edit Designation Dialog */}
-            < Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen} >
-                <DialogContent className="bg-white rounded-3xl border border-slate-300 p-8 max-w-4xl shadow-3xl max-h-[90vh] overflow-y-auto my-4 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                    <DialogHeader className="space-y-1">
-                        <div className="h-9 w-9 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600 mb-1 shadow-inner">
-                            <Edit size={20} />
-                        </div>
-                        <DialogTitle className="text-xl font-bold tracking-tight text-slate-900">Edit Designation</DialogTitle>
-                        <DialogDescription className="text-slate-500 font-medium text-[10px]">
-                            Update designation details and configuration.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="py-6 space-y-6">
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Designation Title *</Label>
-                                        <Input
-                                            className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
-                                            value={formData.title}
-                                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Code *</Label>
-                                        <Input
-                                            className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
-                                            value={formData.code}
-                                            onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-3 gap-3">
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Career Level *</Label>
-                                        <Select value={formData.level?.toString()} onValueChange={(v) => setFormData({ ...formData, level: parseInt(v) })}>
-                                            <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-1 font-bold">
-                                                <SelectItem value="1" className="rounded-lg h-8 text-xs">L1 - Entry</SelectItem>
-                                                <SelectItem value="2" className="rounded-lg h-8 text-xs">L2 - Mid</SelectItem>
-                                                <SelectItem value="3" className="rounded-lg h-8 text-xs">L3 - Senior</SelectItem>
-                                                <SelectItem value="4" className="rounded-lg h-8 text-xs">L4 - Lead</SelectItem>
-                                                <SelectItem value="5" className="rounded-lg h-8 text-xs">L5 - Executive</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Grade</Label>
-                                        <Input
-                                            className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
-                                            value={formData.grade}
-                                            onChange={(e) => setFormData({ ...formData, grade: e.target.value.toUpperCase() })}
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Department</Label>
-                                        <Select value={formData.departmentId || "none"} onValueChange={(v) => setFormData({ ...formData, departmentId: v === "none" ? undefined : v })}>
-                                            <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-1 font-bold">
-                                                <SelectItem value="none" className="rounded-lg h-8 text-xs">No Department</SelectItem>
-                                                {departments.map(dept => (
-                                                    <SelectItem key={dept.id} value={dept.id} className="rounded-lg h-8 text-xs">{dept.name}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-1">
-                                <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Description</Label>
-                                <Textarea
-                                    className="rounded-lg bg-slate-50 border border-slate-300 min-h-[96px] p-4 font-medium text-xs focus:border-indigo-500 transition-colors"
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                />
-                            </div>
-                        </div>
+                    <div className="grid grid-cols-3 gap-3">
+                        <Field label="Career Level" required error={errors.level || undefined}>
+                            <Select value={formData.level?.toString()} onValueChange={(v) => setFormData({ ...formData, level: parseInt(v) })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="1">L1 - Entry</SelectItem>
+                                    <SelectItem value="2">L2 - Mid</SelectItem>
+                                    <SelectItem value="3">L3 - Senior</SelectItem>
+                                    <SelectItem value="4">L4 - Lead</SelectItem>
+                                    <SelectItem value="5">L5 - Executive</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Grade" error={errors.grade || undefined}>
+                            <Input
+                                placeholder="e.g., M2"
+                                maxLength={8}
+                                value={formData.grade}
+                                onChange={(e) => setFormData({ ...formData, grade: e.target.value.toUpperCase() })}
+                            />
+                        </Field>
+                        <Field label="Department" required error={errors.departmentId || undefined}>
+                            <Select value={formData.departmentId || ""} onValueChange={(v) => setFormData({ ...formData, departmentId: v })}>
+                                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                                <SelectContent>
+                                    {departments.map(dept => (
+                                        <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
                     </div>
+                    <Field
+                        label="Role Description"
+                        error={errors.description || undefined}
+                        hint={errors.description ? undefined : `${(formData.description || "").length}/500`}
+                    >
+                        <Textarea
+                            className="min-h-[140px]"
+                            placeholder="Describe the core responsibilities and expectations for this role..."
+                            maxLength={500}
+                            value={formData.description}
+                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-                    <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
-                        <Button
-                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all disabled:opacity-50"
-                            onClick={handleUpdateDesignation}
-                            disabled={isSaving}
-                        >
-                            {isSaving ? "Saving..." : "Save Changes"}
-                        </Button>
-                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => { setIsEditDialogOpen(false); resetForm(); }} disabled={isSaving}>
-                            Cancel
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog >
+            {/* Edit Designation Sheet */}
+            <SideFormSheet
+                open={isEditDialogOpen}
+                onOpenChange={(o) => { setIsEditDialogOpen(o); if (!o) resetForm(); }}
+                title="Edit Designation"
+                description="Update designation details and configuration."
+                icon={<Edit size={20} />}
+                accentColor="#7c3aed"
+                width="lg"
+                loading={isSaving}
+                submitLabel={isSaving ? "Saving..." : "Save Changes"}
+                onSubmit={(e) => { e.preventDefault(); handleUpdateDesignation(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Designation Title" required>
+                            <Input
+                                value={formData.title}
+                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                            />
+                        </Field>
+                        <Field label="Code" required>
+                            <Input
+                                value={formData.code}
+                                onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                            />
+                        </Field>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                        <Field label="Career Level" required>
+                            <Select value={formData.level?.toString()} onValueChange={(v) => setFormData({ ...formData, level: parseInt(v) })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="1">L1 - Entry</SelectItem>
+                                    <SelectItem value="2">L2 - Mid</SelectItem>
+                                    <SelectItem value="3">L3 - Senior</SelectItem>
+                                    <SelectItem value="4">L4 - Lead</SelectItem>
+                                    <SelectItem value="5">L5 - Executive</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Grade">
+                            <Input
+                                value={formData.grade}
+                                onChange={(e) => setFormData({ ...formData, grade: e.target.value.toUpperCase() })}
+                            />
+                        </Field>
+                        <Field label="Department">
+                            <Select value={formData.departmentId || "none"} onValueChange={(v) => setFormData({ ...formData, departmentId: v === "none" ? undefined : v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="none">No Department</SelectItem>
+                                    {departments.map(dept => (
+                                        <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                    </div>
+                    <Field label="Description">
+                        <Textarea
+                            className="min-h-[120px]"
+                            value={formData.description}
+                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             {/* View Members Dialog */}
             < Dialog open={isViewMembersDialogOpen} onOpenChange={setIsViewMembersDialogOpen} >

@@ -40,6 +40,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Label } from "@/shared/components/ui/label";
 import {
     DropdownMenu,
@@ -314,80 +315,61 @@ const TeamMembersPage = () => {
                 </TabsList>
 
                 {activeTab === "members" && (
-                <Dialog open={isAddOpen} onOpenChange={(o) => { setIsAddOpen(o); if (!o) resetForm(); }}>
-                    <DialogTrigger asChild>
-                        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-10 px-6 shadow-md font-bold transition-all border-none">
-                            <Plus className="mr-2 h-4 w-4" /> Add Team Member
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="bg-gradient-to-br from-indigo-50/80 via-white to-white rounded-[2rem] border border-slate-200 shadow-2xl p-10 max-w-2xl max-h-[80vh] overflow-y-auto custom-scrollbar !top-[10%] !translate-y-0">
-                        <DialogHeader>
-                            <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Add Team Member</DialogTitle>
-                            <DialogDescription className="font-medium text-slate-500 text-sm mt-1">
-                                Invite a new person to join your department.
-                                {!backendAvailable && <span className="text-amber-600"> (Offline — saving locally)</span>}
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid grid-cols-2 gap-6 py-6 font-display">
-                            <div className="space-y-2">
-                                <Label className="font-bold text-slate-700">Full Name *</Label>
-                                <Input
-                                    placeholder="Employee name"
-                                    value={memberForm.name}
-                                    onChange={e => { setMemberForm({ ...memberForm, name: e.target.value }); if (formErrors.name) setFormErrors({ ...formErrors, name: "" }); }}
-                                    className={`rounded-xl bg-slate-50 border h-12 ${formErrors.name ? 'border-rose-400 focus:ring-rose-200' : 'border-slate-200'}`}
-                                />
-                                {formErrors.name && <p className="text-[11px] font-medium text-rose-500">{formErrors.name}</p>}
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="font-bold text-slate-700">Work Email *</Label>
-                                <Input
-                                    type="email"
-                                    placeholder="email@company.com"
-                                    value={memberForm.email}
-                                    onChange={e => { setMemberForm({ ...memberForm, email: e.target.value }); if (formErrors.email) setFormErrors({ ...formErrors, email: "" }); }}
-                                    className={`rounded-xl bg-slate-50 border h-12 ${formErrors.email ? 'border-rose-400' : 'border-slate-200'}`}
-                                />
-                                {formErrors.email && <p className="text-[11px] font-medium text-rose-500">{formErrors.email}</p>}
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="font-bold text-slate-700">Phone</Label>
-                                <Input
-                                    placeholder="+91..."
-                                    value={memberForm.phone}
-                                    onChange={e => { setMemberForm({ ...memberForm, phone: e.target.value }); if (formErrors.phone) setFormErrors({ ...formErrors, phone: "" }); }}
-                                    className={`rounded-xl bg-slate-50 border h-12 ${formErrors.phone ? 'border-rose-400' : 'border-slate-200'}`}
-                                />
-                                {formErrors.phone && <p className="text-[11px] font-medium text-rose-500">{formErrors.phone}</p>}
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="font-bold text-slate-700">Designation</Label>
-                                <Input
-                                    placeholder="e.g. UX Designer"
-                                    value={memberForm.designation}
-                                    onChange={e => { setMemberForm({ ...memberForm, designation: e.target.value }); if (formErrors.designation) setFormErrors({ ...formErrors, designation: "" }); }}
-                                    className={`rounded-xl bg-slate-50 border h-12 ${formErrors.designation ? 'border-rose-400' : 'border-slate-200'}`}
-                                />
-                                {formErrors.designation && <p className="text-[11px] font-medium text-rose-500">{formErrors.designation}</p>}
-                            </div>
-                            <div className="space-y-2 col-span-2">
-                                <Label className="font-bold text-slate-700">Department</Label>
-                                <Input
-                                    placeholder="e.g. Engineering"
-                                    value={memberForm.department}
-                                    onChange={e => setMemberForm({ ...memberForm, department: e.target.value })}
-                                    className="rounded-xl bg-slate-50 border border-slate-200 h-12"
-                                />
-                            </div>
-                        </div>
-                        <DialogFooter>
-                            <Button disabled={isSubmitting} className="w-full bg-slate-900 text-white rounded-xl h-11 font-bold text-sm shadow-lg hover:bg-slate-800 transition-all border-none disabled:opacity-50" onClick={handleAdd}>
-                                {isSubmitting ? "Saving..." : "Confirm Admission"} <ArrowRight className="ml-2 h-4 w-4" />
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                <Button onClick={() => setIsAddOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-10 px-6 shadow-md font-bold transition-all border-none">
+                    <Plus className="mr-2 h-4 w-4" /> Add Team Member
+                </Button>
                 )}
+                <SideFormSheet
+                    open={isAddOpen}
+                    onOpenChange={(o) => { setIsAddOpen(o); if (!o) resetForm(); }}
+                    title="Add Team Member"
+                    description={`Invite a new person to join your department.${!backendAvailable ? " (Offline — saving locally)" : ""}`}
+                    icon={<Plus size={20} />}
+                    accentColor="#4f46e5"
+                    width="lg"
+                    loading={isSubmitting}
+                    submitLabel="Confirm Admission"
+                    onSubmit={(e) => { e.preventDefault(); handleAdd(); }}
+                >
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Full Name" required error={formErrors.name || undefined}>
+                            <Input
+                                placeholder="Employee name"
+                                value={memberForm.name}
+                                onChange={e => { setMemberForm({ ...memberForm, name: e.target.value }); if (formErrors.name) setFormErrors({ ...formErrors, name: "" }); }}
+                            />
+                        </Field>
+                        <Field label="Work Email" required error={formErrors.email || undefined}>
+                            <Input
+                                type="email"
+                                placeholder="email@company.com"
+                                value={memberForm.email}
+                                onChange={e => { setMemberForm({ ...memberForm, email: e.target.value }); if (formErrors.email) setFormErrors({ ...formErrors, email: "" }); }}
+                            />
+                        </Field>
+                        <Field label="Phone" error={formErrors.phone || undefined}>
+                            <Input
+                                placeholder="+91..."
+                                value={memberForm.phone}
+                                onChange={e => { setMemberForm({ ...memberForm, phone: e.target.value }); if (formErrors.phone) setFormErrors({ ...formErrors, phone: "" }); }}
+                            />
+                        </Field>
+                        <Field label="Designation" error={formErrors.designation || undefined}>
+                            <Input
+                                placeholder="e.g. UX Designer"
+                                value={memberForm.designation}
+                                onChange={e => { setMemberForm({ ...memberForm, designation: e.target.value }); if (formErrors.designation) setFormErrors({ ...formErrors, designation: "" }); }}
+                            />
+                        </Field>
+                        <Field label="Department" className="col-span-2">
+                            <Input
+                                placeholder="e.g. Engineering"
+                                value={memberForm.department}
+                                onChange={e => setMemberForm({ ...memberForm, department: e.target.value })}
+                            />
+                        </Field>
+                    </div>
+                </SideFormSheet>
             </div>
 
             <TabsContent value="members" className="space-y-5 mt-0">
@@ -590,71 +572,53 @@ const TeamMembersPage = () => {
             </TabsContent>
           </Tabs>
 
-          {/* Edit Member Dialog */}
-          <Dialog open={isEditOpen} onOpenChange={(o) => { setIsEditOpen(o); if (!o) resetForm(); }}>
-              <DialogContent className="bg-gradient-to-br from-indigo-50/80 via-white to-white rounded-[2rem] border border-slate-200 shadow-2xl p-10 max-w-2xl max-h-[80vh] overflow-y-auto custom-scrollbar !top-[10%] !translate-y-0">
-                  <DialogHeader>
-                      <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Edit Team Member</DialogTitle>
-                      <DialogDescription className="font-medium text-slate-500 text-sm mt-1">
-                          Update {selectedMember?.name}'s details.
-                          {!backendAvailable && <span className="text-amber-600"> (Offline — updating locally)</span>}
-                      </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid grid-cols-2 gap-6 py-6">
-                      <div className="space-y-2">
-                          <Label className="font-bold text-slate-700">Full Name *</Label>
-                          <Input
-                              value={memberForm.name}
-                              onChange={e => { setMemberForm({ ...memberForm, name: e.target.value }); if (formErrors.name) setFormErrors({ ...formErrors, name: "" }); }}
-                              className={`rounded-xl bg-slate-50 border h-12 ${formErrors.name ? 'border-rose-400' : 'border-slate-200'}`}
-                          />
-                          {formErrors.name && <p className="text-[11px] font-medium text-rose-500">{formErrors.name}</p>}
-                      </div>
-                      <div className="space-y-2">
-                          <Label className="font-bold text-slate-700">Work Email *</Label>
-                          <Input
-                              type="email"
-                              value={memberForm.email}
-                              onChange={e => { setMemberForm({ ...memberForm, email: e.target.value }); if (formErrors.email) setFormErrors({ ...formErrors, email: "" }); }}
-                              className={`rounded-xl bg-slate-50 border h-12 ${formErrors.email ? 'border-rose-400' : 'border-slate-200'}`}
-                          />
-                          {formErrors.email && <p className="text-[11px] font-medium text-rose-500">{formErrors.email}</p>}
-                      </div>
-                      <div className="space-y-2">
-                          <Label className="font-bold text-slate-700">Phone</Label>
-                          <Input
-                              value={memberForm.phone}
-                              onChange={e => { setMemberForm({ ...memberForm, phone: e.target.value }); if (formErrors.phone) setFormErrors({ ...formErrors, phone: "" }); }}
-                              className={`rounded-xl bg-slate-50 border h-12 ${formErrors.phone ? 'border-rose-400' : 'border-slate-200'}`}
-                          />
-                          {formErrors.phone && <p className="text-[11px] font-medium text-rose-500">{formErrors.phone}</p>}
-                      </div>
-                      <div className="space-y-2">
-                          <Label className="font-bold text-slate-700">Designation</Label>
-                          <Input
-                              value={memberForm.designation}
-                              onChange={e => { setMemberForm({ ...memberForm, designation: e.target.value }); if (formErrors.designation) setFormErrors({ ...formErrors, designation: "" }); }}
-                              className={`rounded-xl bg-slate-50 border h-12 ${formErrors.designation ? 'border-rose-400' : 'border-slate-200'}`}
-                          />
-                          {formErrors.designation && <p className="text-[11px] font-medium text-rose-500">{formErrors.designation}</p>}
-                      </div>
-                      <div className="space-y-2 col-span-2">
-                          <Label className="font-bold text-slate-700">Department</Label>
-                          <Input
-                              value={memberForm.department}
-                              onChange={e => setMemberForm({ ...memberForm, department: e.target.value })}
-                              className="rounded-xl bg-slate-50 border border-slate-200 h-12"
-                          />
-                      </div>
-                  </div>
-                  <DialogFooter className="gap-2">
-                      <Button variant="outline" className="rounded-xl h-11 font-bold" onClick={() => { setIsEditOpen(false); resetForm(); }}>Cancel</Button>
-                      <Button disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-11 font-bold text-sm shadow-lg border-none disabled:opacity-50" onClick={handleUpdate}>
-                          {isSubmitting ? "Saving..." : "Save Changes"}
-                      </Button>
-                  </DialogFooter>
-              </DialogContent>
-          </Dialog>
+          {/* Edit Member Sheet */}
+          <SideFormSheet
+              open={isEditOpen}
+              onOpenChange={(o) => { setIsEditOpen(o); if (!o) resetForm(); }}
+              title="Edit Team Member"
+              description={`Update ${selectedMember?.name || "member"}'s details.${!backendAvailable ? " (Offline — updating locally)" : ""}`}
+              icon={<Edit size={20} />}
+              accentColor="#4f46e5"
+              width="lg"
+              loading={isSubmitting}
+              submitLabel="Save Changes"
+              onSubmit={(e) => { e.preventDefault(); handleUpdate(); }}
+          >
+              <div className="grid grid-cols-2 gap-3">
+                  <Field label="Full Name" required error={formErrors.name || undefined}>
+                      <Input
+                          value={memberForm.name}
+                          onChange={e => { setMemberForm({ ...memberForm, name: e.target.value }); if (formErrors.name) setFormErrors({ ...formErrors, name: "" }); }}
+                      />
+                  </Field>
+                  <Field label="Work Email" required error={formErrors.email || undefined}>
+                      <Input
+                          type="email"
+                          value={memberForm.email}
+                          onChange={e => { setMemberForm({ ...memberForm, email: e.target.value }); if (formErrors.email) setFormErrors({ ...formErrors, email: "" }); }}
+                      />
+                  </Field>
+                  <Field label="Phone" error={formErrors.phone || undefined}>
+                      <Input
+                          value={memberForm.phone}
+                          onChange={e => { setMemberForm({ ...memberForm, phone: e.target.value }); if (formErrors.phone) setFormErrors({ ...formErrors, phone: "" }); }}
+                      />
+                  </Field>
+                  <Field label="Designation" error={formErrors.designation || undefined}>
+                      <Input
+                          value={memberForm.designation}
+                          onChange={e => { setMemberForm({ ...memberForm, designation: e.target.value }); if (formErrors.designation) setFormErrors({ ...formErrors, designation: "" }); }}
+                      />
+                  </Field>
+                  <Field label="Department" className="col-span-2">
+                      <Input
+                          value={memberForm.department}
+                          onChange={e => setMemberForm({ ...memberForm, department: e.target.value })}
+                      />
+                  </Field>
+              </div>
+          </SideFormSheet>
 
           {/* Delete Confirmation Dialog */}
           <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>

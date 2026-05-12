@@ -46,6 +46,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import {
     Select,
     SelectContent,
@@ -1103,22 +1104,19 @@ const SalaryRevisionPage = () => {
                     </div>
                 </div>
 
-                {/* ── Create/Edit Dialog ───────────────── */}
-                <Dialog open={formOpen} onOpenChange={setFormOpen}>
-                    <DialogContent className="max-w-2xl bg-white rounded-2xl p-0 font-sans max-h-[90vh] overflow-hidden flex flex-col">
-                        <DialogHeader className="p-6 border-b border-slate-100 space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                {editingRevision ? <Edit size={20} /> : <Plus size={20} />}
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                {editingRevision ? "Edit revision" : "New salary revision"}
-                            </DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Submit for HR approval with context. Arrears are auto-suggested from effective date.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <ScrollArea className="flex-1 p-6">
-                            <div className="space-y-5">
+                {/* Create/Edit Revision Sheet */}
+                <SideFormSheet
+                    open={formOpen}
+                    onOpenChange={setFormOpen}
+                    title={editingRevision ? "Edit revision" : "New salary revision"}
+                    description="Submit for HR approval with context. Arrears are auto-suggested from effective date."
+                    icon={editingRevision ? <Edit size={20} /> : <TrendingUp size={20} />}
+                    accentColor={editingRevision ? "#7c3aed" : "#4f46e5"}
+                    width="xl"
+                    submitLabel={editingRevision ? "Save changes" : "Submit for approval"}
+                    onSubmit={(e) => { e.preventDefault(); handleSave(); }}
+                >
+                    <div className="space-y-5">
                                 <section className="space-y-3">
                                     <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Employee</h4>
                                     <div className="grid grid-cols-2 gap-3">
@@ -1246,16 +1244,8 @@ const SalaryRevisionPage = () => {
                                 <FormField label="Reason / Justification">
                                     <Textarea value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} placeholder="Annual appraisal, promotion justification, market correction context..." className="min-h-[70px] text-xs font-medium" />
                                 </FormField>
-                            </div>
-                        </ScrollArea>
-                        <DialogFooter className="p-4 border-t border-slate-100 bg-slate-50/50 gap-2">
-                            <Button variant="ghost" onClick={() => setFormOpen(false)} className="h-10 px-5 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleSave} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-6 font-bold text-xs border-none">
-                                {editingRevision ? "Save changes" : "Submit for approval"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── Detail Sheet ───────────────────── */}
                 <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
@@ -1421,31 +1411,22 @@ const SalaryRevisionPage = () => {
                     </SheetContent>
                 </Sheet>
 
-                {/* ── Reject Dialog ───────────────────── */}
-                <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-500 mb-2">
-                                <XCircle size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Reject revision</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Provide a reason — it's persisted to the revision record.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4">
-                            <FormField label="Reason" required>
-                                <Textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="e.g., Budget overshoot this cycle, defer to next quarter..." className="min-h-[90px] text-xs font-medium" />
-                            </FormField>
-                        </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setRejectOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleConfirmReject} className="bg-rose-500 hover:bg-rose-600 text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                Confirm reject
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                {/* Reject Sheet */}
+                <SideFormSheet
+                    open={rejectOpen}
+                    onOpenChange={setRejectOpen}
+                    title="Reject revision"
+                    description="Provide a reason — it's persisted to the revision record."
+                    icon={<XCircle size={20} />}
+                    accentColor="#e11d48"
+                    width="md"
+                    submitLabel="Confirm reject"
+                    onSubmit={(e) => { e.preventDefault(); handleConfirmReject(); }}
+                >
+                    <Field label="Reason" required>
+                        <Textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="e.g., Budget overshoot this cycle, defer to next quarter..." />
+                    </Field>
+                </SideFormSheet>
 
                 {/* ── Approval Chain Dialog ─────────── */}
                 <Dialog open={chainOpen} onOpenChange={setChainOpen}>
@@ -1734,50 +1715,41 @@ const SalaryRevisionPage = () => {
                     </DialogContent>
                 </Dialog>
 
-                {/* ── Arrears Calculator Dialog ─────── */}
-                <Dialog open={arrearsOpen} onOpenChange={setArrearsOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <Calculator size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                Arrears calculator {arrearsTarget ? `— ${arrearsTarget.employeeName}` : ""}
-                            </DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Compute pending back-pay between two dates at the revised CTC delta.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-4">
-                            <div className="grid grid-cols-2 gap-3">
-                                <FormField label="From date">
-                                    <Input type="date" value={arrearsFrom} onChange={(e) => setArrearsFrom(e.target.value)} className="h-10 text-sm font-medium" />
-                                </FormField>
-                                <FormField label="To date">
-                                    <Input type="date" value={arrearsTo} onChange={(e) => setArrearsTo(e.target.value)} className="h-10 text-sm font-medium" />
-                                </FormField>
-                            </div>
-                            <div className="p-4 rounded-xl bg-[#8B5CF6]/5 border border-[#8B5CF6]/20 flex items-center justify-between">
-                                <div>
-                                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Preview</div>
-                                    <div className="text-xs font-semibold text-slate-700 mt-0.5">
-                                        {arrearsPreview.months} month{arrearsPreview.months !== 1 ? "s" : ""}
-                                    </div>
+                {/* Arrears Calculator Sheet */}
+                <SideFormSheet
+                    open={arrearsOpen}
+                    onOpenChange={setArrearsOpen}
+                    title={`Arrears calculator${arrearsTarget ? ` — ${arrearsTarget.employeeName}` : ""}`}
+                    description="Compute pending back-pay between two dates at the revised CTC delta."
+                    icon={<Calculator size={20} />}
+                    accentColor="#4f46e5"
+                    width="md"
+                    submitLabel="Save arrears"
+                    onSubmit={(e) => { e.preventDefault(); handleSaveArrears(); }}
+                >
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="From date">
+                                <Input type="date" value={arrearsFrom} onChange={(e) => setArrearsFrom(e.target.value)} />
+                            </Field>
+                            <Field label="To date">
+                                <Input type="date" value={arrearsTo} onChange={(e) => setArrearsTo(e.target.value)} />
+                            </Field>
+                        </div>
+                        <div className="p-4 rounded-xl bg-[#8B5CF6]/5 border border-[#8B5CF6]/20 flex items-center justify-between">
+                            <div>
+                                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Preview</div>
+                                <div className="text-xs font-semibold text-slate-700 mt-0.5">
+                                    {arrearsPreview.months} month{arrearsPreview.months !== 1 ? "s" : ""}
                                 </div>
-                                <div className="text-right">
-                                    <div className="text-xl font-bold text-[#8B5CF6] tabular-nums">{formatINR(arrearsPreview.amount)}</div>
-                                    <div className="text-[10px] font-medium text-slate-500">Total arrears</div>
-                                </div>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-xl font-bold text-[#8B5CF6] tabular-nums">{formatINR(arrearsPreview.amount)}</div>
+                                <div className="text-[10px] font-medium text-slate-500">Total arrears</div>
                             </div>
                         </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setArrearsOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleSaveArrears} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none gap-2">
-                                <Calculator size={13} /> Save arrears
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── Budget Tracker Dialog ─────────── */}
                 <Dialog open={budgetOpen} onOpenChange={setBudgetOpen}>
@@ -1916,19 +1888,20 @@ const SalaryRevisionPage = () => {
                     </DialogContent>
                 </Dialog>
 
-                {/* ── Bulk Import Dialog ─────────────── */}
-                <Dialog open={importOpen} onOpenChange={setImportOpen}>
-                    <DialogContent className="max-w-3xl bg-white rounded-2xl p-0 font-sans max-h-[90vh] overflow-hidden flex flex-col">
-                        <DialogHeader className="p-6 border-b border-slate-100 space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <Upload size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Import revisions (CSV)</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Columns: employeeId, employeeName, empCode, department, currentCTC, revisedCTC, effectiveDate, reason, revisionType.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {/* Bulk Import Sheet */}
+                <SideFormSheet
+                    open={importOpen}
+                    onOpenChange={setImportOpen}
+                    title="Import revisions (CSV)"
+                    description="Columns: employeeId, employeeName, empCode, department, currentCTC, revisedCTC, effectiveDate, reason, revisionType."
+                    icon={<Upload size={20} />}
+                    accentColor="#4f46e5"
+                    width="xl"
+                    submitLabel={`Import ${importRows.filter((r) => r.ok).length || ""}`}
+                    submitDisabled={importRows.filter((r) => r.ok).length === 0}
+                    onSubmit={(e) => { e.preventDefault(); handleConfirmImport(); }}
+                >
+                    <div className="space-y-4">
                             <input
                                 ref={importFileInputRef}
                                 type="file"
@@ -2004,19 +1977,8 @@ const SalaryRevisionPage = () => {
                                     <p className="text-[10px] font-medium text-slate-400 mt-1">First row must be the header.</p>
                                 </div>
                             )}
-                        </div>
-                        <DialogFooter className="p-4 border-t border-slate-100 bg-slate-50/50 gap-2">
-                            <Button variant="ghost" onClick={() => setImportOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button
-                                onClick={handleConfirmImport}
-                                disabled={importRows.filter((r) => r.ok).length === 0}
-                                className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none gap-2 disabled:opacity-50"
-                            >
-                                <Upload size={13} /> Import {importRows.filter((r) => r.ok).length || ""}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── Bulk Delete Confirm ─────────────── */}
                 <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>

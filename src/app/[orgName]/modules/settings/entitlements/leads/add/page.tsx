@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -103,7 +103,7 @@ const Field = ({ label, required, hint, error, children }: FieldProps) => (
   </div>
 );
 
-// ---------- Backend Zod path → frontend error key + step ----------
+// ---------- Backend Zod path â†’ frontend error key + step ----------
 const BACKEND_PATH_MAP: Record<string, { key: string; step: number }> = {
   title: { key: "title", step: 1 },
   description: { key: "description", step: 1 },
@@ -587,7 +587,7 @@ export default function EntitlementAddLeadPage() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
-              className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/50 dark:border-zinc-800 shadow-xl overflow-hidden"
+              className="bg-white dark:bg-zinc-900 rounded-none border border-zinc-200/50 dark:border-zinc-800 shadow-xl overflow-hidden"
             >
               <div className="p-10 space-y-8">
                 {/* ============ STEP 1 ============ */}
@@ -748,7 +748,7 @@ export default function EntitlementAddLeadPage() {
 
                     <Field
                       label="Communication Email"
-                      hint="Optional — valid email (e.g. name@company.com)"
+                      hint="Optional â€” valid email (e.g. name@company.com)"
                       error={errors.contactEmail}
                     >
                       <CustomInput
@@ -1268,7 +1268,7 @@ export default function EntitlementAddLeadPage() {
                         </CustomButton>
                       </div>
                       <p className="text-[10px] text-zinc-400 italic">
-                        Format: lowercase letters, digits, hyphen — 2 to 30 chars
+                        Format: lowercase letters, digits, hyphen â€” 2 to 30 chars
                       </p>
                       {formData.tags.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-2">
@@ -1292,7 +1292,7 @@ export default function EntitlementAddLeadPage() {
                     </div>
 
                     {/* Review */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-zinc-50/50 dark:bg-zinc-800/20 p-8 rounded-2xl border border-zinc-100 dark:border-zinc-800">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-zinc-50/50 dark:bg-zinc-800/20 p-8 rounded-none border border-zinc-100 dark:border-zinc-800">
                       <div className="space-y-4">
                         <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
                           Lead Details
@@ -1314,7 +1314,7 @@ export default function EntitlementAddLeadPage() {
                             value={
                               formData.estimatedValue
                                 ? `${formData.currency} ${formData.estimatedValue}`
-                                : "—"
+                                : "â€”"
                             }
                           />
                         </div>
@@ -1338,7 +1338,7 @@ export default function EntitlementAddLeadPage() {
                             value={
                               formData.contact.client.phone
                                 ? `${findCountry(clientPhoneIso).dial} ${formData.contact.client.phone}`
-                                : "—"
+                                : "â€”"
                             }
                           />
                           <Row
@@ -1349,10 +1349,10 @@ export default function EntitlementAddLeadPage() {
                             label="Next Action"
                             value={
                               formData.nextAction
-                                ? `${formData.nextAction} • ${
+                                ? `${formData.nextAction} â€¢ ${
                                     formData.nextActionDate || ""
                                   }`
-                                : "—"
+                                : "â€”"
                             }
                           />
                         </div>
@@ -1403,7 +1403,7 @@ const Row = ({ label, value }: { label: string; value: string }) => (
   <div className="flex justify-between border-b border-zinc-100 pb-2 gap-3">
     <span className="text-xs text-zinc-500">{label}</span>
     <span className="text-xs font-bold text-zinc-800 text-right truncate max-w-[60%]">
-      {value || "—"}
+      {value || "â€”"}
     </span>
   </div>
 );

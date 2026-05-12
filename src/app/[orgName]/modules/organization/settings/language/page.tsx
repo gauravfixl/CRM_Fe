@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Languages,
     CalendarClock,
@@ -23,15 +23,38 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
+import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks";
 
 export default function LanguageSettingsPage() {
     const [language, setLanguage] = useState("en-US");
     const [dateFormat, setDateFormat] = useState("MM/DD/YYYY");
     const [timeFormat, setTimeFormat] = useState("12h");
     const [numberFormat, setNumberFormat] = useState("comma"); // 1,000.00
+    const [saving, setSaving] = useState(false);
 
-    const handleSave = () => {
-        toast.success("Localization preferences updated successfully.");
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await getOrgAdminSettings();
+                const s = res?.data?.settings || res?.data?.data || res?.data || {};
+                if (s?.language) setLanguage(s.language);
+            } catch (err) {
+                // Silent — fall back to defaults
+            }
+        })();
+    }, []);
+
+    const handleSave = async () => {
+        try {
+            setSaving(true);
+            await updateOrgAdminSettings({ language });
+            toast.success("Localization preferences updated successfully.");
+        } catch (err: any) {
+            console.error("Failed to save language:", err);
+            toast.error(err?.response?.data?.message || "Failed to save language");
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
@@ -55,9 +78,10 @@ export default function LanguageSettingsPage() {
                     <Button
                         className="h-9 bg-slate-900 hover:bg-slate-800 text-white gap-2 font-bold shadow-lg shadow-slate-200 rounded-none transition-all hover:translate-y-[-1px]"
                         onClick={handleSave}
+                        disabled={saving}
                     >
                         <Save className="w-4 h-4" />
-                        Apply Changes
+                        {saving ? "Saving..." : "Apply Changes"}
                     </Button>
                 </div>
             </div>

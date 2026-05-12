@@ -41,14 +41,6 @@ import {
     TabsTrigger,
 } from "@/shared/components/ui/tabs";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/shared/components/ui/dialog";
-import {
     AlertDialog,
     AlertDialogAction,
     AlertDialogCancel,
@@ -69,6 +61,7 @@ import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Textarea } from "@/shared/components/ui/textarea";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 
 const emptyForm: Omit<Review, "id" | "status"> = {
     reviewerName: "",
@@ -472,344 +465,282 @@ const ReviewsPage = () => {
                 </div>
             </main>
 
-            {/* Audit Detail Dialog */}
-            <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-                <DialogContent className="bg-white rounded-[2.5rem] border-none p-10 max-w-2xl shadow-3xl font-sans" style={{ zoom: "80%" }}>
-                    <DialogHeader className="space-y-3 text-start">
-                        <div className="h-14 w-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 mb-2 shadow-inner border border-indigo-100">
-                            <ListChecks size={28} />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900 uppercase">Review Audit Trail</DialogTitle>
-                        <DialogDescription className="text-slate-500 font-semibold text-sm text-start">View check-in notes, action items and record final summary.</DialogDescription>
-                    </DialogHeader>
+            {/* Audit Detail SideFormSheet */}
+            <SideFormSheet
+                open={isDetailOpen}
+                onOpenChange={setIsDetailOpen}
+                title="Review Audit Trail"
+                description="View check-in notes, action items and record final summary."
+                icon={<ListChecks size={20} />}
+                accentColor="#4f46e5"
+                width="lg"
+                submitLabel="Update Live Status"
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    if (activeReview) {
+                        updateReview(activeReview.id, {
+                            notes: detailNotes,
+                            status: detailStatus,
+                            submittedAt: detailStatus === "Completed" ? new Date().toISOString() : activeReview.submittedAt,
+                        });
+                        toast({ title: "Audit Trail Updated", description: "Notes and status saved successfully." });
+                    }
+                    setIsDetailOpen(false);
+                }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Status">
+                            <Select value={detailStatus} onValueChange={(v) => setDetailStatus(v as Review["status"])}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Pending">Pending</SelectItem>
+                                    <SelectItem value="Completed">Completed</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Due">
+                            <Input value={activeReview?.dueDate || ""} disabled />
+                        </Field>
+                    </div>
 
-                    <div className="py-8 space-y-5 text-start">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Status</Label>
-                                <Select value={detailStatus} onValueChange={(v) => setDetailStatus(v as Review["status"])}>
-                                    <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-slate-100 font-bold px-5 focus:bg-white text-sm">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-xl border-none shadow-2xl p-1.5 font-bold">
-                                        <SelectItem value="Pending" className="rounded-lg h-10 text-[10px] uppercase tracking-wide">Pending</SelectItem>
-                                        <SelectItem value="Completed" className="rounded-lg h-10 text-[10px] uppercase tracking-wide">Completed</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Due</Label>
-                                <Input
-                                    className="rounded-xl h-12 bg-slate-50 border-slate-100 font-bold px-5 text-sm"
-                                    value={activeReview?.dueDate || ""}
-                                    disabled
-                                />
-                            </div>
-                        </div>
+                    <Field label="Review Notes / Summary">
+                        <Textarea
+                            className="min-h-[120px]"
+                            placeholder="Summary of discussion points..."
+                            value={detailNotes}
+                            onChange={(e) => setDetailNotes(e.target.value)}
+                        />
+                    </Field>
 
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Review Notes / Summary</Label>
-                            <Textarea
-                                className="rounded-2xl bg-slate-50 border-slate-100 min-h-[120px] p-5 font-semibold text-sm focus:bg-white transition-all shadow-inner"
-                                placeholder="Summary of discussion points..."
-                                value={detailNotes}
-                                onChange={(e) => setDetailNotes(e.target.value)}
-                            />
-                        </div>
-
-                        <div className="space-y-4">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Tracked Action Items</Label>
-                            <div className="space-y-2">
-                                {(activeReview?.actionItems || []).length === 0 && (
-                                    <p className="text-xs text-slate-400 italic p-3 bg-slate-50 rounded-xl">No action items yet.</p>
-                                )}
-                                {(activeReview?.actionItems || []).map((item, idx) => (
-                                    <div key={idx} className="flex items-center gap-3 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 group hover:bg-white transition-all">
-                                        <div className="h-6 w-6 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shadow-sm">
-                                            <CheckCircle2 size={14} />
-                                        </div>
-                                        <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wide flex-1">{item}</span>
-                                        <Button
-                                            variant="ghost"
-                                            className="h-7 w-7 p-0 text-rose-400 hover:text-rose-600 hover:bg-rose-50"
-                                            onClick={() => {
-                                                if (!activeReview) return;
-                                                const updated = (activeReview.actionItems || []).filter((_, i) => i !== idx);
-                                                updateReview(activeReview.id, { actionItems: updated });
-                                                setActiveReview({ ...activeReview, actionItems: updated });
-                                            }}
-                                        >
-                                            <Trash2 size={12} />
-                                        </Button>
+                    <div className="space-y-2">
+                        <label className="text-[13px] font-semibold text-[#374151]">Tracked Action Items</label>
+                        <div className="space-y-2">
+                            {(activeReview?.actionItems || []).length === 0 && (
+                                <p className="text-xs text-slate-400 italic p-3 bg-slate-50 rounded-xl">No action items yet.</p>
+                            )}
+                            {(activeReview?.actionItems || []).map((item, idx) => (
+                                <div key={idx} className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-xl border border-slate-100">
+                                    <div className="h-6 w-6 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                                        <CheckCircle2 size={14} />
                                     </div>
-                                ))}
-                            </div>
-                            {isAddingAction ? (
-                                <div className="flex items-center gap-2">
-                                    <Input
-                                        className="rounded-xl h-9 bg-slate-50 border-slate-100 font-bold px-4 text-sm flex-1"
-                                        placeholder="Enter action item..."
-                                        value={newActionItem}
-                                        onChange={(e) => setNewActionItem(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === "Enter" && newActionItem.trim() && activeReview) {
-                                                const updatedItems = [...(activeReview.actionItems || []), newActionItem.trim()];
-                                                updateReview(activeReview.id, { actionItems: updatedItems });
-                                                setActiveReview({ ...activeReview, actionItems: updatedItems });
-                                                setNewActionItem("");
-                                                setIsAddingAction(false);
-                                                toast({ title: "Action Item Added", description: "New action item tracked." });
-                                            }
-                                        }}
-                                        autoFocus
-                                    />
+                                    <span className="text-xs font-semibold text-slate-700 flex-1">{item}</span>
                                     <Button
-                                        className="bg-indigo-600 text-white rounded-xl h-9 px-4 font-bold text-[10px] tracking-widest border-none"
+                                        type="button"
+                                        variant="ghost"
+                                        className="h-7 w-7 p-0 text-rose-400 hover:text-rose-600 hover:bg-rose-50"
                                         onClick={() => {
-                                            if (newActionItem.trim() && activeReview) {
-                                                const updatedItems = [...(activeReview.actionItems || []), newActionItem.trim()];
-                                                updateReview(activeReview.id, { actionItems: updatedItems });
-                                                setActiveReview({ ...activeReview, actionItems: updatedItems });
-                                                setNewActionItem("");
-                                                setIsAddingAction(false);
-                                                toast({ title: "Action Item Added", description: "New action item tracked." });
-                                            }
+                                            if (!activeReview) return;
+                                            const updated = (activeReview.actionItems || []).filter((_, i) => i !== idx);
+                                            updateReview(activeReview.id, { actionItems: updated });
+                                            setActiveReview({ ...activeReview, actionItems: updated });
                                         }}
                                     >
-                                        Save
+                                        <Trash2 size={12} />
                                     </Button>
-                                    <Button variant="ghost" className="h-9 px-3 rounded-xl text-slate-400" onClick={() => { setIsAddingAction(false); setNewActionItem(""); }}>Cancel</Button>
                                 </div>
-                            ) : (
-                                <Button variant="ghost" className="text-indigo-600 font-bold text-[10px] uppercase tracking-widest gap-2 hover:bg-indigo-50 px-4 h-9 rounded-xl border-none" onClick={() => setIsAddingAction(true)}>
-                                    <Plus size={14} /> Add Action Item
-                                </Button>
-                            )}
+                            ))}
                         </div>
+                        {isAddingAction ? (
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    placeholder="Enter action item..."
+                                    value={newActionItem}
+                                    onChange={(e) => setNewActionItem(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" && newActionItem.trim() && activeReview) {
+                                            const updatedItems = [...(activeReview.actionItems || []), newActionItem.trim()];
+                                            updateReview(activeReview.id, { actionItems: updatedItems });
+                                            setActiveReview({ ...activeReview, actionItems: updatedItems });
+                                            setNewActionItem("");
+                                            setIsAddingAction(false);
+                                            toast({ title: "Action Item Added", description: "New action item tracked." });
+                                        }
+                                    }}
+                                    autoFocus
+                                />
+                                <Button
+                                    type="button"
+                                    className="bg-indigo-600 text-white"
+                                    onClick={() => {
+                                        if (newActionItem.trim() && activeReview) {
+                                            const updatedItems = [...(activeReview.actionItems || []), newActionItem.trim()];
+                                            updateReview(activeReview.id, { actionItems: updatedItems });
+                                            setActiveReview({ ...activeReview, actionItems: updatedItems });
+                                            setNewActionItem("");
+                                            setIsAddingAction(false);
+                                            toast({ title: "Action Item Added", description: "New action item tracked." });
+                                        }
+                                    }}
+                                >
+                                    Save
+                                </Button>
+                                <Button type="button" variant="ghost" onClick={() => { setIsAddingAction(false); setNewActionItem(""); }}>Cancel</Button>
+                            </div>
+                        ) : (
+                            <Button type="button" variant="ghost" className="text-indigo-600 font-bold gap-2 hover:bg-indigo-50" onClick={() => setIsAddingAction(true)}>
+                                <Plus size={14} /> Add Action Item
+                            </Button>
+                        )}
+                    </div>
+                </div>
+            </SideFormSheet>
+
+            {/* Schedule New SideFormSheet */}
+            <SideFormSheet
+                open={isDialogOpen}
+                onOpenChange={(o) => { setIsDialogOpen(o); if (!o) setCreateErrors({}); }}
+                title="Schedule Review Audit"
+                description="Assign participants and category cycle."
+                icon={<Plus size={20} />}
+                accentColor="#4f46e5"
+                width="lg"
+                submitLabel="Deploy Review Cycle"
+                onSubmit={(e) => { e.preventDefault(); handleAddReview(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Reviewer Name" required error={createErrors.reviewerName || undefined}>
+                            <Input
+                                maxLength={100}
+                                placeholder="Name"
+                                value={formData.reviewerName}
+                                onChange={(e) => setFormData({ ...formData, reviewerName: e.target.value })}
+                            />
+                        </Field>
+                        <Field label="Reviewee Name" required error={createErrors.revieweeName || undefined}>
+                            <Input
+                                maxLength={100}
+                                placeholder="Name"
+                                value={formData.revieweeName}
+                                onChange={(e) => setFormData({ ...formData, revieweeName: e.target.value })}
+                            />
+                        </Field>
+                        <Field label="Reviewee ID">
+                            <Input
+                                maxLength={50}
+                                placeholder="EMP001"
+                                value={formData.revieweeId}
+                                onChange={(e) => setFormData({ ...formData, revieweeId: e.target.value })}
+                            />
+                        </Field>
+                        <Field label="Review Type">
+                            <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v as any })}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Peer">Peer Evaluation</SelectItem>
+                                    <SelectItem value="Manager">Manager Review</SelectItem>
+                                    <SelectItem value="Direct Report">Direct Report</SelectItem>
+                                    <SelectItem value="1-on-1">1-on-1 Check-in</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
                     </div>
 
-                    <DialogFooter className="gap-2 pt-6 border-t border-slate-50 sm:justify-start">
-                        <Button
-                            className="flex-1 bg-slate-900 hover:bg-slate-800 text-white rounded-xl h-12 font-bold text-[11px] uppercase tracking-widest shadow-xl transition-all border-none"
-                            onClick={() => {
-                                if (activeReview) {
-                                    updateReview(activeReview.id, {
-                                        notes: detailNotes,
-                                        status: detailStatus,
-                                        submittedAt: detailStatus === "Completed" ? new Date().toISOString() : activeReview.submittedAt,
-                                    });
-                                    toast({ title: "Audit Trail Updated", description: "Notes and status saved successfully." });
-                                }
-                                setIsDetailOpen(false);
-                            }}
-                        >
-                            Update Live Status
-                        </Button>
-                        <Button variant="ghost" className="h-12 px-6 rounded-xl font-bold text-[10px] uppercase tracking-widest text-slate-400" onClick={() => setIsDetailOpen(false)}>Close View</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Due Date" required error={createErrors.dueDate || undefined}>
+                        <Input
+                            type="date"
+                            min={new Date().toISOString().split("T")[0]}
+                            value={formData.dueDate}
+                            onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                        />
+                    </Field>
 
-            {/* Schedule New Dialog */}
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="bg-white rounded-[2.5rem] border-none p-10 max-w-xl shadow-3xl font-sans" style={{ zoom: "80%" }}>
-                    <DialogHeader className="space-y-3 text-start">
-                        <div className="h-14 w-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 mb-2 shadow-inner border border-indigo-100">
-                            <Plus size={28} />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold tracking-tight uppercase text-slate-900">Schedule Review Audit</DialogTitle>
-                        <DialogDescription className="text-slate-500 font-semibold text-sm text-start">Assign participants and category cycle.</DialogDescription>
-                    </DialogHeader>
+                    <Field label="Notes" error={createErrors.notes || undefined} hint={`${(formData.notes || "").length}/1000`}>
+                        <Textarea
+                            maxLength={1000}
+                            placeholder="Optional context or agenda..."
+                            value={formData.notes || ""}
+                            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-                    <div className="py-8 space-y-5 text-start">
-                        <div className="grid grid-cols-2 gap-5">
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Reviewer Name *</Label>
-                                <Input
-                                    maxLength={100}
-                                    className={`rounded-xl h-12 bg-slate-50 border-slate-100 font-bold px-5 focus:bg-white transition-all text-sm ${createErrors.reviewerName ? "border-rose-400" : ""}`}
-                                    placeholder="Name"
-                                    value={formData.reviewerName}
-                                    onChange={(e) => setFormData({ ...formData, reviewerName: e.target.value })}
-                                />
-                                {createErrors.reviewerName && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {createErrors.reviewerName}</p>}
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Reviewee Name *</Label>
-                                <Input
-                                    maxLength={100}
-                                    className={`rounded-xl h-12 bg-slate-50 border-slate-100 font-bold px-5 focus:bg-white transition-all text-sm ${createErrors.revieweeName ? "border-rose-400" : ""}`}
-                                    placeholder="Name"
-                                    value={formData.revieweeName}
-                                    onChange={(e) => setFormData({ ...formData, revieweeName: e.target.value })}
-                                />
-                                {createErrors.revieweeName && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {createErrors.revieweeName}</p>}
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Reviewee ID</Label>
-                                <Input
-                                    maxLength={50}
-                                    className="rounded-xl h-12 bg-slate-50 border-slate-100 font-bold px-5 focus:bg-white transition-all text-sm"
-                                    placeholder="EMP001"
-                                    value={formData.revieweeId}
-                                    onChange={(e) => setFormData({ ...formData, revieweeId: e.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Review Type</Label>
-                                <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v as any })}>
-                                    <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-slate-100 font-bold px-5 focus:bg-white text-sm">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-xl border-none shadow-2xl p-1.5 font-bold">
-                                        <SelectItem value="Peer" className="rounded-lg h-10 text-[10px] uppercase tracking-wide">Peer Evaluation</SelectItem>
-                                        <SelectItem value="Manager" className="rounded-lg h-10 text-[10px] uppercase tracking-wide">Manager Review</SelectItem>
-                                        <SelectItem value="Direct Report" className="rounded-lg h-10 text-[10px] uppercase tracking-wide">Direct Report</SelectItem>
-                                        <SelectItem value="1-on-1" className="rounded-lg h-10 text-[10px] uppercase tracking-wide text-indigo-600 font-black">1-on-1 Check-in</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Due Date *</Label>
+            {/* Edit SideFormSheet */}
+            <SideFormSheet
+                open={isEditOpen}
+                onOpenChange={(o) => { setIsEditOpen(o); if (!o) setEditErrors({}); }}
+                title="Edit Review"
+                description="Update reviewer, reviewee and audit details."
+                icon={<Edit size={20} />}
+                accentColor="#7c3aed"
+                width="lg"
+                submitLabel="Save Changes"
+                onSubmit={(e) => { e.preventDefault(); handleEditSave(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Reviewer" required error={editErrors.reviewerName || undefined}>
+                            <Input
+                                maxLength={100}
+                                value={editData.reviewerName}
+                                onChange={(e) => setEditData({ ...editData, reviewerName: e.target.value })}
+                            />
+                        </Field>
+                        <Field label="Reviewee" required error={editErrors.revieweeName || undefined}>
+                            <Input
+                                maxLength={100}
+                                value={editData.revieweeName}
+                                onChange={(e) => setEditData({ ...editData, revieweeName: e.target.value })}
+                            />
+                        </Field>
+                        <Field label="Type">
+                            <Select value={editData.type} onValueChange={(v) => setEditData({ ...editData, type: v as any })}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Peer">Peer</SelectItem>
+                                    <SelectItem value="Manager">Manager</SelectItem>
+                                    <SelectItem value="Direct Report">Direct Report</SelectItem>
+                                    <SelectItem value="1-on-1">1-on-1</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Due Date" required error={editErrors.dueDate || undefined}>
                             <Input
                                 type="date"
-                                min={new Date().toISOString().split("T")[0]}
-                                className={`rounded-xl h-12 bg-slate-50 border-slate-100 font-bold px-5 focus:bg-white transition-all text-sm ${createErrors.dueDate ? "border-rose-400" : ""}`}
-                                value={formData.dueDate}
-                                onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                                value={editData.dueDate}
+                                onChange={(e) => setEditData({ ...editData, dueDate: e.target.value })}
                             />
-                            {createErrors.dueDate && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {createErrors.dueDate}</p>}
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Notes</Label>
-                            <Textarea
-                                maxLength={1000}
-                                className={`rounded-xl bg-slate-50 border-slate-100 font-semibold px-5 py-3 text-sm ${createErrors.notes ? "border-rose-400" : ""}`}
-                                placeholder="Optional context or agenda..."
-                                value={formData.notes || ""}
-                                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                            />
-                            <p className="text-[10px] text-slate-400 ml-1">{(formData.notes || "").length}/1000</p>
-                            {createErrors.notes && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {createErrors.notes}</p>}
-                        </div>
-
-                        <div className="flex gap-2 pt-2">
-                            <Button variant="ghost" className="h-12 px-6 rounded-xl font-bold text-[10px] uppercase tracking-widest text-slate-400" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                            <Button className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 font-bold text-[11px] uppercase tracking-widest shadow-xl shadow-indigo-100 transition-all border-none" onClick={handleAddReview}>
-                                Deploy Review Cycle
-                            </Button>
-                        </div>
+                        </Field>
                     </div>
-                </DialogContent>
-            </Dialog>
-
-            {/* Edit Dialog */}
-            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent className="bg-white rounded-[2.5rem] border-none p-10 max-w-xl shadow-3xl font-sans" style={{ zoom: "80%" }}>
-                    <DialogHeader className="space-y-3 text-start">
-                        <div className="h-14 w-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 mb-2 shadow-inner border border-emerald-100">
-                            <Edit size={26} />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold tracking-tight uppercase text-slate-900">Edit Review</DialogTitle>
-                    </DialogHeader>
-
-                    <div className="py-6 space-y-5 text-start">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Reviewer *</Label>
-                                <Input
-                                    maxLength={100}
-                                    className={`rounded-xl h-12 bg-slate-50 border-slate-100 font-bold px-5 text-sm ${editErrors.reviewerName ? "border-rose-400" : ""}`}
-                                    value={editData.reviewerName}
-                                    onChange={(e) => setEditData({ ...editData, reviewerName: e.target.value })}
-                                />
-                                {editErrors.reviewerName && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {editErrors.reviewerName}</p>}
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Reviewee *</Label>
-                                <Input
-                                    maxLength={100}
-                                    className={`rounded-xl h-12 bg-slate-50 border-slate-100 font-bold px-5 text-sm ${editErrors.revieweeName ? "border-rose-400" : ""}`}
-                                    value={editData.revieweeName}
-                                    onChange={(e) => setEditData({ ...editData, revieweeName: e.target.value })}
-                                />
-                                {editErrors.revieweeName && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {editErrors.revieweeName}</p>}
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Type</Label>
-                                <Select value={editData.type} onValueChange={(v) => setEditData({ ...editData, type: v as any })}>
-                                    <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-slate-100 font-bold px-5 focus:bg-white text-sm">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-xl border-none shadow-2xl p-1.5 font-bold">
-                                        <SelectItem value="Peer" className="rounded-lg h-10 text-[10px] uppercase tracking-wide">Peer</SelectItem>
-                                        <SelectItem value="Manager" className="rounded-lg h-10 text-[10px] uppercase tracking-wide">Manager</SelectItem>
-                                        <SelectItem value="Direct Report" className="rounded-lg h-10 text-[10px] uppercase tracking-wide">Direct Report</SelectItem>
-                                        <SelectItem value="1-on-1" className="rounded-lg h-10 text-[10px] uppercase tracking-wide">1-on-1</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Due Date *</Label>
-                                <Input
-                                    type="date"
-                                    className={`rounded-xl h-12 bg-slate-50 border-slate-100 font-bold px-5 text-sm ${editErrors.dueDate ? "border-rose-400" : ""}`}
-                                    value={editData.dueDate}
-                                    onChange={(e) => setEditData({ ...editData, dueDate: e.target.value })}
-                                />
-                                {editErrors.dueDate && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {editErrors.dueDate}</p>}
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Notes</Label>
-                            <Textarea
-                                maxLength={1000}
-                                className={`rounded-xl bg-slate-50 border-slate-100 font-semibold px-5 py-3 text-sm ${editErrors.notes ? "border-rose-400" : ""}`}
-                                value={editData.notes || ""}
-                                onChange={(e) => setEditData({ ...editData, notes: e.target.value })}
-                            />
-                            <p className="text-[10px] text-slate-400 ml-1">{(editData.notes || "").length}/1000</p>
-                            {editErrors.notes && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {editErrors.notes}</p>}
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="ghost" className="h-10 px-6 rounded-xl font-bold text-[10px] uppercase tracking-widest text-slate-400" onClick={() => setIsEditOpen(false)}>Cancel</Button>
-                        <Button className="bg-emerald-600 hover:bg-slate-900 text-white rounded-xl h-10 px-6 font-bold text-[10px] uppercase tracking-widest border-none" onClick={handleEditSave}>
-                            Save Changes
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Reassign Dialog */}
-            <Dialog open={isReassignOpen} onOpenChange={setIsReassignOpen}>
-                <DialogContent className="bg-white rounded-[2.5rem] border-none p-8 max-w-md shadow-3xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-bold">Change Reviewer</DialogTitle>
-                        <DialogDescription>Assign this review to a different reviewer.</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 space-y-2">
-                        <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">New Reviewer Name *</Label>
-                        <Input
-                            maxLength={100}
-                            className={`h-11 rounded-xl bg-slate-50 border-slate-100 ${reassignError ? "border-rose-400" : ""}`}
-                            value={newReviewerName}
-                            onChange={(e) => { setNewReviewerName(e.target.value); setReassignError(null); }}
-                            placeholder="Enter name..."
+                    <Field label="Notes" error={editErrors.notes || undefined} hint={`${(editData.notes || "").length}/1000`}>
+                        <Textarea
+                            maxLength={1000}
+                            value={editData.notes || ""}
+                            onChange={(e) => setEditData({ ...editData, notes: e.target.value })}
                         />
-                        {reassignError && <p className="text-[11px] font-bold text-rose-600 flex items-center gap-1"><AlertCircle size={12} /> {reassignError}</p>}
-                    </div>
-                    <DialogFooter>
-                        <Button variant="ghost" onClick={() => setIsReassignOpen(false)}>Cancel</Button>
-                        <Button className="bg-indigo-600 text-white hover:bg-slate-900 border-none" onClick={handleReassign}>
-                            Reassign
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    </Field>
+                </div>
+            </SideFormSheet>
+
+            {/* Reassign SideFormSheet */}
+            <SideFormSheet
+                open={isReassignOpen}
+                onOpenChange={(o) => { setIsReassignOpen(o); if (!o) { setReassignError(null); } }}
+                title="Change Reviewer"
+                description="Assign this review to a different reviewer."
+                icon={<UserCog size={20} />}
+                accentColor="#4f46e5"
+                width="sm"
+                submitLabel="Reassign"
+                onSubmit={(e) => { e.preventDefault(); handleReassign(); }}
+            >
+                <Field label="New Reviewer Name" required error={reassignError || undefined}>
+                    <Input
+                        maxLength={100}
+                        value={newReviewerName}
+                        onChange={(e) => { setNewReviewerName(e.target.value); setReassignError(null); }}
+                        placeholder="Enter name..."
+                    />
+                </Field>
+            </SideFormSheet>
 
             {/* Delete Confirmation */}
             <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>

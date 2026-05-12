@@ -43,6 +43,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import {
     Select,
     SelectContent,
@@ -1022,78 +1023,108 @@ const PFManagement = () => {
                 </div>
             </div>
 
-            {/* Add/Edit Dialog */}
-            <Dialog open={isAddOpen} onOpenChange={(o) => { setIsAddOpen(o); if (!o) setEditRecord(null) }}>
-                <DialogContent className="sm:max-w-[480px] rounded-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-slate-900">{editRecord ? "Edit PF Record" : "Add PF Record"}</DialogTitle>
-                        <DialogDescription className="text-xs text-slate-500">
-                            {editRecord ? "Update the PF contribution details." : "Enter employee details. Contributions will be auto-calculated at 12%."}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Employee ID</Label>
-                                <Input className="h-9 text-xs rounded-lg" value={formData.employeeId} onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })} disabled={!!editRecord} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Employee Name</Label>
-                                <Input className="h-9 text-xs rounded-lg" value={formData.employeeName} onChange={(e) => setFormData({ ...formData, employeeName: e.target.value })} />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">UAN</Label>
-                                <Input className="h-9 text-xs rounded-lg" value={formData.uan} onChange={(e) => setFormData({ ...formData, uan: e.target.value })} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Month</Label>
-                                <Input className="h-9 text-xs rounded-lg" value={formData.month} onChange={(e) => setFormData({ ...formData, month: e.target.value })} />
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-slate-500">Basic Pay (₹)</Label>
-                            <Input className="h-9 text-xs rounded-lg" type="number" value={formData.basicPay} onChange={(e) => setFormData({ ...formData, basicPay: e.target.value })} />
-                        </div>
-                        {formData.basicPay && (
-                            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Auto-Calculated Contributions</p>
-                                <div className="grid grid-cols-2 gap-2 text-xs">
-                                    <div><span className="text-slate-500">Employee (12%):</span> <span className="font-bold text-slate-700">₹{Math.round(parseFloat(formData.basicPay) * 0.12).toLocaleString("en-IN")}</span></div>
-                                    <div><span className="text-slate-500">Employer (12%):</span> <span className="font-bold text-slate-700">₹{Math.round(parseFloat(formData.basicPay) * 0.12).toLocaleString("en-IN")}</span></div>
-                                    <div><span className="text-slate-500">EPS (8.33%):</span> <span className="font-bold text-slate-700">₹{Math.round(Math.min(parseFloat(formData.basicPay), 15000) * 0.0833).toLocaleString("en-IN")}</span></div>
-                                    <div><span className="text-slate-500">EDLI (0.5%):</span> <span className="font-bold text-slate-700">₹{Math.round(parseFloat(formData.basicPay) * 0.005).toLocaleString("en-IN")}</span></div>
-                                </div>
-                            </div>
-                        )}
+            {/* Add/Edit PF Sheet */}
+            <SideFormSheet
+                open={isAddOpen}
+                onOpenChange={(o) => { setIsAddOpen(o); if (!o) setEditRecord(null) }}
+                title={editRecord ? "Edit PF Record" : "Add PF Record"}
+                description={editRecord ? "Update the PF contribution details." : "Enter employee details. Contributions will be auto-calculated at 12%."}
+                icon={<Landmark size={20} />}
+                accentColor={editRecord ? "#7c3aed" : "#4f46e5"}
+                width="md"
+                submitLabel={editRecord ? "Update" : "Add Record"}
+                onSubmit={(e) => { e.preventDefault(); handleSave(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Employee ID">
+                            <Input value={formData.employeeId} onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })} disabled={!!editRecord} />
+                        </Field>
+                        <Field label="Employee Name">
+                            <Input value={formData.employeeName} onChange={(e) => setFormData({ ...formData, employeeName: e.target.value })} />
+                        </Field>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => { setIsAddOpen(false); setEditRecord(null) }}>Cancel</Button>
-                        <Button className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-[#8B5CF6]/20" onClick={handleSave}>
-                            {editRecord ? "Update" : "Add Record"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="UAN">
+                            <Input value={formData.uan} onChange={(e) => setFormData({ ...formData, uan: e.target.value })} />
+                        </Field>
+                        <Field label="Month">
+                            <Input value={formData.month} onChange={(e) => setFormData({ ...formData, month: e.target.value })} />
+                        </Field>
+                    </div>
+                    <Field label="Basic Pay (₹)">
+                        <Input type="number" value={formData.basicPay} onChange={(e) => setFormData({ ...formData, basicPay: e.target.value })} />
+                    </Field>
+                    {formData.basicPay && (
+                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Auto-Calculated Contributions</p>
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div><span className="text-slate-500">Employee (12%):</span> <span className="font-bold text-slate-700">₹{Math.round(parseFloat(formData.basicPay) * 0.12).toLocaleString("en-IN")}</span></div>
+                                <div><span className="text-slate-500">Employer (12%):</span> <span className="font-bold text-slate-700">₹{Math.round(parseFloat(formData.basicPay) * 0.12).toLocaleString("en-IN")}</span></div>
+                                <div><span className="text-slate-500">EPS (8.33%):</span> <span className="font-bold text-slate-700">₹{Math.round(Math.min(parseFloat(formData.basicPay), 15000) * 0.0833).toLocaleString("en-IN")}</span></div>
+                                <div><span className="text-slate-500">EDLI (0.5%):</span> <span className="font-bold text-slate-700">₹{Math.round(parseFloat(formData.basicPay) * 0.005).toLocaleString("en-IN")}</span></div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </SideFormSheet>
 
-            {/* ── Transfer Request Dialog ── */}
-            <Dialog open={isTransferOpen} onOpenChange={(o) => { setIsTransferOpen(o); if (!o) setEditTransfer(null) }}>
-                <DialogContent className="sm:max-w-[520px] rounded-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                            <ArrowLeftRight size={18} className="text-[#8B5CF6]" />
-                            {editTransfer ? "Edit Transfer Request" : "New Transfer Request"}
-                        </DialogTitle>
-                        <DialogDescription className="text-xs text-slate-500">
-                            Submit a PF transfer from the employee&apos;s previous employer. Form 13 can be generated after submission.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Employee</Label>
-                            <Select value={transferForm.employeeId} onValueChange={(v) => setTransferForm({ ...transferForm, employeeId: v })}>
-                                <SelectTrigger className="h-9 text-xs rounded-lg"><SelectValue placeholder="Select employee" /></SelectTrigger>
+            {/* Transfer Request Sheet */}
+            <SideFormSheet
+                open={isTransferOpen}
+                onOpenChange={(o) => { setIsTransferOpen(o); if (!o) setEditTransfer(null) }}
+                title={editTransfer ? "Edit Transfer Request" : "New Transfer Request"}
+                description="Submit a PF transfer from the employee's previous employer. Form 13 can be generated after submission."
+                icon={<ArrowLeftRight size={20} />}
+                accentColor={editTransfer ? "#7c3aed" : "#4f46e5"}
+                width="lg"
+                submitLabel={editTransfer ? "Update Request" : "Submit Request"}
+                onSubmit={(e) => { e.preventDefault(); handleSaveTransfer(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Employee">
+                        <Select value={transferForm.employeeId} onValueChange={(v) => setTransferForm({ ...transferForm, employeeId: v })}>
+                            <SelectTrigger><SelectValue placeholder="Select employee" /></SelectTrigger>
+                            <SelectContent>
+                                {pfRecords.map(r => (
+                                    <SelectItem key={r.id} value={r.employeeId} className="text-xs">
+                                        {r.employeeName} — UAN {r.uan}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Previous Employer">
+                            <Input value={transferForm.previousEmployerName} onChange={(e) => setTransferForm({ ...transferForm, previousEmployerName: e.target.value })} placeholder="Acme Technologies Ltd" />
+                        </Field>
+                        <Field label="Previous PF Number">
+                            <Input className="font-mono" value={transferForm.previousEmployerPfNumber} onChange={(e) => setTransferForm({ ...transferForm, previousEmployerPfNumber: e.target.value })} placeholder="MH/BAN/12345/001234" />
+                        </Field>
+                    </div>
+                    <Field label="Notes">
+                        <Textarea value={transferForm.notes} onChange={(e) => setTransferForm({ ...transferForm, notes: e.target.value })} placeholder="Any context or special handling notes..." />
+                    </Field>
+                </div>
+            </SideFormSheet>
+
+            {/* Withdrawal Claim Sheet */}
+            <SideFormSheet
+                open={isWithdrawalOpen}
+                onOpenChange={(o) => { setIsWithdrawalOpen(o); if (!o) setEditWithdrawal(null) }}
+                title={editWithdrawal ? "Edit Withdrawal Claim" : "New Withdrawal Claim"}
+                description="Submit a PF withdrawal claim (Form 19 / 10C / 31 / 10D) for settlement."
+                icon={<Wallet size={20} />}
+                accentColor={editWithdrawal ? "#7c3aed" : "#4f46e5"}
+                width="lg"
+                submitLabel={editWithdrawal ? "Update Claim" : "Submit Claim"}
+                onSubmit={(e) => { e.preventDefault(); handleSaveWithdrawal(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Employee">
+                            <Select value={withdrawalForm.employeeId} onValueChange={(v) => setWithdrawalForm({ ...withdrawalForm, employeeId: v })}>
+                                <SelectTrigger><SelectValue placeholder="Select employee" /></SelectTrigger>
                                 <SelectContent>
                                     {pfRecords.map(r => (
                                         <SelectItem key={r.id} value={r.employeeId} className="text-xs">
@@ -1102,231 +1133,142 @@ const PFManagement = () => {
                                     ))}
                                 </SelectContent>
                             </Select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Previous Employer</Label>
-                                <Input className="h-9 text-xs rounded-lg" value={transferForm.previousEmployerName} onChange={(e) => setTransferForm({ ...transferForm, previousEmployerName: e.target.value })} placeholder="Acme Technologies Ltd" />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Previous PF Number</Label>
-                                <Input className="h-9 text-xs rounded-lg font-mono" value={transferForm.previousEmployerPfNumber} onChange={(e) => setTransferForm({ ...transferForm, previousEmployerPfNumber: e.target.value })} placeholder="MH/BAN/12345/001234" />
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Notes</Label>
-                            <Textarea className="text-xs rounded-lg min-h-[70px]" value={transferForm.notes} onChange={(e) => setTransferForm({ ...transferForm, notes: e.target.value })} placeholder="Any context or special handling notes..." />
-                        </div>
+                        </Field>
+                        <Field label="Claim Type">
+                            <Select value={withdrawalForm.claimType} onValueChange={(v) => setWithdrawalForm({ ...withdrawalForm, claimType: v as PFWithdrawalClaim["claimType"] })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Form 19 (Final Settlement)" className="text-xs">Form 19 (Final Settlement)</SelectItem>
+                                    <SelectItem value="Form 10C (Pension)" className="text-xs">Form 10C (Pension)</SelectItem>
+                                    <SelectItem value="Form 31 (Advance)" className="text-xs">Form 31 (Advance)</SelectItem>
+                                    <SelectItem value="Form 10D (Pension Benefit)" className="text-xs">Form 10D (Pension Benefit)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => { setIsTransferOpen(false); setEditTransfer(null) }}>Cancel</Button>
-                        <Button className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-[#8B5CF6]/20" onClick={handleSaveTransfer}>
-                            {editTransfer ? "Update Request" : "Submit Request"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* ── Withdrawal Claim Dialog ── */}
-            <Dialog open={isWithdrawalOpen} onOpenChange={(o) => { setIsWithdrawalOpen(o); if (!o) setEditWithdrawal(null) }}>
-                <DialogContent className="sm:max-w-[540px] rounded-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                            <Wallet size={18} className="text-[#8B5CF6]" />
-                            {editWithdrawal ? "Edit Withdrawal Claim" : "New Withdrawal Claim"}
-                        </DialogTitle>
-                        <DialogDescription className="text-xs text-slate-500">
-                            Submit a PF withdrawal claim (Form 19 / 10C / 31 / 10D) for settlement.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Employee</Label>
-                                <Select value={withdrawalForm.employeeId} onValueChange={(v) => setWithdrawalForm({ ...withdrawalForm, employeeId: v })}>
-                                    <SelectTrigger className="h-9 text-xs rounded-lg"><SelectValue placeholder="Select employee" /></SelectTrigger>
-                                    <SelectContent>
-                                        {pfRecords.map(r => (
-                                            <SelectItem key={r.id} value={r.employeeId} className="text-xs">
-                                                {r.employeeName} — UAN {r.uan}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Claim Type</Label>
-                                <Select value={withdrawalForm.claimType} onValueChange={(v) => setWithdrawalForm({ ...withdrawalForm, claimType: v as PFWithdrawalClaim["claimType"] })}>
-                                    <SelectTrigger className="h-9 text-xs rounded-lg"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Form 19 (Final Settlement)" className="text-xs">Form 19 (Final Settlement)</SelectItem>
-                                        <SelectItem value="Form 10C (Pension)" className="text-xs">Form 10C (Pension)</SelectItem>
-                                        <SelectItem value="Form 31 (Advance)" className="text-xs">Form 31 (Advance)</SelectItem>
-                                        <SelectItem value="Form 10D (Pension Benefit)" className="text-xs">Form 10D (Pension Benefit)</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Reason</Label>
-                            <Input className="h-9 text-xs rounded-lg" value={withdrawalForm.reason} onChange={(e) => setWithdrawalForm({ ...withdrawalForm, reason: e.target.value })} placeholder="Resignation / Medical / Superannuation..." />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Claimed Amount (₹)</Label>
-                                <Input className="h-9 text-xs rounded-lg" type="number" value={withdrawalForm.claimedAmount} onChange={(e) => setWithdrawalForm({ ...withdrawalForm, claimedAmount: e.target.value })} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Documents (comma separated)</Label>
-                                <Input className="h-9 text-xs rounded-lg" value={withdrawalForm.documentsAttached} onChange={(e) => setWithdrawalForm({ ...withdrawalForm, documentsAttached: e.target.value })} placeholder="pan.pdf, aadhaar.pdf" />
-                            </div>
-                        </div>
+                    <Field label="Reason">
+                        <Input value={withdrawalForm.reason} onChange={(e) => setWithdrawalForm({ ...withdrawalForm, reason: e.target.value })} placeholder="Resignation / Medical / Superannuation..." />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Claimed Amount (₹)">
+                            <Input type="number" value={withdrawalForm.claimedAmount} onChange={(e) => setWithdrawalForm({ ...withdrawalForm, claimedAmount: e.target.value })} />
+                        </Field>
+                        <Field label="Documents (comma separated)">
+                            <Input value={withdrawalForm.documentsAttached} onChange={(e) => setWithdrawalForm({ ...withdrawalForm, documentsAttached: e.target.value })} placeholder="pan.pdf, aadhaar.pdf" />
+                        </Field>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => { setIsWithdrawalOpen(false); setEditWithdrawal(null) }}>Cancel</Button>
-                        <Button className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-[#8B5CF6]/20" onClick={handleSaveWithdrawal}>
-                            {editWithdrawal ? "Update Claim" : "Submit Claim"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                </div>
+            </SideFormSheet>
 
-            {/* ── Advance Request Dialog ── */}
-            <Dialog open={isAdvanceOpen} onOpenChange={(o) => { setIsAdvanceOpen(o); if (!o) { setEditAdvance(null); setAdvanceEligibility(null) } }}>
-                <DialogContent className="sm:max-w-[540px] rounded-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                            <Banknote size={18} className="text-[#8B5CF6]" />
-                            {editAdvance ? "Edit Advance Request" : "New Advance Request"}
-                        </DialogTitle>
-                        <DialogDescription className="text-xs text-slate-500">
-                            Request a PF advance under Scheme 68. Eligible limit is auto-computed from basic pay and purpose.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Employee</Label>
-                                <Select value={advanceForm.employeeId} onValueChange={(v) => { setAdvanceForm({ ...advanceForm, employeeId: v }); refreshAdvanceEligibility(v, advanceForm.purpose) }}>
-                                    <SelectTrigger className="h-9 text-xs rounded-lg"><SelectValue placeholder="Select employee" /></SelectTrigger>
-                                    <SelectContent>
-                                        {pfRecords.map(r => (
-                                            <SelectItem key={r.id} value={r.employeeId} className="text-xs">
-                                                {r.employeeName} — UAN {r.uan}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Purpose</Label>
-                                <Select value={advanceForm.purpose} onValueChange={(v) => { const p = v as PFAdvance["purpose"]; setAdvanceForm({ ...advanceForm, purpose: p }); refreshAdvanceEligibility(advanceForm.employeeId, p) }}>
-                                    <SelectTrigger className="h-9 text-xs rounded-lg"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        {(["Marriage", "Education", "Medical", "Housing", "Covid-19", "Natural Calamity", "Other"] as PFAdvance["purpose"][]).map(p => (
-                                            <SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Requested Amount (₹)</Label>
-                            <Input className="h-9 text-xs rounded-lg" type="number" value={advanceForm.requestedAmount} onChange={(e) => setAdvanceForm({ ...advanceForm, requestedAmount: e.target.value })} />
-                        </div>
-                        {advanceEligibility && (
-                            <div className={cn("p-3 rounded-xl border space-y-1.5", advanceOverLimit ? "bg-amber-50 border-amber-200" : "bg-emerald-50/60 border-emerald-200")}>
-                                <div className="flex items-center gap-2">
-                                    {advanceOverLimit ? <AlertTriangle size={14} className="text-amber-600" /> : <CheckCircle2 size={14} className="text-emerald-600" />}
-                                    <p className={cn("text-[10px] font-bold uppercase tracking-wider", advanceOverLimit ? "text-amber-700" : "text-emerald-700")}>
-                                        {advanceOverLimit ? "Exceeds eligible limit" : "Within eligible limit"}
-                                    </p>
-                                </div>
-                                <p className="text-xs font-bold text-slate-800">
-                                    Eligible Limit: ₹{advanceEligibility.eligibleLimit.toLocaleString("en-IN")}
+            {/* Advance Request Sheet */}
+            <SideFormSheet
+                open={isAdvanceOpen}
+                onOpenChange={(o) => { setIsAdvanceOpen(o); if (!o) { setEditAdvance(null); setAdvanceEligibility(null) } }}
+                title={editAdvance ? "Edit Advance Request" : "New Advance Request"}
+                description="Request a PF advance under Scheme 68. Eligible limit is auto-computed from basic pay and purpose."
+                icon={<Banknote size={20} />}
+                accentColor={editAdvance ? "#7c3aed" : "#4f46e5"}
+                width="lg"
+                submitLabel={editAdvance ? "Update Advance" : "Submit Advance"}
+                onSubmit={(e) => { e.preventDefault(); handleSaveAdvance(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Employee">
+                            <Select value={advanceForm.employeeId} onValueChange={(v) => { setAdvanceForm({ ...advanceForm, employeeId: v }); refreshAdvanceEligibility(v, advanceForm.purpose) }}>
+                                <SelectTrigger><SelectValue placeholder="Select employee" /></SelectTrigger>
+                                <SelectContent>
+                                    {pfRecords.map(r => (
+                                        <SelectItem key={r.id} value={r.employeeId} className="text-xs">
+                                            {r.employeeName} — UAN {r.uan}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Purpose">
+                            <Select value={advanceForm.purpose} onValueChange={(v) => { const p = v as PFAdvance["purpose"]; setAdvanceForm({ ...advanceForm, purpose: p }); refreshAdvanceEligibility(advanceForm.employeeId, p) }}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {(["Marriage", "Education", "Medical", "Housing", "Covid-19", "Natural Calamity", "Other"] as PFAdvance["purpose"][]).map(p => (
+                                        <SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                    </div>
+                    <Field label="Requested Amount (₹)">
+                        <Input type="number" value={advanceForm.requestedAmount} onChange={(e) => setAdvanceForm({ ...advanceForm, requestedAmount: e.target.value })} />
+                    </Field>
+                    {advanceEligibility && (
+                        <div className={cn("p-3 rounded-xl border space-y-1.5", advanceOverLimit ? "bg-amber-50 border-amber-200" : "bg-emerald-50/60 border-emerald-200")}>
+                            <div className="flex items-center gap-2">
+                                {advanceOverLimit ? <AlertTriangle size={14} className="text-amber-600" /> : <CheckCircle2 size={14} className="text-emerald-600" />}
+                                <p className={cn("text-[10px] font-bold uppercase tracking-wider", advanceOverLimit ? "text-amber-700" : "text-emerald-700")}>
+                                    {advanceOverLimit ? "Exceeds eligible limit" : "Within eligible limit"}
                                 </p>
-                                <p className="text-[11px] text-slate-600">{advanceEligibility.reason}</p>
                             </div>
-                        )}
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => { setIsAdvanceOpen(false); setEditAdvance(null); setAdvanceEligibility(null) }}>Cancel</Button>
-                        <Button className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-[#8B5CF6]/20" onClick={handleSaveAdvance}>
-                            {editAdvance ? "Update Advance" : "Submit Advance"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                            <p className="text-xs font-bold text-slate-800">
+                                Eligible Limit: ₹{advanceEligibility.eligibleLimit.toLocaleString("en-IN")}
+                            </p>
+                            <p className="text-[11px] text-slate-600">{advanceEligibility.reason}</p>
+                        </div>
+                    )}
+                </div>
+            </SideFormSheet>
 
-            {/* ── Approve Advance Dialog ── */}
-            <Dialog open={isApproveOpen} onOpenChange={(o) => { setIsApproveOpen(o); if (!o) setApproveTarget(null) }}>
-                <DialogContent className="sm:max-w-[460px] rounded-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                            <CheckCircle2 size={18} className="text-emerald-500" />
-                            Approve PF Advance
-                        </DialogTitle>
-                        <DialogDescription className="text-xs text-slate-500">
-                            {approveTarget ? `Approve advance for ${approveTarget.employeeName} (${approveTarget.purpose}).` : ""}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        {approveTarget && (
-                            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs grid grid-cols-2 gap-2">
-                                <div><span className="text-slate-500">Requested:</span> <span className="font-bold text-slate-800">₹{approveTarget.requestedAmount.toLocaleString("en-IN")}</span></div>
-                                <div><span className="text-slate-500">Eligible:</span> <span className="font-bold text-slate-800">{approveTarget.eligibleLimit ? `₹${approveTarget.eligibleLimit.toLocaleString("en-IN")}` : "—"}</span></div>
-                            </div>
-                        )}
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Approved Amount (₹)</Label>
-                            <Input className="h-9 text-xs rounded-lg" type="number" value={approveForm.approvedAmount} onChange={(e) => setApproveForm({ ...approveForm, approvedAmount: e.target.value })} />
+            {/* Approve Advance Sheet */}
+            <SideFormSheet
+                open={isApproveOpen}
+                onOpenChange={(o) => { setIsApproveOpen(o); if (!o) setApproveTarget(null) }}
+                title="Approve PF Advance"
+                description={approveTarget ? `Approve advance for ${approveTarget.employeeName} (${approveTarget.purpose}).` : undefined}
+                icon={<CheckCircle2 size={20} />}
+                accentColor="#059669"
+                width="md"
+                submitLabel="Approve"
+                onSubmit={(e) => { e.preventDefault(); handleApprove(); }}
+            >
+                <div className="space-y-4">
+                    {approveTarget && (
+                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs grid grid-cols-2 gap-2">
+                            <div><span className="text-slate-500">Requested:</span> <span className="font-bold text-slate-800">₹{approveTarget.requestedAmount.toLocaleString("en-IN")}</span></div>
+                            <div><span className="text-slate-500">Eligible:</span> <span className="font-bold text-slate-800">{approveTarget.eligibleLimit ? `₹${approveTarget.eligibleLimit.toLocaleString("en-IN")}` : "—"}</span></div>
                         </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Approval Notes</Label>
-                            <Textarea className="text-xs rounded-lg min-h-[70px]" value={approveForm.notes} onChange={(e) => setApproveForm({ ...approveForm, notes: e.target.value })} placeholder="Eligibility basis, conditions, committee remarks..." />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => { setIsApproveOpen(false); setApproveTarget(null) }}>Cancel</Button>
-                        <Button className="bg-emerald-500 hover:bg-emerald-600 text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-emerald-500/20" onClick={handleApprove}>
-                            Approve
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    )}
+                    <Field label="Approved Amount (₹)">
+                        <Input type="number" value={approveForm.approvedAmount} onChange={(e) => setApproveForm({ ...approveForm, approvedAmount: e.target.value })} />
+                    </Field>
+                    <Field label="Approval Notes">
+                        <Textarea value={approveForm.notes} onChange={(e) => setApproveForm({ ...approveForm, notes: e.target.value })} placeholder="Eligibility basis, conditions, committee remarks..." />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-            {/* ── Settle Withdrawal Dialog ── */}
-            <Dialog open={isSettleOpen} onOpenChange={(o) => { setIsSettleOpen(o); if (!o) setSettleTarget(null) }}>
-                <DialogContent className="sm:max-w-[440px] rounded-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                            <CheckCircle2 size={18} className="text-emerald-500" />
-                            Settle Withdrawal Claim
-                        </DialogTitle>
-                        <DialogDescription className="text-xs text-slate-500">
-                            {settleTarget ? `Settle claim for ${settleTarget.employeeName} (${settleTarget.claimType}).` : ""}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        {settleTarget && (
-                            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs">
-                                <p><span className="text-slate-500">Claimed:</span> <span className="font-bold text-slate-800">₹{settleTarget.claimedAmount.toLocaleString("en-IN")}</span></p>
-                                <p className="mt-1"><span className="text-slate-500">Claim Date:</span> <span className="font-medium text-slate-700">{settleTarget.claimDate}</span></p>
-                            </div>
-                        )}
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Settled Amount (₹)</Label>
-                            <Input className="h-9 text-xs rounded-lg" type="number" value={settleAmount} onChange={(e) => setSettleAmount(e.target.value)} />
+            {/* Settle Withdrawal Sheet */}
+            <SideFormSheet
+                open={isSettleOpen}
+                onOpenChange={(o) => { setIsSettleOpen(o); if (!o) setSettleTarget(null) }}
+                title="Settle Withdrawal Claim"
+                description={settleTarget ? `Settle claim for ${settleTarget.employeeName} (${settleTarget.claimType}).` : undefined}
+                icon={<CheckCircle2 size={20} />}
+                accentColor="#059669"
+                width="md"
+                submitLabel="Confirm Settlement"
+                onSubmit={(e) => { e.preventDefault(); handleSettleClaim(); }}
+            >
+                <div className="space-y-4">
+                    {settleTarget && (
+                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                            <p><span className="text-slate-500">Claimed:</span> <span className="font-bold text-slate-800">₹{settleTarget.claimedAmount.toLocaleString("en-IN")}</span></p>
+                            <p className="mt-1"><span className="text-slate-500">Claim Date:</span> <span className="font-medium text-slate-700">{settleTarget.claimDate}</span></p>
                         </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => { setIsSettleOpen(false); setSettleTarget(null) }}>Cancel</Button>
-                        <Button className="bg-emerald-500 hover:bg-emerald-600 text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-emerald-500/20" onClick={handleSettleClaim}>
-                            Confirm Settlement
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    )}
+                    <Field label="Settled Amount (₹)">
+                        <Input type="number" value={settleAmount} onChange={(e) => setSettleAmount(e.target.value)} />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             {/* ── View Transfer Details Dialog ── */}
             <Dialog open={!!viewTransfer} onOpenChange={(o) => { if (!o) setViewTransfer(null) }}>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { CustomButton } from "@/components/custom/CustomButton"
 import { Input } from "@/components/ui/input"
@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Search, Users, UserMinus, MoreHorizontal, Loader2, UserPlus, Crown, Shield } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
+import { getAllTeamMembers, deleteTeamMember } from "@/hooks/teamHooks"
 
 interface ManageMembersModalProps {
     open: boolean
@@ -26,18 +27,43 @@ interface Member {
     joinedAt: string
 }
 
-const initialMembers: Member[] = [
-    { id: "m1", name: "Alice Johnson", email: "alice@company.com", role: "Owner", joinedAt: "2025-01-15" },
-    { id: "m2", name: "Bob Smith", email: "bob@company.com", role: "Admin", joinedAt: "2025-02-20" },
-    { id: "m3", name: "Charlie Brown", email: "charlie@company.com", role: "Member", joinedAt: "2025-03-10" },
-    { id: "m4", name: "Diana Prince", email: "diana@company.com", role: "Member", joinedAt: "2025-03-18" },
-    { id: "m5", name: "Edward Norton", email: "edward@company.com", role: "Member", joinedAt: "2025-04-01" },
-]
-
-export function ManageMembersModal({ open, onOpenChange, groupName, onMembersUpdated }: ManageMembersModalProps) {
-    const [members, setMembers] = useState<Member[]>(initialMembers)
+export function ManageMembersModal({ open, onOpenChange, groupName, groupId, onMembersUpdated }: ManageMembersModalProps) {
+    const [members, setMembers] = useState<Member[]>([])
+    const [loading, setLoading] = useState(false)
     const [searchQuery, setSearchQuery] = useState("")
     const [removing, setRemoving] = useState<string | null>(null)
+
+    useEffect(() => {
+        if (!open || !groupId) return
+        let cancelled = false
+        ;(async () => {
+            try {
+                setLoading(true)
+                const res = await getAllTeamMembers(groupId)
+                const data: any = res?.data || res || []
+                const arr: any[] = Array.isArray(data) ? data : data.members ? data.members : data.data ? data.data : []
+                const mapped: Member[] = arr.map((m: any) => {
+                    const u = m.user || m.member || m
+                    const name = u.name || [u.firstName, u.lastName].filter(Boolean).join(" ") || u.email || "Unknown"
+                    return {
+                        id: m._id || m.memberId || u._id || u.id || "",
+                        name,
+                        email: u.email || "",
+                        role: m.role || "Member",
+                        joinedAt: m.joinedAt || m.createdAt
+                            ? new Date(m.joinedAt || m.createdAt).toISOString().split("T")[0]
+                            : "",
+                    }
+                })
+                if (!cancelled) setMembers(mapped)
+            } catch (err: any) {
+                if (!cancelled) toast.error(err?.response?.data?.message || "Failed to load members")
+            } finally {
+                if (!cancelled) setLoading(false)
+            }
+        })()
+        return () => { cancelled = true }
+    }, [open, groupId])
 
     const filteredMembers = members.filter(m =>
         m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -45,19 +71,27 @@ export function ManageMembersModal({ open, onOpenChange, groupName, onMembersUpd
     )
 
     const changeRole = (memberId: string, newRole: string) => {
+        // Backend currently has no role-change route exposed for team members,
+        // so we update locally only and reflect the change in the UI.
         setMembers(prev => prev.map(m => m.id === memberId ? { ...m, role: newRole } : m))
-        toast.success("Member role updated")
+        toast.success("Member role updated locally")
         onMembersUpdated?.()
     }
 
     const removeMember = async (memberId: string) => {
+        if (!groupId) {
+            toast.error("No group selected")
+            return
+        }
         setRemoving(memberId)
         try {
-            await new Promise(resolve => setTimeout(resolve, 500))
+            await deleteTeamMember(groupId, memberId)
             const member = members.find(m => m.id === memberId)
             setMembers(prev => prev.filter(m => m.id !== memberId))
-            toast.success(`${member?.name} removed from group`)
+            toast.success(`${member?.name || "Member"} removed from group`)
             onMembersUpdated?.()
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to remove member")
         } finally {
             setRemoving(null)
         }
@@ -103,7 +137,12 @@ export function ManageMembersModal({ open, onOpenChange, groupName, onMembersUpd
                 </div>
 
                 <div className="flex-1 overflow-y-auto min-h-0">
-                    {filteredMembers.length === 0 ? (
+                    {loading ? (
+                        <div className="p-8 text-center text-zinc-400">
+                            <Loader2 className="w-6 h-6 mx-auto mb-2 animate-spin opacity-60" />
+                            <p className="text-sm">Loading members...</p>
+                        </div>
+                    ) : filteredMembers.length === 0 ? (
                         <div className="p-8 text-center text-zinc-400">
                             <Users className="w-10 h-10 mx-auto mb-2 opacity-30" />
                             <p className="text-sm">No members found</p>

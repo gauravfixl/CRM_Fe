@@ -16,6 +16,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
@@ -1185,40 +1186,77 @@ const GenerateOfferDialog: React.FC<{
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="bg-white rounded-2xl border border-slate-200 p-0 max-w-3xl shadow-2xl overflow-hidden">
-                <DialogHeader className="px-6 pt-6 pb-3 border-b border-slate-100">
-                    <DialogTitle className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                        <Sparkles className="h-4 w-4 text-violet-600" />
-                        Generate Offer
-                    </DialogTitle>
-                    <DialogDescription className="text-[11px] text-slate-500 font-medium">
-                        Step {step} of 4 — {["Candidate", "Template", "Compensation", "Terms"][step - 1]}
-                    </DialogDescription>
-                    {/* Stepper */}
-                    <div className="flex items-center gap-2 pt-3">
-                        {[1, 2, 3, 4].map((s) => (
-                            <React.Fragment key={s}>
+        <SideFormSheet
+            open={open}
+            onOpenChange={onOpenChange}
+            title="Generate Offer"
+            description={`Step ${step} of 4 — ${["Candidate", "Template", "Compensation", "Terms"][step - 1]}`}
+            icon={<Sparkles className="h-5 w-5" />}
+            accentColor="#059669"
+            width="xl"
+            footer={
+                <div className="flex items-center justify-between w-full">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        disabled={step === 1}
+                        onClick={() => setStep((s) => s - 1)}
+                        className="h-9 rounded-lg text-[11px] font-semibold"
+                    >
+                        <ChevronLeft className="h-3.5 w-3.5 mr-1" />
+                        Back
+                    </Button>
+                    {step < 4 ? (
+                        <Button
+                            type="button"
+                            onClick={() => setStep((s) => s + 1)}
+                            disabled={
+                                (step === 1 && !form.candidateId) ||
+                                (step === 2 && !form.templateId)
+                            }
+                            className="h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-semibold"
+                        >
+                            Next
+                            <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                        </Button>
+                    ) : (
+                        <Button
+                            type="button"
+                            onClick={submit}
+                            disabled={!canSubmit}
+                            className="h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-semibold disabled:opacity-50"
+                        >
+                            <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                            Create draft offer
+                        </Button>
+                    )}
+                </div>
+            }
+        >
+            <div>
+                {/* Stepper */}
+                <div className="flex items-center gap-2 pb-4 mb-4 border-b border-slate-100">
+                    {[1, 2, 3, 4].map((s) => (
+                        <React.Fragment key={s}>
+                            <div
+                                className={`h-7 w-7 rounded-full flex items-center justify-center text-[11px] font-bold ${s <= step
+                                        ? "bg-violet-600 text-white"
+                                        : "bg-slate-100 text-slate-400"
+                                    }`}
+                            >
+                                {s}
+                            </div>
+                            {s < 4 && (
                                 <div
-                                    className={`h-7 w-7 rounded-full flex items-center justify-center text-[11px] font-bold ${s <= step
-                                            ? "bg-violet-600 text-white"
-                                            : "bg-slate-100 text-slate-400"
+                                    className={`h-1 flex-1 rounded-full ${s < step ? "bg-violet-600" : "bg-slate-100"
                                         }`}
-                                >
-                                    {s}
-                                </div>
-                                {s < 4 && (
-                                    <div
-                                        className={`h-1 flex-1 rounded-full ${s < step ? "bg-violet-600" : "bg-slate-100"
-                                            }`}
-                                    />
-                                )}
-                            </React.Fragment>
-                        ))}
-                    </div>
-                </DialogHeader>
+                                />
+                            )}
+                        </React.Fragment>
+                    ))}
+                </div>
 
-                <div className="px-6 py-5 max-h-[60vh] overflow-y-auto">
+                <div>
                     {step === 1 && (
                         <div className="space-y-4">
                             <div>
@@ -1630,42 +1668,8 @@ const GenerateOfferDialog: React.FC<{
                         </div>
                     )}
                 </div>
-
-                <DialogFooter className="px-6 py-4 border-t border-slate-100 flex items-center justify-between gap-2 sm:justify-between">
-                    <Button
-                        variant="outline"
-                        disabled={step === 1}
-                        onClick={() => setStep((s) => s - 1)}
-                        className="h-9 rounded-lg text-[11px] font-semibold"
-                    >
-                        <ChevronLeft className="h-3.5 w-3.5 mr-1" />
-                        Back
-                    </Button>
-                    {step < 4 ? (
-                        <Button
-                            onClick={() => setStep((s) => s + 1)}
-                            disabled={
-                                (step === 1 && !form.candidateId) ||
-                                (step === 2 && !form.templateId)
-                            }
-                            className="h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-semibold"
-                        >
-                            Next
-                            <ChevronRight className="h-3.5 w-3.5 ml-1" />
-                        </Button>
-                    ) : (
-                        <Button
-                            onClick={submit}
-                            disabled={!canSubmit}
-                            className="h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-semibold disabled:opacity-50"
-                        >
-                            <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-                            Create draft offer
-                        </Button>
-                    )}
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+            </div>
+        </SideFormSheet>
     );
 };
 
@@ -1725,18 +1729,18 @@ const EditOfferDialog: React.FC<{
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="bg-white rounded-2xl border border-slate-200 p-0 max-w-2xl shadow-2xl">
-                <DialogHeader className="px-6 pt-6 pb-3 border-b border-slate-100">
-                    <DialogTitle className="text-lg font-bold tracking-tight flex items-center gap-2">
-                        <Edit className="h-4 w-4 text-violet-600" />
-                        Edit Offer
-                    </DialogTitle>
-                    <DialogDescription className="text-[11px] text-slate-500 font-medium">
-                        {offer.candidateName} • v{offer.version}
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="px-6 py-5 max-h-[60vh] overflow-y-auto space-y-4">
+        <SideFormSheet
+            open={open}
+            onOpenChange={onOpenChange}
+            title="Edit Offer"
+            description={`${offer.candidateName} • v${offer.version}`}
+            icon={<Edit className="h-5 w-5" />}
+            accentColor="#7c3aed"
+            width="lg"
+            submitLabel="Save changes"
+            onSubmit={(e) => { e.preventDefault(); save(); }}
+        >
+            <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <Label className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
@@ -1857,24 +1861,8 @@ const EditOfferDialog: React.FC<{
                             </Select>
                         </div>
                     </div>
-                </div>
-                <DialogFooter className="px-6 py-4 border-t border-slate-100">
-                    <Button
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                        className="h-9 rounded-lg text-[11px] font-semibold"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={save}
-                        className="h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-semibold"
-                    >
-                        Save changes
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+            </div>
+        </SideFormSheet>
     );
 };
 
@@ -2238,49 +2226,31 @@ const NewVersionDialog: React.FC<{
         if (!open) setChanges("");
     }, [open]);
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="bg-white rounded-2xl border border-slate-200 max-w-md">
-                <DialogHeader>
-                    <DialogTitle className="text-base font-bold tracking-tight flex items-center gap-2">
-                        <History className="h-4 w-4 text-violet-600" />
-                        Create new version
-                    </DialogTitle>
-                    <DialogDescription className="text-[11px] text-slate-500 font-medium">
-                        Document what has changed in this version
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="py-2">
-                    <Label className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-                        What changed?
-                    </Label>
-                    <Textarea
-                        value={changes}
-                        onChange={(e) => setChanges(e.target.value)}
-                        placeholder="e.g. Revised CTC from ₹15L to ₹18L based on counter offer"
-                        className="mt-1.5 min-h-[100px] rounded-lg border-slate-200 text-xs"
-                    />
-                </div>
-                <DialogFooter>
-                    <Button
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                        className="h-9 rounded-lg text-[11px] font-semibold"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        disabled={!changes.trim()}
-                        onClick={() => {
-                            onSubmit(changes.trim());
-                            onOpenChange(false);
-                        }}
-                        className="h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-semibold"
-                    >
-                        Create version
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <SideFormSheet
+            open={open}
+            onOpenChange={onOpenChange}
+            title="Create new version"
+            description="Document what has changed in this version"
+            icon={<History className="h-5 w-5" />}
+            accentColor="#7c3aed"
+            width="md"
+            submitLabel="Create version"
+            submitDisabled={!changes.trim()}
+            onSubmit={(e) => {
+                e.preventDefault();
+                onSubmit(changes.trim());
+                onOpenChange(false);
+            }}
+        >
+            <Field label="What changed?" required>
+                <Textarea
+                    value={changes}
+                    onChange={(e) => setChanges(e.target.value)}
+                    placeholder="e.g. Revised CTC from ₹15L to ₹18L based on counter offer"
+                    className="min-h-[100px]"
+                />
+            </Field>
+        </SideFormSheet>
     );
 };
 
@@ -2297,54 +2267,37 @@ const SendSignatureDialog: React.FC<{
     if (!offer) return null;
     const fakeLink = `https://fixlsolutions.com/offer/accept/${offer.id}?token=XXXX`;
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="bg-white rounded-2xl border border-slate-200 max-w-md">
-                <DialogHeader>
-                    <DialogTitle className="text-base font-bold tracking-tight flex items-center gap-2">
-                        <FileSignature className="h-4 w-4 text-violet-600" />
-                        Send for e-signature
-                    </DialogTitle>
-                    <DialogDescription className="text-[11px] text-slate-500 font-medium">
-                        The candidate will receive an email with an acceptance link
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="py-2 space-y-3">
-                    <div className="rounded-lg border border-slate-200 p-3 bg-slate-50 space-y-1.5">
-                        <div className="flex items-center gap-2 text-xs">
-                            <Mail className="h-3.5 w-3.5 text-violet-500" />
-                            <span className="font-semibold">
-                                {offer.candidateEmail || "No email on file"}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-[10px] text-slate-500">
-                            <Copy className="h-3 w-3" />
-                            <span className="font-mono truncate">{fakeLink}</span>
-                        </div>
+        <SideFormSheet
+            open={open}
+            onOpenChange={onOpenChange}
+            title="Send for e-signature"
+            description="The candidate will receive an email with an acceptance link"
+            icon={<FileSignature className="h-5 w-5" />}
+            accentColor="#4f46e5"
+            width="md"
+            submitLabel="Send now"
+            onSubmit={(e) => { e.preventDefault(); onConfirm(); }}
+        >
+            <div className="space-y-3">
+                <div className="rounded-lg border border-slate-200 p-3 bg-slate-50 space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs">
+                        <Mail className="h-3.5 w-3.5 text-violet-500" />
+                        <span className="font-semibold">
+                            {offer.candidateEmail || "No email on file"}
+                        </span>
                     </div>
-                    <p className="text-[11px] text-slate-500 leading-relaxed">
-                        Clicking send will notify the candidate and mark this offer as
-                        &quot;Sent&quot;. They can sign digitally, decline, or submit a
-                        counter offer.
-                    </p>
+                    <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                        <Copy className="h-3 w-3" />
+                        <span className="font-mono truncate">{fakeLink}</span>
+                    </div>
                 </div>
-                <DialogFooter>
-                    <Button
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                        className="h-9 rounded-lg text-[11px] font-semibold"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={onConfirm}
-                        className="h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-semibold"
-                    >
-                        <Send className="h-3.5 w-3.5 mr-1.5" />
-                        Send now
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                    Clicking send will notify the candidate and mark this offer as
+                    &quot;Sent&quot;. They can sign digitally, decline, or submit a
+                    counter offer.
+                </p>
+            </div>
+        </SideFormSheet>
     );
 };
 
@@ -2360,45 +2313,28 @@ const MarkSignedDialog: React.FC<{
 }> = ({ open, onOpenChange, offer, onConfirm }) => {
     if (!offer) return null;
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="bg-white rounded-2xl border border-slate-200 max-w-md">
-                <DialogHeader>
-                    <DialogTitle className="text-base font-bold tracking-tight flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                        Mark as signed
-                    </DialogTitle>
-                    <DialogDescription className="text-[11px] text-slate-500 font-medium">
-                        Confirm that the candidate has accepted this offer
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="py-3">
-                    <p className="text-xs text-slate-700">
-                        Has <strong>{offer.candidateName}</strong> accepted the offer for{" "}
-                        <strong>{offer.role}</strong>?
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-2">
-                        This will mark the signature as complete and move the offer to
-                        &quot;Accepted&quot;.
-                    </p>
-                </div>
-                <DialogFooter>
-                    <Button
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                        className="h-9 rounded-lg text-[11px] font-semibold"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={onConfirm}
-                        className="h-9 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold"
-                    >
-                        <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
-                        Confirm signed
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <SideFormSheet
+            open={open}
+            onOpenChange={onOpenChange}
+            title="Mark as signed"
+            description="Confirm that the candidate has accepted this offer"
+            icon={<CheckCircle2 className="h-5 w-5" />}
+            accentColor="#059669"
+            width="md"
+            submitLabel="Confirm signed"
+            onSubmit={(e) => { e.preventDefault(); onConfirm(); }}
+        >
+            <div>
+                <p className="text-xs text-slate-700">
+                    Has <strong>{offer.candidateName}</strong> accepted the offer for{" "}
+                    <strong>{offer.role}</strong>?
+                </p>
+                <p className="text-[11px] text-slate-500 mt-2">
+                    This will mark the signature as complete and move the offer to
+                    &quot;Accepted&quot;.
+                </p>
+            </div>
+        </SideFormSheet>
     );
 };
 
@@ -2422,55 +2358,35 @@ const MarkDeclinedDialog: React.FC<{
     }, [open]);
     if (!offer) return null;
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="bg-white rounded-2xl border border-slate-200 max-w-md">
-                <DialogHeader>
-                    <DialogTitle className="text-base font-bold tracking-tight flex items-center gap-2">
-                        <XCircle className="h-4 w-4 text-rose-600" />
-                        Mark as declined
-                    </DialogTitle>
-                    <DialogDescription className="text-[11px] text-slate-500 font-medium">
-                        Record why the candidate declined
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="py-2 space-y-3">
-                    <div>
-                        <Label className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-                            Reason
-                        </Label>
-                        <Textarea
-                            value={reason}
-                            onChange={(e) => setReason(e.target.value)}
-                            placeholder="e.g. Accepted another offer, compensation too low"
-                            className="mt-1.5 min-h-[80px] rounded-lg border-slate-200 text-xs"
-                        />
-                    </div>
-                    <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-                        <Checkbox
-                            checked={record}
-                            onCheckedChange={(c) => setRecord(!!c)}
-                        />
-                        <span>Record as counter offer opportunity</span>
-                    </label>
-                </div>
-                <DialogFooter>
-                    <Button
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                        className="h-9 rounded-lg text-[11px] font-semibold"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={() => onConfirm(reason, record)}
-                        className="h-9 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-semibold"
-                    >
-                        <XCircle className="h-3.5 w-3.5 mr-1.5" />
-                        Mark declined
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <SideFormSheet
+            open={open}
+            onOpenChange={onOpenChange}
+            title="Mark as declined"
+            description="Record why the candidate declined"
+            icon={<XCircle className="h-5 w-5" />}
+            accentColor="#e11d48"
+            width="md"
+            submitLabel="Mark declined"
+            onSubmit={(e) => { e.preventDefault(); onConfirm(reason, record); }}
+        >
+            <div className="space-y-3">
+                <Field label="Reason">
+                    <Textarea
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        placeholder="e.g. Accepted another offer, compensation too low"
+                        className="min-h-[80px]"
+                    />
+                </Field>
+                <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                    <Checkbox
+                        checked={record}
+                        onCheckedChange={(c) => setRecord(!!c)}
+                    />
+                    <span>Record as counter offer opportunity</span>
+                </label>
+            </div>
+        </SideFormSheet>
     );
 };
 
@@ -3246,66 +3162,48 @@ const BulkSendDialog: React.FC<{
     onConfirm: () => void;
 }> = ({ open, onOpenChange, offers, onConfirm }) => {
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="bg-white rounded-2xl border border-slate-200 max-w-md">
-                <DialogHeader>
-                    <DialogTitle className="text-base font-bold tracking-tight flex items-center gap-2">
-                        <Send className="h-4 w-4 text-violet-600" />
-                        Bulk send offers
-                    </DialogTitle>
-                    <DialogDescription className="text-[11px] text-slate-500 font-medium">
-                        Send {offers.length} offer{offers.length !== 1 ? "s" : ""} to
-                        candidates
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="max-h-[40vh] overflow-y-auto py-2 space-y-1.5">
-                    {offers.map((o) => (
-                        <div
-                            key={o.id}
-                            className="flex items-center justify-between rounded-lg border border-slate-200 p-2.5 text-xs"
-                        >
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <div className="h-7 w-7 rounded-full bg-violet-100 flex items-center justify-center text-violet-700 text-[9px] font-bold">
-                                    {o.candidateName
-                                        .split(" ")
-                                        .map((s) => s[0])
-                                        .slice(0, 2)
-                                        .join("")
-                                        .toUpperCase()}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="font-semibold text-slate-800 truncate">
-                                        {o.candidateName}
-                                    </p>
-                                    <p className="text-[10px] text-slate-400 truncate">
-                                        {o.candidateEmail || "No email"}
-                                    </p>
-                                </div>
+        <SideFormSheet
+            open={open}
+            onOpenChange={onOpenChange}
+            title="Bulk send offers"
+            description={`Send ${offers.length} offer${offers.length !== 1 ? "s" : ""} to candidates`}
+            icon={<Send className="h-5 w-5" />}
+            accentColor="#4f46e5"
+            width="md"
+            submitLabel="Send all"
+            onSubmit={(e) => { e.preventDefault(); onConfirm(); }}
+        >
+            <div className="space-y-1.5">
+                {offers.map((o) => (
+                    <div
+                        key={o.id}
+                        className="flex items-center justify-between rounded-lg border border-slate-200 p-2.5 text-xs"
+                    >
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <div className="h-7 w-7 rounded-full bg-violet-100 flex items-center justify-center text-violet-700 text-[9px] font-bold">
+                                {o.candidateName
+                                    .split(" ")
+                                    .map((s) => s[0])
+                                    .slice(0, 2)
+                                    .join("")
+                                    .toUpperCase()}
                             </div>
-                            <span className="font-semibold text-slate-700 tabular-nums">
-                                {formatINR(o.totalCtc)}
-                            </span>
+                            <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-slate-800 truncate">
+                                    {o.candidateName}
+                                </p>
+                                <p className="text-[10px] text-slate-400 truncate">
+                                    {o.candidateEmail || "No email"}
+                                </p>
+                            </div>
                         </div>
-                    ))}
-                </div>
-                <DialogFooter>
-                    <Button
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                        className="h-9 rounded-lg text-[11px] font-semibold"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={onConfirm}
-                        className="h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-semibold"
-                    >
-                        <Send className="h-3.5 w-3.5 mr-1.5" />
-                        Send all
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                        <span className="font-semibold text-slate-700 tabular-nums">
+                            {formatINR(o.totalCtc)}
+                        </span>
+                    </div>
+                ))}
+            </div>
+        </SideFormSheet>
     );
 };
 

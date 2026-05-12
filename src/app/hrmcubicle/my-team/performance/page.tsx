@@ -20,6 +20,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     Sheet,
     SheetContent,
@@ -361,113 +362,90 @@ const TeamPerformancePage = () => {
             </div>
 
             {/* Review Dialog */}
-            <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
-                <DialogContent className="bg-white rounded-2xl border border-slate-200 p-6 max-w-xl text-start">
-                    <DialogHeader>
-                        <div className="h-12 w-12 bg-indigo-50 rounded-xl flex items-center justify-center mb-4">
-                            <FileText className="text-indigo-600" size={24} />
-                        </div>
-                        <DialogTitle className="text-xl font-bold tracking-tight">Performance Appraisal</DialogTitle>
-                        <DialogDescription className="text-sm font-medium text-slate-500">Submit a professional review for <span className="text-indigo-600 font-bold">{activeMember?.name}</span>.</DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-6 py-6">
-                        <div className="space-y-2">
-                            <Label className="font-bold text-slate-700 text-[10px] tracking-widest ml-1">Overall Rating</Label>
-                            <Select value={rating} onValueChange={setRating}>
-                                <SelectTrigger className="rounded-xl h-10 bg-slate-50 border border-slate-200 font-bold text-sm">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl border-none shadow-xl bg-white">
-                                    <SelectItem value="5.0" className="font-bold py-2 text-xs">Outstanding (5.0)</SelectItem>
-                                    <SelectItem value="4.5" className="font-bold py-2 text-xs">Excellent (4.5)</SelectItem>
-                                    <SelectItem value="4.0" className="font-bold py-2 text-xs">Exceeds (4.0)</SelectItem>
-                                    <SelectItem value="3.5" className="font-bold py-2 text-xs">Above Avg (3.5)</SelectItem>
-                                    <SelectItem value="3.0" className="font-bold py-2 text-xs">Meets (3.0)</SelectItem>
-                                    <SelectItem value="2.0" className="font-bold py-2 text-xs">Below (2.0)</SelectItem>
-                                    <SelectItem value="1.0" className="font-bold py-2 text-xs">Unacceptable (1.0)</SelectItem>
+            <SideFormSheet
+                open={isReviewOpen}
+                onOpenChange={(o) => { setIsReviewOpen(o); if (!o) setReviewErrors({}); }}
+                title="Performance Appraisal"
+                description={activeMember?.name ? `Submit a professional review for ${activeMember.name}.` : undefined}
+                icon={<FileText size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                loading={isSubmitting}
+                submitLabel={isSubmitting ? "Publishing..." : "Publish Appraisal"}
+                onSubmit={(e) => { e.preventDefault(); handleSaveReview(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Overall Rating">
+                        <Select value={rating} onValueChange={setRating}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="5.0">Outstanding (5.0)</SelectItem>
+                                <SelectItem value="4.5">Excellent (4.5)</SelectItem>
+                                <SelectItem value="4.0">Exceeds (4.0)</SelectItem>
+                                <SelectItem value="3.5">Above Avg (3.5)</SelectItem>
+                                <SelectItem value="3.0">Meets (3.0)</SelectItem>
+                                <SelectItem value="2.0">Below (2.0)</SelectItem>
+                                <SelectItem value="1.0">Unacceptable (1.0)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field label="Feedback" required hint={`${feedback.length} / 20 chars minimum`} error={reviewErrors.feedback || undefined}>
+                        <Textarea
+                            placeholder="Detail strengths and areas for improvement..."
+                            value={feedback}
+                            onChange={(e) => { setFeedback(e.target.value); if (reviewErrors.feedback) setReviewErrors({ ...reviewErrors, feedback: "" }); }}
+                            className="min-h-[140px]"
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
+
+            {/* Goal Sheet */}
+            <SideFormSheet
+                open={isGoalOpen}
+                onOpenChange={(o) => { setIsGoalOpen(o); if (!o) setGoalErrors({}); }}
+                title="Assign Milestone"
+                description={activeMember?.name ? `Define a strategic goal for ${activeMember.name}.` : undefined}
+                icon={<Target size={20} />}
+                accentColor="#7c3aed"
+                width="md"
+                loading={isSubmitting}
+                submitLabel={isSubmitting ? "Assigning..." : "Assign Goal"}
+                onSubmit={(e) => { e.preventDefault(); handleAssignGoal(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Goal Heading" required hint="min 5 chars" error={goalErrors.heading || undefined}>
+                        <Input
+                            placeholder="e.g. Lead the migration to Microservices"
+                            value={goalHeading}
+                            onChange={(e) => { setGoalHeading(e.target.value); if (goalErrors.heading) setGoalErrors({ ...goalErrors, heading: "" }); }}
+                        />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Target Period">
+                            <Select value={goalPeriod} onValueChange={setGoalPeriod}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="q1">Q1 Jan-Mar</SelectItem>
+                                    <SelectItem value="q2">Q2 Apr-Jun</SelectItem>
+                                    <SelectItem value="q3">Q3 Jul-Sep</SelectItem>
+                                    <SelectItem value="q4">Q4 Oct-Dec</SelectItem>
                                 </SelectContent>
                             </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="font-bold text-slate-700 text-[10px] tracking-widest ml-1">Feedback * (min 20 chars)</Label>
-                            <Textarea
-                                placeholder="Detail strengths and areas for improvement..."
-                                value={feedback}
-                                onChange={(e) => { setFeedback(e.target.value); if (reviewErrors.feedback) setReviewErrors({ ...reviewErrors, feedback: "" }); }}
-                                className={`rounded-xl bg-slate-50 min-h-[120px] p-4 text-sm font-medium focus:ring-1 focus:ring-indigo-100 ${reviewErrors.feedback ? 'border-2 border-rose-400' : 'border-none'}`}
-                            />
-                            {reviewErrors.feedback && <p className="text-[11px] font-medium text-rose-500">{reviewErrors.feedback}</p>}
-                            <p className="text-[10px] text-slate-400">{feedback.length} / 20 chars minimum</p>
-                        </div>
+                        </Field>
+                        <Field label="Priority">
+                            <Select value={goalPriority} onValueChange={setGoalPriority}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="critical">Critical</SelectItem>
+                                    <SelectItem value="high">High</SelectItem>
+                                    <SelectItem value="medium">Medium</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
                     </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="outline" className="rounded-xl h-11 font-bold" onClick={() => { setIsReviewOpen(false); setReviewErrors({}); }}>Cancel</Button>
-                        <Button disabled={isSubmitting} className="bg-slate-900 text-white rounded-xl h-11 font-bold text-sm shadow-md hover:bg-slate-800 transition-colors border-none disabled:opacity-50" onClick={handleSaveReview}>
-                            {isSubmitting ? "Publishing..." : "Publish Appraisal"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Goal Dialog */}
-            <Dialog open={isGoalOpen} onOpenChange={setIsGoalOpen}>
-                <DialogContent className="bg-white rounded-2xl border border-slate-200 p-6 max-w-xl text-start">
-                    <DialogHeader>
-                        <div className="h-12 w-12 bg-purple-50 rounded-xl flex items-center justify-center mb-4">
-                            <Target className="text-purple-600" size={24} />
-                        </div>
-                        <DialogTitle className="text-xl font-bold tracking-tight">Assign Milestone</DialogTitle>
-                        <DialogDescription className="text-sm font-medium text-slate-500">Define a strategic goal for <span className="text-purple-600 font-bold">{activeMember?.name}</span>.</DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-5 py-5">
-                        <div className="space-y-1">
-                            <Label className="font-bold ml-1 text-[10px] text-slate-400 tracking-widest">Goal Heading * (min 5 chars)</Label>
-                            <Input
-                                placeholder="e.g. Lead the migration to Microservices"
-                                value={goalHeading}
-                                onChange={(e) => { setGoalHeading(e.target.value); if (goalErrors.heading) setGoalErrors({ ...goalErrors, heading: "" }); }}
-                                className={`rounded-xl h-10 bg-slate-50 border font-bold text-sm ${goalErrors.heading ? 'border-rose-400' : 'border-slate-200'}`}
-                            />
-                            {goalErrors.heading && <p className="text-[11px] font-medium text-rose-500">{goalErrors.heading}</p>}
-                        </div>
-                        <div className="grid grid-cols-2 gap-5">
-                            <div className="space-y-2">
-                                <Label className="font-bold ml-1 text-[10px] text-slate-400 tracking-widest">Target Period</Label>
-                                <Select value={goalPeriod} onValueChange={setGoalPeriod}>
-                                    <SelectTrigger className="rounded-xl h-10 bg-slate-50 border border-slate-200 font-bold text-sm">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-white border-none shadow-xl rounded-xl">
-                                        <SelectItem value="q1" className="text-xs font-bold">Q1 Jan-Mar</SelectItem>
-                                        <SelectItem value="q2" className="text-xs font-bold">Q2 Apr-Jun</SelectItem>
-                                        <SelectItem value="q3" className="text-xs font-bold">Q3 Jul-Sep</SelectItem>
-                                        <SelectItem value="q4" className="text-xs font-bold">Q4 Oct-Dec</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="font-bold ml-1 text-[10px] text-slate-400 tracking-widest">Priority</Label>
-                                <Select value={goalPriority} onValueChange={setGoalPriority}>
-                                    <SelectTrigger className="rounded-xl h-10 bg-slate-50 border border-slate-200 font-bold text-sm">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-white border-none shadow-xl rounded-xl">
-                                        <SelectItem value="critical" className="text-xs font-bold">Critical</SelectItem>
-                                        <SelectItem value="high" className="text-xs font-bold">High</SelectItem>
-                                        <SelectItem value="medium" className="text-xs font-bold">Medium</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                    </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="outline" className="rounded-xl h-11 font-bold" onClick={() => { setIsGoalOpen(false); setGoalErrors({}); }}>Cancel</Button>
-                        <Button disabled={isSubmitting} className="bg-slate-900 text-white rounded-xl h-11 font-bold text-sm shadow-md border-none disabled:opacity-50" onClick={handleAssignGoal}>
-                            {isSubmitting ? "Assigning..." : "Assign Goal"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                </div>
+            </SideFormSheet>
 
             {/* View Goals Dialog */}
             <Dialog open={isViewGoalsOpen} onOpenChange={setIsViewGoalsOpen}>

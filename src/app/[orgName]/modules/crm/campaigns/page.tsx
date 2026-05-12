@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -181,7 +181,7 @@ export default function CampaignsPage() {
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: i * 0.1, duration: 0.4, type: "spring", stiffness: 100 }}
                             whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                            className={`relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br ${stat.gradient} ${stat.shadow} border-0 flex flex-col justify-between h-32 group`}
+                            className={`relative overflow-hidden rounded-none p-6 bg-gradient-to-br ${stat.gradient} ${stat.shadow} border-0 flex flex-col justify-between h-32 group`}
                         >
                             {/* Animated Inner Glow */}
                             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:scale-150 transition-transform duration-700" />

@@ -34,6 +34,7 @@ import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Sheet, SheetContent, SheetTitle } from "@/shared/components/ui/sheet";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/shared/components/ui/alert-dialog";
@@ -461,62 +462,68 @@ const KnowledgeBasePage = () => {
                 </div>
             </div>
 
-            {/* Article Builder Dialog */}
-            <Dialog open={isCreateDialogOpen} onOpenChange={(v) => { if (!v) resetForm(); setIsCreateDialogOpen(v); }}>
-                <DialogContent className="max-w-3xl p-0 overflow-hidden border-2 border-slate-200 rounded-3xl shadow-3xl bg-white outline-none">
-                    <div className="bg-slate-50 border-b border-slate-200 px-8 py-6 flex items-center justify-between shrink-0">
-                        <div className="flex items-center gap-4">
-                            <div className="h-10 w-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-emerald-600 shadow-sm">
-                                <Plus size={20} />
+            {/* Article Builder Side Sheet */}
+            <SideFormSheet
+                open={isCreateDialogOpen}
+                onOpenChange={(o) => { setIsCreateDialogOpen(o); if (!o) resetForm(); }}
+                title={editingId ? "Edit Article" : "KB Article Factory"}
+                description="Construct self-help resources for the workforce"
+                icon={<Plus size={20} />}
+                accentColor={editingId ? "#7c3aed" : "#059669"}
+                width="xl"
+                onSubmit={(e) => { e.preventDefault(); handleSave(formData.status as any); }}
+                footer={
+                    <>
+                        <Button type="button" variant="ghost" onClick={() => setIsCreateDialogOpen(false)} className="h-10 px-5 font-bold text-slate-400 text-xs uppercase tracking-widest">Discard</Button>
+                        <Button type="button" variant="outline" className="h-10 px-5 border-slate-200 font-bold text-xs uppercase tracking-widest gap-2 bg-white rounded-lg" onClick={() => handleSave("Draft")}>
+                            <Save size={14} /> Save Draft
+                        </Button>
+                        <Button type="button" onClick={() => handleSave(formData.status as any)} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg h-10 px-6 font-bold text-xs uppercase tracking-widest shadow-lg shadow-emerald-100 gap-2">
+                            <Send size={14} /> {editingId ? "Save Changes" : "Deploy Article"}
+                        </Button>
+                    </>
+                }
+            >
+                <div className="space-y-5">
+                    <Field label="Article Headline" required>
+                        <Input
+                            placeholder="Core Headline (Optimized for Search)"
+                            value={formData.title || ""}
+                            onChange={e => setFormData({ ...formData, title: e.target.value })}
+                        />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Knowledge Cluster">
+                            <Select value={formData.category} onValueChange={v => setFormData({ ...formData, category: v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {categoryOptions.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Access Status">
+                            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-lg h-10">
+                                {["Published", "Draft"].map(s => (
+                                    <button
+                                        type="button"
+                                        key={s}
+                                        className={`rounded-md text-[10px] font-black uppercase transition-all ${formData.status === s ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400'}`}
+                                        onClick={() => setFormData({ ...formData, status: s as any })}
+                                    >
+                                        {s}
+                                    </button>
+                                ))}
                             </div>
-                            <div>
-                                <DialogTitle className="text-xl font-bold text-slate-900 tracking-tight leading-none uppercase">{editingId ? "Edit Article" : "KB Article Factory"}</DialogTitle>
-                                <DialogDescription className="text-xs font-semibold text-slate-400 mt-1 uppercase tracking-widest">Construct self-help resources for the workforce</DialogDescription>
-                            </div>
-                        </div>
-                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-slate-300" onClick={() => setIsCreateDialogOpen(false)}><X size={20} /></Button>
+                        </Field>
                     </div>
 
-                    <div className="flex-1 flex flex-col p-8 space-y-8 max-h-[70vh] overflow-y-auto">
+                    <Field
+                        label="Document Content (Markdown Supported)"
+                        required
+                    >
                         <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Article Headline</Label>
-                            <Input
-                                placeholder="Core Headline (Optimized for Search)"
-                                value={formData.title || ""}
-                                onChange={e => setFormData({ ...formData, title: e.target.value })}
-                                className="h-14 border-slate-200 rounded-2xl px-6 font-bold text-slate-900 text-lg bg-slate-50/20 focus-visible:ring-emerald-500"
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-8">
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Knowledge Cluster</Label>
-                                <Select value={formData.category} onValueChange={v => setFormData({ ...formData, category: v })}>
-                                    <SelectTrigger className="h-12 border-slate-200 rounded-xl font-bold bg-white shadow-sm"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="rounded-xl border-slate-100 font-bold uppercase text-[10px]">
-                                        {categoryOptions.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Access Status</Label>
-                                <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl h-12">
-                                    {["Published", "Draft"].map(s => (
-                                        <button
-                                            key={s}
-                                            className={`rounded-lg text-[10px] font-black uppercase transition-all ${formData.status === s ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400'}`}
-                                            onClick={() => setFormData({ ...formData, status: s as any })}
-                                        >
-                                            {s}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-center px-1">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Document Content (Markdown Supported)</Label>
+                            <div className="flex justify-end">
                                 <Button type="button" variant="ghost" size="sm" className="h-7 text-[10px] font-bold text-indigo-600 uppercase tracking-widest gap-1.5" onClick={handleEnrich}>
                                     <Sparkles size={12} /> AI Enrich
                                 </Button>
@@ -525,44 +532,31 @@ const KnowledgeBasePage = () => {
                                 placeholder="Type your knowledge content here. Be detailed and use bullet points for clarity."
                                 value={formData.content || ""}
                                 onChange={e => setFormData({ ...formData, content: e.target.value })}
-                                className="min-h-[250px] border-slate-200 rounded-2xl p-6 font-medium text-[13px] leading-relaxed resize-none focus-visible:ring-0 focus:border-emerald-500 transition-all bg-slate-50/20 shadow-inner"
+                                className="min-h-[220px]"
                             />
                         </div>
+                    </Field>
 
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">SEO Tags</Label>
-                            <div className="flex flex-wrap gap-2 p-4 border border-slate-100 rounded-2xl bg-slate-50/50 items-center">
-                                {(formData.tags || []).map(tag => (
-                                    <Badge key={tag} className="bg-white border-slate-200 text-slate-500 font-bold text-[9px] h-6 px-3 uppercase tracking-tighter shadow-sm flex items-center gap-1">
-                                        #{tag}
-                                        <X size={10} className="ml-1 cursor-pointer hover:text-rose-500" onClick={() => handleRemoveTag(tag)} />
-                                    </Badge>
-                                ))}
-                                <Input
-                                    placeholder="Add tag + Enter"
-                                    value={newTagInput}
-                                    onChange={(e) => setNewTagInput(e.target.value)}
-                                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddTag(); } }}
-                                    className="h-7 w-32 text-[10px] font-bold border-dashed border-indigo-200"
-                                />
-                                <Button variant="ghost" size="sm" className="h-7 px-2 text-[9px] font-black text-indigo-600 uppercase" onClick={handleAddTag}>+ Add</Button>
-                            </div>
+                    <Field label="SEO Tags">
+                        <div className="flex flex-wrap gap-2 p-3 border border-slate-100 rounded-xl bg-slate-50/50 items-center">
+                            {(formData.tags || []).map(tag => (
+                                <Badge key={tag} className="bg-white border-slate-200 text-slate-500 font-bold text-[9px] h-6 px-3 uppercase tracking-tighter shadow-sm flex items-center gap-1">
+                                    #{tag}
+                                    <X size={10} className="ml-1 cursor-pointer hover:text-rose-500" onClick={() => handleRemoveTag(tag)} />
+                                </Badge>
+                            ))}
+                            <Input
+                                placeholder="Add tag + Enter"
+                                value={newTagInput}
+                                onChange={(e) => setNewTagInput(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddTag(); } }}
+                                className="h-7 w-32 text-[10px] font-bold border-dashed border-indigo-200"
+                            />
+                            <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-[9px] font-black text-indigo-600 uppercase" onClick={handleAddTag}>+ Add</Button>
                         </div>
-                    </div>
-
-                    <div className="p-8 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
-                        <Button variant="ghost" onClick={() => setIsCreateDialogOpen(false)} className="h-12 px-8 font-bold text-slate-400 text-xs uppercase tracking-widest">Discard Entry</Button>
-                        <div className="flex items-center gap-3">
-                            <Button variant="outline" className="h-12 px-6 border-slate-200 font-bold text-xs uppercase tracking-widest gap-2 bg-white rounded-xl" onClick={() => handleSave("Draft")}>
-                                <Save size={16} /> Save Draft
-                            </Button>
-                            <Button onClick={() => handleSave(formData.status as any)} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-12 px-10 font-bold text-xs uppercase tracking-widest shadow-xl shadow-emerald-100 gap-2">
-                                <Send size={16} /> {editingId ? "Save Changes" : "Deploy Article"}
-                            </Button>
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             {/* Content Preview Sheet */}
             <Sheet open={isDetailSheetOpen} onOpenChange={setIsDetailSheetOpen}>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { Phone, Search, Plus, Filter, MoreVertical, PhoneIncoming, PhoneOutgoing, Clock, CheckCircle2 } from "lucide-react";
@@ -122,7 +122,7 @@ export default function LeadCallsPage() {
                                 transition={{ delay: idx * 0.1 }}
                                 className="p-6 hover:bg-zinc-50 transition-all group flex gap-6 cursor-pointer items-center"
                             >
-                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors
+                                <div className={`w-12 h-12 rounded-none flex items-center justify-center transition-colors
                       ${call.type === 'incoming' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'}
                    `}>
                                     {call.type === 'incoming' ? <PhoneIncoming className="h-5 w-5" /> : <PhoneOutgoing className="h-5 w-5" />}
@@ -134,7 +134,7 @@ export default function LeadCallsPage() {
                                     </div>
                                     <div className="flex items-center gap-3 mb-2">
                                         <span className="text-xs font-medium text-zinc-500 flex items-center gap-1"><Clock className="h-3 w-3" /> {call.duration}</span>
-                                        <span className="text-zinc-300">•</span>
+                                        <span className="text-zinc-300">â€¢</span>
                                         <Badge className={`border-none text-[9px] uppercase font-bold
                             ${call.outcome === 'Interested' ? 'bg-emerald-50 text-emerald-600' :
                                                 call.outcome === 'Voicemail' ? 'bg-zinc-50 text-zinc-500' : 'bg-red-50 text-red-600'}

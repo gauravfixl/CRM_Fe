@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Zap,
     Plus,
@@ -47,6 +47,23 @@ import {
 } from "@/shared/components/ui/select";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { toast } from "sonner";
+import {
+    listAutomationRules,
+    createAutomationRule,
+    updateAutomationRule,
+    deleteAutomationRule,
+} from "@/hooks/orgAdminHooks";
+
+interface RuleTemplate {
+    id: string;
+    name: string;
+    category: string;
+    trigger: string;
+    actions: number;
+    usage: number;
+    status: "Active" | "Paused";
+    description: string;
+}
 
 export default function RuleTemplatesPage() {
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -54,66 +71,149 @@ export default function RuleTemplatesPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [filterCategory, setFilterCategory] = useState("all");
     const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+    const [busyId, setBusyId] = useState<string | null>(null);
+    const [creating, setCreating] = useState(false);
+    const [updating, setUpdating] = useState(false);
 
     const [newTemplate, setNewTemplate] = useState({ name: "", category: "", trigger: "", description: "" });
-    const [editTemplate, setEditTemplate] = useState<any>(null);
+    const [editTemplate, setEditTemplate] = useState<RuleTemplate | null>(null);
 
-    const [templates, setTemplates] = useState([
-        { id: "1", name: "Lead Auto-Assignment", category: "Lead Management", trigger: "On Create", actions: 3, usage: 24, status: "Active", description: "Automatically assigns leads based on territory and workload." },
-        { id: "2", name: "Deal Stage Progression", category: "Sales Pipeline", trigger: "Field Update", actions: 5, usage: 18, status: "Active", description: "Moves deals through stages based on criteria." },
-        { id: "3", name: "Task Escalation", category: "Task Management", trigger: "Time-Based", actions: 2, usage: 12, status: "Active", description: "Escalates overdue tasks to managers." },
-        { id: "4", name: "Email Notification Chain", category: "Communication", trigger: "On Create", actions: 4, usage: 8, status: "Paused", description: "Sends sequential email notifications." },
-        { id: "5", name: "Invoice Auto-Generation", category: "Sales Pipeline", trigger: "Field Update", actions: 3, usage: 15, status: "Active", description: "Generates invoices when deal is won." },
-    ]);
+    const [templates, setTemplates] = useState<RuleTemplate[]>([]);
 
-    const toggleStatus = (id: string) => {
-        setTemplates(prev => prev.map(t =>
-            t.id === id ? { ...t, status: t.status === "Active" ? "Paused" : "Active" } : t
-        ));
-        toast.success("Template status updated");
+    const fetchTemplates = async () => {
+        try {
+            const res = await listAutomationRules();
+            const list = res?.data?.data?.rules || res?.data?.rules || res?.data?.data || res?.data || [];
+            const arr = Array.isArray(list) ? list : [];
+            setTemplates(
+                arr.map((r: any) => ({
+                    id: r._id || r.id || "",
+                    name: r.name || "Untitled",
+                    category: r.module || "â€”",
+                    trigger: r.trigger?.event || "manual",
+                    actions: Array.isArray(r.actions) ? r.actions.length : 0,
+                    usage: typeof r.triggerCount === "number" ? r.triggerCount : 0,
+                    status: r.enabled === false ? "Paused" : "Active",
+                    description: r.description || "",
+                }))
+            );
+        } catch (err: any) {
+            // Silent â€” table just stays empty
+        }
     };
 
-    const deleteTemplate = (id: string) => {
-        setTemplates(prev => prev.filter(t => t.id !== id));
-        toast.success("Template deleted successfully");
+    useEffect(() => {
+        fetchTemplates();
+    }, []);
+
+    const toggleStatus = async (id: string) => {
+        const target = templates.find(t => t.id === id);
+        if (!target) return;
+        const newEnabled = target.status !== "Active";
+        const prev = templates;
+        setBusyId(id);
+        setTemplates(p => p.map(t => t.id === id ? { ...t, status: newEnabled ? "Active" : "Paused" } : t));
+        try {
+            await updateAutomationRule(id, { enabled: newEnabled });
+            toast.success("Template status updated");
+        } catch (err: any) {
+            setTemplates(prev);
+            toast.error(err?.response?.data?.message || "Failed to update status");
+        } finally {
+            setBusyId(null);
+        }
     };
 
-    const duplicateTemplate = (template: any) => {
-        const newT = { ...template, id: Date.now().toString(), name: `${template.name} (Copy)`, usage: 0 };
-        setTemplates(prev => [...prev, newT]);
-        toast.success("Template duplicated");
+    const deleteTemplate = async (id: string) => {
+        setBusyId(id);
+        try {
+            await deleteAutomationRule(id);
+            setTemplates(prev => prev.filter(t => t.id !== id));
+            toast.success("Template deleted successfully");
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to delete template");
+        } finally {
+            setBusyId(null);
+        }
     };
 
-    const handleCreate = () => {
+    const duplicateTemplate = async (template: RuleTemplate) => {
+        setBusyId(template.id);
+        try {
+            await createAutomationRule({
+                name: `${template.name} (Copy)`,
+                module: template.category || "automation",
+                description: template.description || undefined,
+                trigger: { event: template.trigger || "manual", source: "ui" },
+                actions: [{ type: "noop" }],
+                enabled: template.status === "Active",
+            });
+            await fetchTemplates();
+            toast.success("Template duplicated");
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to duplicate");
+        } finally {
+            setBusyId(null);
+        }
+    };
+
+    const handleCreate = async () => {
         if (!newTemplate.name || !newTemplate.category || !newTemplate.trigger) {
             toast.error("Please fill all required fields");
             return;
         }
-        const t = {
-            id: Date.now().toString(),
-            name: newTemplate.name,
-            category: newTemplate.category,
-            trigger: newTemplate.trigger,
-            actions: 0,
-            usage: 0,
-            status: "Active",
-            description: newTemplate.description,
-        };
-        setTemplates(prev => [...prev, t]);
-        setNewTemplate({ name: "", category: "", trigger: "", description: "" });
-        setShowCreateModal(false);
-        toast.success("Template created successfully");
+        if (newTemplate.name.trim().length < 2) {
+            toast.error("Name must be at least 2 characters");
+            return;
+        }
+        setCreating(true);
+        try {
+            await createAutomationRule({
+                name: newTemplate.name.trim(),
+                module: newTemplate.category.trim(),
+                description: newTemplate.description?.trim() || undefined,
+                trigger: { event: newTemplate.trigger.trim(), source: "ui" },
+                actions: [{ type: "noop" }],
+                enabled: true,
+            });
+            setNewTemplate({ name: "", category: "", trigger: "", description: "" });
+            setShowCreateModal(false);
+            await fetchTemplates();
+            toast.success("Template created successfully");
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to create template");
+        } finally {
+            setCreating(false);
+        }
     };
 
-    const handleEdit = () => {
+    const handleEdit = async () => {
         if (!editTemplate) return;
-        setTemplates(prev => prev.map(t => t.id === editTemplate.id ? editTemplate : t));
-        setShowEditModal(false);
-        setEditTemplate(null);
-        toast.success("Template updated successfully");
+        if (editTemplate.name.trim().length < 2) {
+            toast.error("Name must be at least 2 characters");
+            return;
+        }
+        setUpdating(true);
+        try {
+            await updateAutomationRule(editTemplate.id, {
+                name: editTemplate.name.trim(),
+                module: editTemplate.category.trim(),
+                description: editTemplate.description?.trim() || undefined,
+                trigger: { event: editTemplate.trigger.trim() || "manual", source: "ui" },
+                enabled: editTemplate.status === "Active",
+            });
+            setShowEditModal(false);
+            setEditTemplate(null);
+            await fetchTemplates();
+            toast.success("Template updated successfully");
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to update template");
+        } finally {
+            setUpdating(false);
+        }
     };
 
-    const openEdit = (template: any) => {
+    const openEdit = (template: RuleTemplate) => {
         setEditTemplate({ ...template });
         setShowEditModal(true);
     };
@@ -130,7 +230,7 @@ export default function RuleTemplatesPage() {
     return (
         <div className="relative min-h-screen bg-[#F8F9FC] dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-outfit p-6 space-y-6">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white dark:bg-zinc-900 p-6 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white dark:bg-zinc-900 p-6 border border-zinc-200 dark:border-zinc-800 rounded-none shadow-sm">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center justify-center text-white shadow-lg">
                         <LayoutTemplate className="w-6 h-6" />
@@ -169,7 +269,7 @@ export default function RuleTemplatesPage() {
                             <span className="text-xl font-semibold text-zinc-900 dark:text-white block">{templates.filter(t => t.status === "Active").length}</span>
                             <span className="text-[10px] text-emerald-600 font-medium mt-1 block">Currently in use</span>
                         </div>
-                        <div className="h-10 w-10 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 rounded-2xl flex items-center justify-center">
+                        <div className="h-10 w-10 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 rounded-none flex items-center justify-center">
                             <Zap className="w-5 h-5" />
                         </div>
                     </SmallCardContent>
@@ -181,7 +281,7 @@ export default function RuleTemplatesPage() {
                             <span className="text-xl font-semibold text-zinc-900 dark:text-white block">{templates.reduce((sum, t) => sum + t.usage, 0)}</span>
                             <span className="text-[10px] text-blue-600 font-medium mt-1 block">Instances deployed</span>
                         </div>
-                        <div className="h-10 w-10 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-2xl flex items-center justify-center">
+                        <div className="h-10 w-10 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-none flex items-center justify-center">
                             <Layers className="w-5 h-5" />
                         </div>
                     </SmallCardContent>
@@ -193,7 +293,7 @@ export default function RuleTemplatesPage() {
                             <span className="text-xl font-semibold text-zinc-900 dark:text-white block">{categories.length}</span>
                             <span className="text-[10px] text-zinc-500 font-medium mt-1 block">Template types</span>
                         </div>
-                        <div className="h-10 w-10 bg-purple-50 dark:bg-purple-900/20 text-purple-500 rounded-2xl flex items-center justify-center">
+                        <div className="h-10 w-10 bg-purple-50 dark:bg-purple-900/20 text-purple-500 rounded-none flex items-center justify-center">
                             <Code className="w-5 h-5" />
                         </div>
                     </SmallCardContent>
@@ -201,7 +301,7 @@ export default function RuleTemplatesPage() {
             </div>
 
             {/* Templates Table */}
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none shadow-sm overflow-hidden">
                 <div className="p-4 border-b border-zinc-100 dark:border-zinc-800 flex flex-col md:flex-row gap-4 justify-between items-center bg-zinc-50/20 dark:bg-zinc-900/50">
                     <div className="relative w-full md:w-96">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
@@ -325,7 +425,7 @@ export default function RuleTemplatesPage() {
 
             {/* Create Modal */}
             <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-                <DialogContent className="max-w-2xl rounded-2xl p-0 overflow-hidden shadow-2xl border-none">
+                <DialogContent className="max-w-2xl rounded-none p-0 overflow-hidden shadow-2xl border-none">
                     <div className="bg-gradient-to-r from-purple-600 to-indigo-700 p-8 text-white relative">
                         <div className="absolute top-0 right-0 p-4 opacity-10">
                             <LayoutTemplate size={80} />
@@ -386,14 +486,14 @@ export default function RuleTemplatesPage() {
                     </div>
                     <div className="p-6 bg-zinc-50 dark:bg-zinc-900 border-t border-zinc-100 dark:border-zinc-800 flex justify-end gap-3">
                         <Button variant="ghost" onClick={() => setShowCreateModal(false)} className="rounded-xl text-xs text-zinc-500">Cancel</Button>
-                        <Button onClick={handleCreate} className="bg-purple-600 hover:bg-purple-700 rounded-xl text-xs px-8 h-10">Create Template</Button>
+                        <Button onClick={handleCreate} disabled={creating} className="bg-purple-600 hover:bg-purple-700 rounded-xl text-xs px-8 h-10">{creating ? "Creating..." : "Create Template"}</Button>
                     </div>
                 </DialogContent>
             </Dialog>
 
             {/* Edit Modal */}
             <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-                <DialogContent className="max-w-2xl rounded-2xl p-0 overflow-hidden shadow-2xl border-none">
+                <DialogContent className="max-w-2xl rounded-none p-0 overflow-hidden shadow-2xl border-none">
                     <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-8 text-white relative">
                         <h2 className="text-xl font-semibold flex items-center gap-3">
                             <Edit size={22} /> Edit Template
@@ -447,7 +547,7 @@ export default function RuleTemplatesPage() {
                             </div>
                             <div className="p-6 bg-zinc-50 dark:bg-zinc-900 border-t border-zinc-100 dark:border-zinc-800 flex justify-end gap-3">
                                 <Button variant="ghost" onClick={() => setShowEditModal(false)} className="rounded-xl text-xs text-zinc-500">Cancel</Button>
-                                <Button onClick={handleEdit} className="bg-blue-600 hover:bg-blue-700 rounded-xl text-xs px-8 h-10">Save Changes</Button>
+                                <Button onClick={handleEdit} disabled={updating} className="bg-blue-600 hover:bg-blue-700 rounded-xl text-xs px-8 h-10">{updating ? "Saving..." : "Save Changes"}</Button>
                             </div>
                         </>
                     )}

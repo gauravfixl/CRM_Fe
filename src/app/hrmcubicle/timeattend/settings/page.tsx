@@ -10,14 +10,7 @@ import { Label } from "@/shared/components/ui/label";
 import { Switch } from "@/shared/components/ui/switch";
 import { Settings, Save, Clock, Calendar, ShieldCheck, GitBranch, Trash2 } from "lucide-react";
 import { useToast } from "@/shared/components/ui/use-toast";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     getActiveAttendancePolicy,
     getActiveShifts,
@@ -403,45 +396,35 @@ const TimeAttendSettingsPage = () => {
                 </TabsContent>
             </Tabs>
 
-            {/* Workflow Create/Edit Dialog */}
-            <Dialog open={isWorkflowDialogOpen} onOpenChange={setIsWorkflowDialogOpen}>
-                <DialogContent className="sm:max-w-[450px] rounded-2xl p-8 bg-white border-2 border-slate-200 shadow-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-bold text-slate-900">
-                            {editingWorkflow ? "Edit Workflow" : "Create New Workflow"}
-                        </DialogTitle>
-                        <DialogDescription className="text-slate-500">
-                            Define the approval chain for this workflow.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid gap-2">
-                            <Label className="font-semibold text-slate-700">Workflow Name</Label>
-                            <Input
-                                placeholder="e.g. Overtime Approval"
-                                value={workflowName}
-                                onChange={(e) => setWorkflowName(e.target.value)}
-                                className="h-11 rounded-lg border border-slate-200"
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label className="font-semibold text-slate-700">Approval Steps</Label>
-                            <Input
-                                placeholder="e.g. Manager → HR → Director"
-                                value={workflowSteps}
-                                onChange={(e) => setWorkflowSteps(e.target.value)}
-                                className="h-11 rounded-lg border border-slate-200"
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter className="flex gap-2">
-                        <Button variant="ghost" onClick={() => setIsWorkflowDialogOpen(false)}>Cancel</Button>
-                        <Button className="bg-[#6366f1] hover:bg-[#5558e6]" onClick={handleSaveWorkflow}>
-                            {editingWorkflow ? "Save Changes" : "Create Workflow"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Workflow Create/Edit */}
+            <SideFormSheet
+                open={isWorkflowDialogOpen}
+                onOpenChange={setIsWorkflowDialogOpen}
+                title={editingWorkflow ? "Edit Workflow" : "Create New Workflow"}
+                description="Define the approval chain for this workflow."
+                icon={<GitBranch size={20} />}
+                accentColor={editingWorkflow ? "#7c3aed" : "#4f46e5"}
+                width="md"
+                submitLabel={editingWorkflow ? "Save Changes" : "Create Workflow"}
+                onSubmit={(e) => { e.preventDefault(); handleSaveWorkflow(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Workflow Name" required>
+                        <Input
+                            placeholder="e.g. Overtime Approval"
+                            value={workflowName}
+                            onChange={(e) => setWorkflowName(e.target.value)}
+                        />
+                    </Field>
+                    <Field label="Approval Steps" required>
+                        <Input
+                            placeholder="e.g. Manager → HR → Director"
+                            value={workflowSteps}
+                            onChange={(e) => setWorkflowSteps(e.target.value)}
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
         </div>
     );
 };

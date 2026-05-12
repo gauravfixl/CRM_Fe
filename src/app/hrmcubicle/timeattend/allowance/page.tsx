@@ -12,7 +12,8 @@ import { Coins, UserCheck, Settings, CheckCircle2, MoreHorizontal, Download, Sea
 import { Select as SelectUI, SelectContent as SelectContentUI, SelectItem as SelectItemUI, SelectTrigger as SelectTriggerUI, SelectValue as SelectValueUI } from "@/shared/components/ui/select";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/shared/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { motion, AnimatePresence } from "framer-motion";
 
 const INITIAL_EMPLOYEES = [
@@ -407,58 +408,58 @@ const ShiftAllowancePage = () => {
 
                 {/* Analytics */}
                 <div className="grid gap-8 md:grid-cols-3">
-                    <Card className="shadow-2xl shadow-slate-200/50 border-none rounded-none bg-emerald-100 p-12 overflow-hidden relative group">
+                    <Card className="shadow-2xl shadow-slate-200/50 border-none rounded-none bg-emerald-100 p-6 overflow-hidden relative group">
                         <div className="relative z-10">
-                            <div className="flex items-center justify-between mb-8">
-                                <p className="text-sm font-extrabold text-slate-400">Gross payout</p>
-                                <div className="h-12 w-12 rounded-2xl bg-white text-emerald-500 flex items-center justify-center shadow-sm">
-                                    <Coins size={24} />
+                            <div className="flex items-center justify-between mb-3">
+                                <p className="text-sm font-extrabold text-slate-500">Gross payout</p>
+                                <div className="h-10 w-10 rounded-xl bg-white text-emerald-500 flex items-center justify-center shadow-sm">
+                                    <Coins size={20} />
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <h4 className="text-4xl font-bold text-slate-900 tracking-tighter">₹ 2.45L</h4>
-                                <div className="flex items-center gap-3">
-                                    <Badge className="bg-emerald-100 text-emerald-700 border-none font-bold px-3 py-1 rounded-lg">
+                            <div className="space-y-1.5">
+                                <h4 className="text-3xl font-bold text-slate-900 tracking-tighter">₹ 2.45L</h4>
+                                <div className="flex items-center gap-2">
+                                    <Badge className="bg-emerald-100 text-emerald-700 border-none font-bold px-2.5 py-0.5 rounded-md">
                                         <TrendingUp size={12} className="mr-1" /> +12.4%
                                     </Badge>
-                                    <p className="text-xs font-bold text-slate-400">vs last cycle</p>
+                                    <p className="text-xs font-bold text-slate-500">vs last cycle</p>
                                 </div>
                             </div>
                         </div>
-                        <div className="absolute -bottom-10 -right-10 h-48 w-48 bg-emerald-100 rounded-full blur-3xl opacity-40 group-hover:scale-125 transition-transform" />
+                        <div className="absolute -bottom-10 -right-10 h-40 w-40 bg-emerald-100 rounded-full blur-3xl opacity-40 group-hover:scale-125 transition-transform" />
                     </Card>
 
-                    <Card className="shadow-2xl shadow-slate-200/50 border-none rounded-none bg-purple-100 p-12 overflow-hidden relative group">
+                    <Card className="shadow-2xl shadow-slate-200/50 border-none rounded-none bg-purple-100 p-6 overflow-hidden relative group">
                         <div className="relative z-10">
-                            <div className="flex items-center justify-between mb-8">
-                                <p className="text-sm font-extrabold text-slate-400">Staff coverage</p>
-                                <div className="h-12 w-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center">
-                                    <UserCheck size={24} />
+                            <div className="flex items-center justify-between mb-3">
+                                <p className="text-sm font-extrabold text-slate-500">Staff coverage</p>
+                                <div className="h-10 w-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center">
+                                    <UserCheck size={20} />
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <h4 className="text-4xl font-bold text-slate-900 tracking-tighter">84 Personnel</h4>
+                            <div className="space-y-1.5">
+                                <h4 className="text-3xl font-bold text-slate-900 tracking-tighter">84 Personnel</h4>
                                 <p className="text-sm font-bold text-slate-500 opacity-80">Active across {rules.length} logical allowance hierarchies.</p>
                             </div>
                         </div>
-                        <div className="absolute top-0 right-0 p-12 opacity-5 text-purple-900">
-                            <PieChart size={180} />
+                        <div className="absolute top-0 right-0 p-8 opacity-5 text-purple-900">
+                            <PieChart size={140} />
                         </div>
                     </Card>
 
-                    <Card className="shadow-2xl shadow-slate-200/50 border-none rounded-none bg-amber-100 p-12 overflow-hidden relative">
+                    <Card className="shadow-2xl shadow-slate-200/50 border-none rounded-none bg-amber-100 p-6 overflow-hidden relative">
                         <div className="relative z-10">
-                            <div className="flex items-center justify-between mb-8">
-                                <p className="text-sm font-extrabold text-slate-400">System status</p>
-                                <div className="h-12 w-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center">
-                                    <ShieldCheck size={24} />
+                            <div className="flex items-center justify-between mb-3">
+                                <p className="text-sm font-extrabold text-slate-500">System status</p>
+                                <div className="h-10 w-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
+                                    <ShieldCheck size={20} />
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <h4 className="text-4xl font-bold text-slate-900 tracking-tighter">Synced</h4>
-                                <div className="flex items-center gap-3 mt-4">
-                                    <div className="h-3 w-3 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-                                    <p className="text-xs font-bold text-slate-400">Last ledger update: 10:42 AM IST</p>
+                            <div className="space-y-1.5">
+                                <h4 className="text-3xl font-bold text-slate-900 tracking-tighter">Synced</h4>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                                    <p className="text-xs font-bold text-slate-500">Last ledger update: 10:42 AM IST</p>
                                 </div>
                             </div>
                         </div>
@@ -880,79 +881,73 @@ const ShiftAllowancePage = () => {
                     </TabsContent>
                 </Tabs>
 
-                {/* Rule Modal (Create/Edit) */}
-                <Dialog open={isRuleModalOpen} onOpenChange={setIsRuleModalOpen}>
-                    <DialogContent className="sm:max-w-4xl rounded-[3rem] border-2 border-slate-200 p-12 bg-white shadow-3xl" style={{ zoom: '0.75' } as React.CSSProperties}>
-                        <DialogHeader>
-                            <DialogTitle className="text-3xl font-bold tracking-tight">{editingRule ? "Modify Allowance Rule" : "Create Global Policy"}</DialogTitle>
-                            <DialogDescription className="font-bold text-slate-400 text-lg">Define the financial weight for shift transitions.</DialogDescription>
-                        </DialogHeader>
-                        <form onSubmit={handleSaveRule} className="grid grid-cols-1 md:grid-cols-3 gap-8 py-8">
-                            <div className="grid gap-3">
-                                <Label className="font-bold ml-2 text-slate-600">Shift variant identifier</Label>
-                                <Input name="shiftName" defaultValue={editingRule?.shiftName} required className="h-16 rounded-2xl bg-white border-2 border-slate-300 px-6 font-bold text-xl" placeholder="e.g. Late Night Shift" />
-                            </div>
-                            <div className="grid gap-3">
-                                <Label className="font-bold ml-2 text-slate-600">Unit rate (₹)</Label>
-                                <Input name="amount" type="number" defaultValue={editingRule?.amount} required className="h-16 rounded-2xl bg-white border-2 border-slate-300 px-6 font-bold text-xl" />
-                            </div>
-                            <div className="grid gap-3">
-                                <Label className="font-bold ml-2 text-slate-600">Activation time</Label>
-                                <Input name="startTime" defaultValue={editingRule?.startTime} required className="h-16 rounded-2xl bg-white border-2 border-slate-300 px-6 font-bold text-xl" placeholder="10:00 PM" />
-                            </div>
-
-                            <DialogFooter className="mt-4 flex gap-4 col-span-full">
-                                <Button type="button" variant="ghost" className="rounded-2xl font-bold text-slate-400 h-16 flex-1 text-lg" onClick={() => setIsRuleModalOpen(false)}>Discard</Button>
-                                <Button type="submit" className="bg-slate-900 h-16 rounded-2xl font-bold text-white shadow-xl shadow-slate-200 flex-1 text-lg">
-                                    {editingRule ? "Commit changes" : "Deploy policy"}
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </DialogContent>
-                </Dialog>
+                {/* Rule (Create/Edit) */}
+                <SideFormSheet
+                    open={isRuleModalOpen}
+                    onOpenChange={setIsRuleModalOpen}
+                    title={editingRule ? "Modify Allowance Rule" : "Create Global Policy"}
+                    description="Define the financial weight for shift transitions."
+                    icon={<Coins size={20} />}
+                    accentColor={editingRule ? "#7c3aed" : "#4f46e5"}
+                    width="md"
+                    submitLabel={editingRule ? "Commit Changes" : "Deploy Policy"}
+                    onSubmit={handleSaveRule}
+                >
+                    <div className="space-y-4">
+                        <Field label="Shift Variant Identifier" required>
+                            <Input name="shiftName" defaultValue={editingRule?.shiftName} required placeholder="e.g. Late Night Shift" />
+                        </Field>
+                        <Field label="Unit Rate (₹)" required>
+                            <Input name="amount" type="number" defaultValue={editingRule?.amount} required />
+                        </Field>
+                        <Field label="Activation Time" required>
+                            <Input name="startTime" defaultValue={editingRule?.startTime} required placeholder="10:00 PM" />
+                        </Field>
+                    </div>
+                </SideFormSheet>
 
                 {/* Timesheet Insight Modal */}
                 <Dialog open={isTimesheetOpen} onOpenChange={setIsTimesheetOpen}>
-                    <DialogContent className="max-w-3xl rounded-[3rem] border-2 border-slate-200 p-12 bg-white">
+                    <DialogContent className="left-auto right-0 top-0 translate-x-0 translate-y-0 max-w-md w-[420px] h-screen max-h-screen rounded-none rounded-l-2xl border-y-0 border-r-0 border-l border-slate-200 p-6 bg-white overflow-y-auto flex flex-col">
                         <DialogHeader>
-                            <DialogTitle className="text-3xl font-bold flex items-center gap-4">
-                                <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-500">
-                                    <History />
+                            <DialogTitle className="text-base font-semibold flex items-center gap-3">
+                                <div className="h-8 w-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500">
+                                    <History size={16} />
                                 </div>
-                                Compensation Evidence: {selectedEmployee?.name}
+                                <span>Compensation Evidence: {selectedEmployee?.name}</span>
                             </DialogTitle>
                         </DialogHeader>
-                        <div className="space-y-10 py-10">
-                            <div className="bg-slate-50 p-10 rounded-[2.5rem] border border-slate-100 flex items-center justify-between">
+                        <div className="space-y-4 py-3">
+                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center justify-between">
                                 <div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Policy variant</p>
-                                    <Badge className="bg-indigo-900 text-white border-none px-4 py-2 rounded-xl text-xs font-bold">{selectedEmployee?.shift}</Badge>
+                                    <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1.5">Policy variant</p>
+                                    <Badge className="bg-indigo-900 text-white border-none px-2.5 py-0.5 rounded-md text-[11px] font-medium">{selectedEmployee?.shift}</Badge>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Total accrued</p>
-                                    <p className="text-3xl font-bold text-slate-900">₹ {((selectedEmployee?.rate || 0) * (selectedEmployee?.volume || 0)).toLocaleString()}</p>
+                                    <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1.5">Total accrued</p>
+                                    <p className="text-lg font-semibold text-slate-900">₹ {((selectedEmployee?.rate || 0) * (selectedEmployee?.volume || 0)).toLocaleString()}</p>
                                 </div>
                             </div>
 
-                            <div className="space-y-6">
-                                <p className="text-lg font-bold text-slate-900">Shift Log Breakdown (Current Cycle)</p>
-                                <div className="border border-slate-50 rounded-[2rem] overflow-hidden">
+                            <div className="space-y-2.5">
+                                <p className="text-sm font-semibold text-slate-900">Shift Log Breakdown (Current Cycle)</p>
+                                <div className="border border-slate-100 rounded-xl overflow-hidden">
                                     <Table>
                                         <TableHeader className="bg-slate-50/50">
-                                            <TableRow className="border-slate-50">
-                                                <th className="p-6 font-bold text-[10px] text-slate-400 uppercase tracking-widest">Date</th>
-                                                <th className="p-6 font-bold text-[10px] text-slate-400 uppercase tracking-widest">In Range</th>
-                                                <th className="p-6 font-bold text-[10px] text-slate-400 uppercase tracking-widest">Duration</th>
-                                                <th className="p-6 font-bold text-[10px] text-slate-400 uppercase tracking-widest text-right">Credit</th>
+                                            <TableRow className="border-slate-100">
+                                                <th className="p-2.5 font-medium text-[10px] text-slate-500 uppercase tracking-wide">Date</th>
+                                                <th className="p-2.5 font-medium text-[10px] text-slate-500 uppercase tracking-wide">In Range</th>
+                                                <th className="p-2.5 font-medium text-[10px] text-slate-500 uppercase tracking-wide">Duration</th>
+                                                <th className="p-2.5 font-medium text-[10px] text-slate-500 uppercase tracking-wide text-right">Credit</th>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {[...Array(3)].map((_, i) => (
-                                                <TableRow key={i} className="border-slate-50">
-                                                    <TableCell className="p-6 font-bold text-slate-600">Jan {20 + i}, 2026</TableCell>
-                                                    <TableCell className="p-6 font-bold text-slate-600">10:00 PM &ndash; 06:00 AM</TableCell>
-                                                    <TableCell className="p-6 font-bold text-slate-600">8h 00m</TableCell>
-                                                    <TableCell className="p-6 font-bold text-emerald-500 text-right">₹ {selectedEmployee?.rate}</TableCell>
+                                                <TableRow key={i} className="border-slate-100">
+                                                    <TableCell className="p-2.5 text-xs font-medium text-slate-600">Jan {20 + i}, 2026</TableCell>
+                                                    <TableCell className="p-2.5 text-xs font-medium text-slate-600">10:00 PM &ndash; 06:00 AM</TableCell>
+                                                    <TableCell className="p-2.5 text-xs font-medium text-slate-600">8h 00m</TableCell>
+                                                    <TableCell className="p-2.5 text-xs font-semibold text-emerald-600 text-right">₹ {selectedEmployee?.rate}</TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
@@ -961,138 +956,116 @@ const ShiftAllowancePage = () => {
                             </div>
                         </div>
                         <DialogFooter>
-                            <Button className="w-full h-16 bg-slate-900 text-white rounded-2xl font-bold text-xl" onClick={() => setIsTimesheetOpen(false)}>
+                            <Button className="w-full h-10 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm" onClick={() => setIsTimesheetOpen(false)}>
                                 Securely close ledger
                             </Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
 
-                {/* Pay Code Create/Edit Dialog */}
-                <Dialog open={isPayCodeDialogOpen} onOpenChange={setIsPayCodeDialogOpen}>
-                    <DialogContent className="sm:max-w-[500px] rounded-2xl p-8 bg-white border-2 border-slate-200 shadow-2xl">
-                        <DialogHeader>
-                            <DialogTitle className="text-xl font-bold text-slate-900">
-                                {editingPayCode ? "Edit Pay Code" : "Register New Pay Code"}
-                            </DialogTitle>
-                            <DialogDescription className="text-slate-500">
-                                Define a formula-based payment rule. Example formulas: <span className="font-mono">[Basic]*0.2</span>, <span className="font-mono">[Gross]*0.1</span>, <span className="font-mono">500</span>.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                            <div className="grid gap-2">
-                                <Label className="font-semibold text-slate-700">Pay Code Name</Label>
-                                <Input
-                                    placeholder="e.g. Night Shift India"
-                                    value={payCodeForm.name}
-                                    onChange={(e) => setPayCodeForm({ ...payCodeForm, name: e.target.value })}
-                                    className="h-11 rounded-lg border border-slate-200"
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label className="font-semibold text-slate-700">Identifier Code (optional)</Label>
-                                <Input
-                                    placeholder="Auto-derived from name if empty (e.g. NIPC)"
-                                    value={payCodeForm.code}
-                                    onChange={(e) => setPayCodeForm({ ...payCodeForm, code: e.target.value.toUpperCase() })}
-                                    className="h-11 rounded-lg border border-slate-200 uppercase"
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label className="font-semibold text-slate-700">Payment Formula</Label>
-                                <Input
-                                    placeholder="e.g. [Basic]*0.2 or 500"
-                                    value={payCodeForm.formula}
-                                    onChange={(e) => setPayCodeForm({ ...payCodeForm, formula: e.target.value })}
-                                    className="h-11 rounded-lg border border-slate-200 font-mono"
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label className="font-semibold text-slate-700">Frequency</Label>
-                                <SelectUI value={payCodeForm.frequency} onValueChange={(v) => setPayCodeForm({ ...payCodeForm, frequency: v as PayCode["frequency"] })}>
-                                    <SelectTriggerUI className="h-11 rounded-lg border border-slate-200">
-                                        <SelectValueUI />
-                                    </SelectTriggerUI>
-                                    <SelectContentUI>
-                                        <SelectItemUI value="Lump Sum">Lump Sum</SelectItemUI>
-                                        <SelectItemUI value="Per Shift">Per Shift</SelectItemUI>
-                                        <SelectItemUI value="Per Hour">Per Hour</SelectItemUI>
-                                    </SelectContentUI>
-                                </SelectUI>
-                            </div>
-                        </div>
-                        <DialogFooter className="flex gap-2">
-                            <Button variant="ghost" onClick={() => setIsPayCodeDialogOpen(false)}>Cancel</Button>
-                            <Button className="bg-[#CB9DF0] hover:bg-[#b580e0]" onClick={handleSavePayCode}>
-                                {editingPayCode ? "Save Changes" : "Register Pay Code"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                {/* Pay Code (Create/Edit) */}
+                <SideFormSheet
+                    open={isPayCodeDialogOpen}
+                    onOpenChange={setIsPayCodeDialogOpen}
+                    title={editingPayCode ? "Edit Pay Code" : "Register New Pay Code"}
+                    description="Define a formula-based payment rule. Example formulas: [Basic]*0.2, [Gross]*0.1, 500."
+                    icon={<FileCode2 size={20} />}
+                    accentColor={editingPayCode ? "#7c3aed" : "#4f46e5"}
+                    width="md"
+                    submitLabel={editingPayCode ? "Save Changes" : "Register Pay Code"}
+                    onSubmit={(e) => { e.preventDefault(); handleSavePayCode(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Pay Code Name" required>
+                            <Input
+                                placeholder="e.g. Night Shift India"
+                                value={payCodeForm.name}
+                                onChange={(e) => setPayCodeForm({ ...payCodeForm, name: e.target.value })}
+                            />
+                        </Field>
+                        <Field label="Identifier Code" hint="Auto-derived from name if empty (e.g. NIPC)">
+                            <Input
+                                placeholder="e.g. NIPC"
+                                value={payCodeForm.code}
+                                onChange={(e) => setPayCodeForm({ ...payCodeForm, code: e.target.value.toUpperCase() })}
+                                className="uppercase"
+                            />
+                        </Field>
+                        <Field label="Payment Formula" required>
+                            <Input
+                                placeholder="e.g. [Basic]*0.2 or 500"
+                                value={payCodeForm.formula}
+                                onChange={(e) => setPayCodeForm({ ...payCodeForm, formula: e.target.value })}
+                                className="font-mono"
+                            />
+                        </Field>
+                        <Field label="Frequency" required>
+                            <SelectUI value={payCodeForm.frequency} onValueChange={(v) => setPayCodeForm({ ...payCodeForm, frequency: v as PayCode["frequency"] })}>
+                                <SelectTriggerUI>
+                                    <SelectValueUI />
+                                </SelectTriggerUI>
+                                <SelectContentUI>
+                                    <SelectItemUI value="Lump Sum">Lump Sum</SelectItemUI>
+                                    <SelectItemUI value="Per Shift">Per Shift</SelectItemUI>
+                                    <SelectItemUI value="Per Hour">Per Hour</SelectItemUI>
+                                </SelectContentUI>
+                            </SelectUI>
+                        </Field>
+                    </div>
+                </SideFormSheet>
 
-                {/* Policy Create/Edit Dialog */}
-                <Dialog open={isPolicyDialogOpen} onOpenChange={setIsPolicyDialogOpen}>
-                    <DialogContent className="sm:max-w-[500px] rounded-2xl p-8 bg-white border-2 border-slate-200 shadow-2xl">
-                        <DialogHeader>
-                            <DialogTitle className="text-xl font-bold text-slate-900">
-                                {editingPolicy ? "Edit Policy" : "Create New Policy"}
-                            </DialogTitle>
-                            <DialogDescription className="text-slate-500">
-                                Bind a pay code to a department or staff group to establish an allowance policy.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                            <div className="grid gap-2">
-                                <Label className="font-semibold text-slate-700">Policy Name</Label>
-                                <Input
-                                    placeholder="e.g. Evening Shift India"
-                                    value={policyForm.name}
-                                    onChange={(e) => setPolicyForm({ ...policyForm, name: e.target.value })}
-                                    className="h-11 rounded-lg border border-slate-200"
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label className="font-semibold text-slate-700">Linked Pay Code</Label>
-                                <SelectUI value={policyForm.payCodeId} onValueChange={(v) => setPolicyForm({ ...policyForm, payCodeId: v })}>
-                                    <SelectTriggerUI className="h-11 rounded-lg border border-slate-200">
-                                        <SelectValueUI placeholder="Select a pay code" />
-                                    </SelectTriggerUI>
-                                    <SelectContentUI>
-                                        {payCodes.map(pc => (
-                                            <SelectItemUI key={pc.id} value={pc.id}>
-                                                {pc.name} ({pc.code}) — {pc.formula}
-                                            </SelectItemUI>
-                                        ))}
-                                    </SelectContentUI>
-                                </SelectUI>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label className="font-semibold text-slate-700">Department</Label>
-                                <Input
-                                    placeholder="e.g. Operations (leave blank for All)"
-                                    value={policyForm.department}
-                                    onChange={(e) => setPolicyForm({ ...policyForm, department: e.target.value })}
-                                    className="h-11 rounded-lg border border-slate-200"
-                                />
-                            </div>
-                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
-                                <Label className="font-semibold text-slate-700">Active on creation</Label>
-                                <input
-                                    type="checkbox"
-                                    checked={policyForm.isActive}
-                                    onChange={(e) => setPolicyForm({ ...policyForm, isActive: e.target.checked })}
-                                    className="h-5 w-5 accent-[#10b981]"
-                                />
-                            </div>
+                {/* Policy (Create/Edit) */}
+                <SideFormSheet
+                    open={isPolicyDialogOpen}
+                    onOpenChange={setIsPolicyDialogOpen}
+                    title={editingPolicy ? "Edit Policy" : "Create New Policy"}
+                    description="Bind a pay code to a department or staff group to establish an allowance policy."
+                    icon={<FolderKanban size={20} />}
+                    accentColor={editingPolicy ? "#7c3aed" : "#059669"}
+                    width="md"
+                    submitLabel={editingPolicy ? "Save Changes" : "Create Policy"}
+                    onSubmit={(e) => { e.preventDefault(); handleSavePolicy(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Policy Name" required>
+                            <Input
+                                placeholder="e.g. Evening Shift India"
+                                value={policyForm.name}
+                                onChange={(e) => setPolicyForm({ ...policyForm, name: e.target.value })}
+                            />
+                        </Field>
+                        <Field label="Linked Pay Code" required>
+                            <SelectUI value={policyForm.payCodeId} onValueChange={(v) => setPolicyForm({ ...policyForm, payCodeId: v })}>
+                                <SelectTriggerUI>
+                                    <SelectValueUI placeholder="Select a pay code" />
+                                </SelectTriggerUI>
+                                <SelectContentUI>
+                                    {payCodes.map(pc => (
+                                        <SelectItemUI key={pc.id} value={pc.id}>
+                                            {pc.name} ({pc.code}) — {pc.formula}
+                                        </SelectItemUI>
+                                    ))}
+                                </SelectContentUI>
+                            </SelectUI>
+                        </Field>
+                        <Field label="Department">
+                            <Input
+                                placeholder="e.g. Operations (leave blank for All)"
+                                value={policyForm.department}
+                                onChange={(e) => setPolicyForm({ ...policyForm, department: e.target.value })}
+                            />
+                        </Field>
+                        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
+                            <Label className="font-semibold text-slate-700">Active on creation</Label>
+                            <input
+                                type="checkbox"
+                                checked={policyForm.isActive}
+                                onChange={(e) => setPolicyForm({ ...policyForm, isActive: e.target.checked })}
+                                className="h-5 w-5 accent-[#10b981]"
+                            />
                         </div>
-                        <DialogFooter className="flex gap-2">
-                            <Button variant="ghost" onClick={() => setIsPolicyDialogOpen(false)}>Cancel</Button>
-                            <Button className="bg-[#10b981] hover:bg-[#059669] text-white" onClick={handleSavePolicy}>
-                                {editingPolicy ? "Save Changes" : "Create Policy"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                    </div>
+                </SideFormSheet>
 
             </div>
         </div >

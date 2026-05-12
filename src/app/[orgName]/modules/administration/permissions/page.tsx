@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import {
   Search,
   Shield,
@@ -13,22 +13,22 @@ import {
   AlertCircle,
   Loader2,
 } from "lucide-react"
-import SubHeader from "@/components/custom/SubHeader"
-import { CustomButton } from "@/components/custom/CustomButton"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { Fragment } from "react"
+import { Button } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
 import { toast } from "sonner"
 import { useParams } from "next/navigation"
 import { decryptData } from "@/utils/crypto"
-import { getAllRolesNPermissions } from "@/hooks/roleNPermissionHooks"
+import {
+  getAllRolesNPermissions,
+  getPermissionCatalog,
+} from "@/hooks/roleNPermissionHooks"
+import { useCachedFetch } from "@/lib/swrCache"
+import {
+  MODULE_ACTION_CATALOG,
+  MODULE_DISPLAY_NAMES,
+  MODULE_GROUPS,
+} from "@/shared/utils/module-permission-map"
 
 interface PermissionAction {
   _id?: string
@@ -47,58 +47,128 @@ interface Role {
   userCount?: number
 }
 
+interface CatalogModule {
+  id: string
+  name: string
+  group: string
+  actions: string[]
+}
+
+// Static fallback derived from the central catalog. Used until/unless the
+// backend `/role-permission/catalog` endpoint returns its own list. Keeps the
+// matrix in lock-step with the role-builder which uses the same source.
+const STATIC_CATALOG: CatalogModule[] = Object.entries(MODULE_ACTION_CATALOG).map(
+  ([id, actions]) => ({
+    id,
+    name: MODULE_DISPLAY_NAMES[id] || id,
+    group: MODULE_GROUPS[id] || "Other",
+    actions: actions as string[],
+  })
+)
+
 export default function PermissionSets() {
   const params = useParams()
-  const [roles, setRoles] = useState<Role[]>([])
-  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [orgName, setOrgName] = useState("")
+  const [catalog, setCatalog] = useState<CatalogModule[] | null>(null)
 
   useEffect(() => {
     setOrgName((params.orgName as string) || localStorage.getItem("orgName") || "")
-    fetchPermissions()
+  }, [params.orgName])
+
+  // Backend catalog overrides the static fallback when available.
+  // 404 → returns null and we keep the static list (see roleNPermissionHooks).
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const data = await getPermissionCatalog()
+        if (cancelled || !data || !Array.isArray(data.modules)) return
+        const mapped: CatalogModule[] = data.modules.map((m: any) => ({
+          id: m.id,
+          name: m.name || MODULE_DISPLAY_NAMES[m.id] || m.id,
+          group: m.group || MODULE_GROUPS[m.id] || "Other",
+          actions: Array.isArray(m.actions) ? m.actions : [],
+        }))
+        setCatalog(mapped)
+      } catch {
+        // silent — fall back to STATIC_CATALOG
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
   }, [])
 
-  const fetchPermissions = async () => {
-    setLoading(true)
-    try {
-      const scopeParams = { scope: "sc-org" as const }
-      const response = await getAllRolesNPermissions(scopeParams)
+  const fetchPermissions = useCallback(async (): Promise<Role[]> => {
+    const scopeParams = { scope: "sc-org" as const }
+    const response = await getAllRolesNPermissions(scopeParams)
 
-      let rolesData: Role[] = []
-
-      if (response?.data?.permissions && response?.data?.iv) {
-        rolesData = decryptData(response.data.permissions, response.data.iv)
-      } else if (response?.data?.roles) {
-        rolesData = response.data.roles
-      } else if (Array.isArray(response?.data)) {
-        rolesData = response.data
-      }
-
-      // Normalize: some APIs return roleName instead of name
-      rolesData = rolesData.map((role: any) => ({
-        ...role,
-        name: role.name || role.roleName || "Unnamed Role",
-        permissions: Array.isArray(role.permissions) ? role.permissions : [],
-      }))
-
-      setRoles(rolesData)
-    } catch (error) {
-      console.error("Error fetching permissions:", error)
-      toast.error("Failed to load permission matrix")
-    } finally {
-      setLoading(false)
+    let rolesData: Role[] = []
+    if (response?.data?.permissions && response?.data?.iv) {
+      rolesData = decryptData(response.data.permissions, response.data.iv) || []
+    } else if (response?.data?.roles) {
+      rolesData = response.data.roles
+    } else if (Array.isArray(response?.data)) {
+      rolesData = response.data
     }
-  }
 
-  // Collect all unique modules and actions across all roles
-  const { allModules, moduleActions } = useMemo(() => {
+    return rolesData.map((role: any) => ({
+      ...role,
+      name: role.name || role.roleName || "Unnamed Role",
+      permissions: Array.isArray(role.permissions) ? role.permissions : [],
+    }))
+  }, [])
+
+  const {
+    data: rolesData,
+    loading,
+    error,
+    refetch: fetchPermissionsRefetch,
+  } = useCachedFetch<Role[]>("roles:org:permissions-matrix", fetchPermissions)
+
+  const roles = rolesData ?? []
+  const hasData = roles.length > 0
+
+  // Toast only when the fetch fails AND we have nothing to show; otherwise the
+  // user sees stale-but-usable cached data and a silent background retry.
+  const lastErrorToast = useRef<string | null>(null)
+  useEffect(() => {
+    if (!error || hasData) return
+    if (lastErrorToast.current === error) return
+    lastErrorToast.current = error
+    toast.error("Failed to load permission matrix")
+  }, [error, hasData])
+
+  // Build the matrix's module/action list catalog-first, then fold in any
+  // module/action referenced by an actual role that the catalog doesn't know
+  // about (legacy data, custom modules from a future backend version, etc.).
+  // This way every catalog module shows up — even if zero roles use it yet —
+  // and nothing referenced by a role gets silently dropped.
+  const { allModules, moduleActions, moduleNames, moduleGroups } = useMemo(() => {
+    const baseList = catalog ?? STATIC_CATALOG
     const moduleMap = new Map<string, Set<string>>()
+    const nameMap: Record<string, string> = {}
+    const groupMap: Record<string, string> = {}
+
+    baseList.forEach((m) => {
+      moduleMap.set(m.id, new Set(m.actions))
+      nameMap[m.id] = m.name
+      groupMap[m.id] = m.group
+    })
 
     roles.forEach((role) => {
       role.permissions?.forEach((perm) => {
+        if (!perm?.module) return
         if (!moduleMap.has(perm.module)) {
           moduleMap.set(perm.module, new Set())
+          nameMap[perm.module] =
+            MODULE_DISPLAY_NAMES[perm.module] ||
+            perm.module
+              .split("_")
+              .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+              .join(" ")
+          groupMap[perm.module] = MODULE_GROUPS[perm.module] || "Other"
         }
         perm.actions?.forEach((action) => {
           moduleMap.get(perm.module)!.add(action)
@@ -106,16 +176,20 @@ export default function PermissionSets() {
       })
     })
 
-    const allModules = Array.from(moduleMap.keys()).sort()
+    const allModules = Array.from(moduleMap.keys()).sort((a, b) => {
+      const ga = groupMap[a] || "Other"
+      const gb = groupMap[b] || "Other"
+      if (ga !== gb) return ga.localeCompare(gb)
+      return (nameMap[a] || a).localeCompare(nameMap[b] || b)
+    })
     const moduleActions: Record<string, string[]> = {}
     allModules.forEach((mod) => {
       moduleActions[mod] = Array.from(moduleMap.get(mod)!).sort()
     })
 
-    return { allModules, moduleActions }
-  }, [roles])
+    return { allModules, moduleActions, moduleNames: nameMap, moduleGroups: groupMap }
+  }, [roles, catalog])
 
-  // Filter roles by search query
   const filteredRoles = useMemo(() => {
     if (!searchQuery) return roles
     const q = searchQuery.toLowerCase()
@@ -126,7 +200,6 @@ export default function PermissionSets() {
     )
   }, [roles, searchQuery])
 
-  // Check if a role has a specific action for a module
   const hasAction = (role: Role, module: string, action: string): boolean => {
     const perm = role.permissions?.find((p) => p.module === module)
     return perm?.actions?.includes(action) ?? false
@@ -138,322 +211,300 @@ export default function PermissionSets() {
     totalActions: Object.values(moduleActions).reduce((sum, actions) => sum + actions.length, 0),
   }
 
+  const renderTypeBadge = (isCustom?: boolean) => (
+    <div
+      className={`inline-flex items-center gap-2 px-2 py-1 border rounded-none ${
+        isCustom
+          ? "bg-emerald-50 text-emerald-600 border-emerald-100"
+          : "bg-zinc-50 text-zinc-500 border-zinc-200"
+      }`}
+    >
+      <span className="text-[10px] font-medium">{isCustom ? "Custom" : "System"}</span>
+    </div>
+  )
+
   return (
-    <div className="relative min-h-screen bg-[#F8F9FC] font-outfit">
-      <SubHeader
-        title="Permission Matrix"
-        breadcrumbItems={[
-          { label: "Identity & Access", href: "#" },
-          { label: "Access Management", href: "#" },
-          { label: "Permission Matrix", href: "#" },
-        ]}
-        rightControls={
-          <div className="flex gap-2">
-            <CustomButton
-              variant="outline"
-              size="sm"
-              onClick={fetchPermissions}
-              className="bg-white border-zinc-200 rounded-lg h-10 px-4"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 mr-2 ${loading ? "animate-spin" : ""}`} />
-              Refresh Matrix
-            </CustomButton>
-          </div>
-        }
-      />
-
-      <div className="p-4 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-gradient-to-r from-primary/70 to-primary text-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white text-xs opacity-80">Total Roles</p>
-                <p className="text-white text-xl font-semibold mt-1">{stats.totalRoles}</p>
-                <p className="text-white text-[10px] mt-1 opacity-70">In permission matrix</p>
-              </div>
-              <Shield className="w-5 h-5 text-white" />
-            </div>
-          </div>
-          <div className="border bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-xs">Modules</p>
-                <p className="text-xl font-semibold text-gray-900 mt-1">{stats.totalModules}</p>
-                <p className="text-[10px] text-gray-400 mt-1">Unique modules tracked</p>
-              </div>
-              <ListTree className="w-5 h-5 text-indigo-500" />
-            </div>
-          </div>
-          <div className="border bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-xs">Action Types</p>
-                <p className="text-xl font-semibold text-gray-900 mt-1">{stats.totalActions}</p>
-                <p className="text-[10px] text-gray-400 mt-1">Distinct permission actions</p>
-              </div>
-              <Lock className="w-5 h-5 text-emerald-500" />
-            </div>
-          </div>
-        </div>
-
-        {/* Search */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100">
-              <ListTree className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-zinc-900">Permission Matrix Overview</h3>
-              <p className="text-[10px] text-zinc-400 font-medium">
-                Read-only view of role-to-module access mappings
-              </p>
-            </div>
-          </div>
-          <div className="relative md:w-80">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-            <Input
-              placeholder="Search roles..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-11 pr-4 h-14 bg-white border-zinc-200 rounded-lg shadow-sm focus:ring-blue-500/10"
-            />
-          </div>
-        </div>
-
-        {/* Loading State */}
-        {loading ? (
-          <div className="bg-white border border-zinc-200 rounded-xl shadow-xl p-16 flex flex-col items-center justify-center gap-4">
-            <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-            <p className="text-sm text-zinc-500 font-medium">Loading permission matrix...</p>
-          </div>
-        ) : filteredRoles.length === 0 ? (
-          <div className="bg-white border border-zinc-200 rounded-xl shadow-xl p-16 flex flex-col items-center justify-center gap-4">
-            <Shield className="w-8 h-8 text-zinc-300" />
-            <p className="text-sm text-zinc-400 font-medium">
-              {searchQuery ? "No roles match your search" : "No roles found in the directory"}
+    <div className="flex flex-col min-h-screen bg-transparent">
+      <div className="p-6 pb-0">
+        <div className="flex items-center justify-between mb-1">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Permission Matrix</h1>
+            <p className="text-sm text-zinc-500 mt-1">
+              Read-only overview of role-to-module permissions across the organization.
             </p>
           </div>
-        ) : (
-          <>
-            {/* Summary Table */}
-            <div className="bg-white border border-zinc-200 rounded-xl shadow-xl overflow-hidden">
-              <div className="p-6 border-b border-zinc-100">
-                <h3 className="text-sm font-semibold text-zinc-900">Role Summary</h3>
-                <p className="text-[10px] text-zinc-400 font-medium mt-0.5">
-                  Overview of modules and actions per role
-                </p>
-              </div>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-zinc-50/50 border-b border-zinc-100 hover:bg-transparent">
-                      <TableHead className="p-4 text-xs font-semibold text-gray-500">Role</TableHead>
-                      <TableHead className="p-4 text-xs font-semibold text-gray-500">Type</TableHead>
-                      <TableHead className="p-4 text-xs font-semibold text-gray-500 text-center">Modules</TableHead>
-                      <TableHead className="p-4 text-xs font-semibold text-gray-500 text-center">Total Actions</TableHead>
-                      <TableHead className="p-4 text-xs font-semibold text-gray-500">Module Breakdown</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody className="divide-y divide-zinc-50">
-                    {filteredRoles.map((role) => {
-                      const moduleCount = role.permissions?.length || 0
-                      const totalActions = role.permissions?.reduce(
-                        (sum, p) => sum + (p.actions?.length || 0),
-                        0
-                      ) || 0
-                      return (
-                        <TableRow key={role._id} className="hover:bg-indigo-50/10 transition-all">
-                          <TableCell className="p-4">
-                            <div className="flex items-center gap-3">
-                              <div className="h-8 w-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100">
-                                <Shield className="w-4 h-4" />
-                              </div>
-                              <div>
-                                <span className="text-sm font-semibold text-gray-900">{role.name}</span>
-                                <p className="text-[10px] text-zinc-400 font-medium truncate max-w-[200px]">
-                                  {role.description || "No description"}
-                                </p>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="p-4">
-                            <Badge
-                              className={`border-0 text-xs font-medium px-3 py-1 rounded-full ${
-                                role.isCustom
-                                  ? "bg-emerald-50 text-emerald-600"
-                                  : "bg-zinc-100 text-zinc-500"
-                              }`}
-                            >
-                              {role.isCustom ? "Custom" : "System"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="p-4 text-center">
-                            <span className="text-sm font-semibold text-zinc-700">{moduleCount}</span>
-                          </TableCell>
-                          <TableCell className="p-4 text-center">
-                            <span className="text-sm font-semibold text-zinc-700">{totalActions}</span>
-                          </TableCell>
-                          <TableCell className="p-4">
-                            <div className="flex flex-wrap gap-1.5">
-                              {role.permissions?.slice(0, 4).map((perm) => (
-                                <Badge
-                                  key={perm._id || perm.module}
-                                  variant="outline"
-                                  className="border-zinc-200 text-[10px] font-medium px-2 py-0.5 rounded-full"
-                                >
-                                  {perm.module} ({perm.actions?.length || 0})
-                                </Badge>
-                              ))}
-                              {(role.permissions?.length || 0) > 4 && (
-                                <Badge
-                                  variant="outline"
-                                  className="border-zinc-200 text-[10px] font-medium px-2 py-0.5 rounded-full"
-                                >
-                                  +{role.permissions.length - 4} more
-                                </Badge>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
+          <Button
+            onClick={fetchPermissionsRefetch}
+            disabled={loading}
+            variant="outline"
+            size="sm"
+            className="rounded-none border-zinc-200 font-medium text-xs h-8 gap-1.5 px-4"
+          >
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+            Refresh Matrix
+          </Button>
+        </div>
+      </div>
 
-            {/* Detailed Permission Matrix */}
-            {allModules.length > 0 && (
-              <div className="bg-white border border-zinc-200 rounded-xl shadow-xl overflow-hidden">
-                <div className="p-6 border-b border-zinc-100 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-sm font-semibold text-zinc-900">Detailed Permission Matrix</h3>
-                    <p className="text-[10px] text-zinc-400 font-medium mt-0.5">
-                      Module-level action breakdown per role
-                    </p>
-                  </div>
-                  <CustomButton
-                    className="rounded-lg bg-primary text-white px-6 font-semibold text-xs h-10"
-                    onClick={() => toast.info("Matrix editor coming soon")}
-                  >
-                    Open Matrix Editor <ChevronRight className="ml-2 w-4 h-4" />
-                  </CustomButton>
+      <div className="flex-1 p-6 space-y-6">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white">
+            <p className="text-white text-xs opacity-80">Total Roles</p>
+            <p className="text-white text-xl font-semibold mt-1">{stats.totalRoles}</p>
+            <p className="text-white text-[10px] mt-1 opacity-70">In permission matrix</p>
+          </div>
+
+          <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+            <p className="text-zinc-500 text-xs">Modules</p>
+            <p className="text-xl font-semibold text-zinc-900 mt-1">{stats.totalModules}</p>
+            <p className="text-primary text-[10px] mt-1">Unique modules tracked</p>
+          </div>
+
+          <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+            <p className="text-zinc-500 text-xs">Action Types</p>
+            <p className="text-xl font-semibold text-zinc-900 mt-1">{stats.totalActions}</p>
+            <p className="text-emerald-600 text-[10px] mt-1">Distinct permission actions</p>
+          </div>
+
+          <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+            <p className="text-zinc-500 text-xs">Mode</p>
+            <p className="text-xl font-semibold text-zinc-900 mt-1">Read-only</p>
+            <p className="text-zinc-400 text-[10px] mt-1">Edit from role page</p>
+          </div>
+        </div>
+
+        {/* Search bar */}
+        <div className="bg-white border border-zinc-200 rounded-none shadow-lg overflow-hidden">
+          <div className="p-4 border-b border-zinc-100 bg-zinc-50/50 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <ListTree size={16} className="text-primary" />
+              <h3 className="text-sm font-semibold text-gray-900">Permission Matrix Overview</h3>
+            </div>
+            <div className="relative w-full md:w-80">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
+              <Input
+                placeholder="Search roles..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 rounded-none border-zinc-200 h-10 text-xs font-medium focus:ring-primary bg-white"
+              />
+            </div>
+          </div>
+
+          {loading && !hasData ? (
+            <div className="p-16 flex flex-col items-center justify-center gap-3">
+              <Loader2 className="w-6 h-6 text-primary animate-spin" />
+              <p className="text-xs text-zinc-500 font-medium">Loading permission matrix...</p>
+            </div>
+          ) : filteredRoles.length === 0 ? (
+            <div className="p-16 flex flex-col items-center justify-center gap-3">
+              <Shield className="w-8 h-8 text-zinc-300" />
+              <p className="text-sm text-zinc-500 font-medium">
+                {error
+                  ? error
+                  : searchQuery
+                    ? "No roles match your search"
+                    : "No roles found in the directory"}
+              </p>
+              {error && !hasData && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchPermissionsRefetch}
+                  className="rounded-none border-zinc-200 text-xs font-medium h-8 px-3 mt-2"
+                >
+                  <RefreshCw size={12} className="mr-1.5" />
+                  Retry
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-zinc-100/50 border-b border-zinc-100">
+                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500">Role</th>
+                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500">Type</th>
+                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500 text-center">Modules</th>
+                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500 text-center">Total Actions</th>
+                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500">Module Breakdown</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100">
+                  {filteredRoles.map((role) => {
+                    const moduleCount = role.permissions?.length || 0
+                    const totalActions = role.permissions?.reduce((sum, p) => sum + (p.actions?.length || 0), 0) || 0
+                    return (
+                      <tr key={role._id} className="hover:bg-primary/5 transition-colors">
+                        <td className="px-6 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 bg-primary/10 text-primary rounded-none flex items-center justify-center">
+                              <Shield className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <span className="text-sm font-semibold text-gray-900 block">{role.name}</span>
+                              <span className="text-[10px] text-zinc-500 font-medium truncate max-w-[200px] block">
+                                {role.description || "No description"}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-3">{renderTypeBadge(role.isCustom)}</td>
+                        <td className="px-6 py-3 text-center">
+                          <span className="text-sm font-semibold text-zinc-700">{moduleCount}</span>
+                        </td>
+                        <td className="px-6 py-3 text-center">
+                          <span className="text-sm font-semibold text-zinc-700">{totalActions}</span>
+                        </td>
+                        <td className="px-6 py-3">
+                          <div className="flex flex-wrap gap-1">
+                            {role.permissions?.slice(0, 4).map((perm) => (
+                              <span
+                                key={perm._id || perm.module}
+                                className="border border-zinc-200 bg-zinc-50 text-[10px] font-medium px-2 py-0.5 rounded-none text-zinc-700"
+                              >
+                                {moduleNames[perm.module] || perm.module} ({perm.actions?.length || 0})
+                              </span>
+                            ))}
+                            {(role.permissions?.length || 0) > 4 && (
+                              <span className="border border-zinc-200 bg-zinc-50 text-[10px] font-medium px-2 py-0.5 rounded-none text-zinc-700">
+                                +{role.permissions.length - 4} more
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Detailed Permission Matrix */}
+        {allModules.length > 0 && filteredRoles.length > 0 && (
+          <div className="bg-white border border-zinc-200 rounded-none shadow-lg overflow-hidden">
+            <div className="p-4 border-b border-zinc-100 bg-zinc-50/50 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ListTree size={16} className="text-primary" />
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900">Detailed Permission Matrix</h3>
+                  <p className="text-[10px] text-zinc-500 font-medium">Module-level action breakdown per role</p>
                 </div>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-zinc-50/50 border-b border-zinc-100 hover:bg-transparent">
-                        <TableHead className="p-4 text-xs font-semibold text-gray-500 sticky left-0 bg-zinc-50/50 z-10 min-w-[160px]">
-                          Module / Action
-                        </TableHead>
-                        {filteredRoles.map((role) => (
-                          <TableHead
-                            key={role._id}
-                            className="p-4 text-xs font-semibold text-gray-500 text-center min-w-[120px]"
+              </div>
+              <Button
+                size="sm"
+                className="rounded-none bg-primary hover:bg-primary/90 h-8 text-xs font-medium gap-2 px-4"
+                onClick={() => toast.info("Matrix editor coming soon")}
+              >
+                Open Matrix Editor
+                <ChevronRight size={14} />
+              </Button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-zinc-100/50 border-b border-zinc-100">
+                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500 sticky left-0 bg-zinc-100/50 z-10 min-w-[160px]">
+                      Module / Action
+                    </th>
+                    {filteredRoles.map((role) => (
+                      <th
+                        key={role._id}
+                        className="px-4 py-3 text-[11px] font-medium text-gray-500 text-center min-w-[120px]"
+                      >
+                        <div className="flex flex-col items-center gap-1">
+                          <span>{role.name}</span>
+                          <span
+                            className={`text-[9px] font-medium px-2 py-0 rounded-none ${
+                              role.isCustom
+                                ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                                : "bg-zinc-50 text-zinc-500 border border-zinc-200"
+                            }`}
                           >
-                            <div className="flex flex-col items-center gap-1">
-                              <span>{role.name}</span>
-                              <Badge
-                                className={`border-0 text-[9px] font-medium px-2 py-0 rounded-full ${
-                                  role.isCustom
-                                    ? "bg-emerald-50 text-emerald-600"
-                                    : "bg-zinc-100 text-zinc-500"
+                            {role.isCustom ? "Custom" : "System"}
+                          </span>
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {allModules.map((module) => (
+                    <Fragment key={module}>
+                      <tr className="bg-primary/5 border-t border-zinc-100">
+                        <td className="px-6 py-3 sticky left-0 bg-primary/5 z-10">
+                          <div className="flex items-center gap-2">
+                            <ListTree className="w-3.5 h-3.5 text-primary" />
+                            <div className="flex flex-col">
+                              <span className="text-xs font-semibold text-primary">
+                                {moduleNames[module] || module}
+                              </span>
+                              <span className="text-[9px] font-medium text-zinc-500">
+                                {moduleGroups[module] || "Other"} · {module}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        {filteredRoles.map((role) => {
+                          const perm = role.permissions?.find((p) => p.module === module)
+                          return (
+                            <td key={`${role._id}-${module}-header`} className="px-4 py-3 text-center">
+                              <span
+                                className={`text-[10px] font-medium px-2 py-0.5 rounded-none border ${
+                                  perm
+                                    ? "border-primary/20 bg-primary/10 text-primary"
+                                    : "border-zinc-200 bg-zinc-50 text-zinc-400"
                                 }`}
                               >
-                                {role.isCustom ? "Custom" : "System"}
-                              </Badge>
-                            </div>
-                          </TableHead>
-                        ))}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {allModules.map((module) => (
-                        <>
-                          {/* Module header row */}
-                          <TableRow
-                            key={`module-${module}`}
-                            className="bg-indigo-50/30 border-t border-zinc-100 hover:bg-indigo-50/50"
-                          >
-                            <TableCell className="p-4 sticky left-0 bg-indigo-50/30 z-10">
-                              <div className="flex items-center gap-2">
-                                <ListTree className="w-3.5 h-3.5 text-indigo-500" />
-                                <span className="text-xs font-semibold text-indigo-700">{module}</span>
-                              </div>
-                            </TableCell>
-                            {filteredRoles.map((role) => {
-                              const perm = role.permissions?.find((p) => p.module === module)
-                              return (
-                                <TableCell
-                                  key={`${role._id}-${module}-header`}
-                                  className="p-4 text-center"
-                                >
-                                  <Badge
-                                    variant="outline"
-                                    className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                                      perm
-                                        ? "border-indigo-200 bg-indigo-50 text-indigo-600"
-                                        : "border-zinc-200 text-zinc-400"
-                                    }`}
-                                  >
-                                    {perm ? `${perm.actions?.length || 0} actions` : "No access"}
-                                  </Badge>
-                                </TableCell>
-                              )
-                            })}
-                          </TableRow>
-                          {/* Action rows for this module */}
-                          {moduleActions[module].map((action) => (
-                            <TableRow
-                              key={`${module}-${action}`}
-                              className="hover:bg-zinc-50/50 transition-all border-b border-zinc-50"
-                            >
-                              <TableCell className="p-3 pl-10 sticky left-0 bg-white z-10">
-                                <span className="text-xs text-zinc-600 font-medium">{action}</span>
-                              </TableCell>
-                              {filteredRoles.map((role) => (
-                                <TableCell
-                                  key={`${role._id}-${module}-${action}`}
-                                  className="p-3 text-center"
-                                >
-                                  {hasAction(role, module, action) ? (
-                                    <div className="flex items-center justify-center">
-                                      <div className="h-6 w-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                                        <Check className="w-3.5 h-3.5" />
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center justify-center">
-                                      <div className="h-6 w-6 rounded-full bg-zinc-50 text-zinc-300 flex items-center justify-center">
-                                        <X className="w-3.5 h-3.5" />
-                                      </div>
-                                    </div>
-                                  )}
-                                </TableCell>
-                              ))}
-                            </TableRow>
+                                {perm ? `${perm.actions?.length || 0} actions` : "No access"}
+                              </span>
+                            </td>
+                          )
+                        })}
+                      </tr>
+                      {moduleActions[module].map((action) => (
+                        <tr key={`${module}-${action}`} className="hover:bg-zinc-50/50 transition-colors border-b border-zinc-50">
+                          <td className="px-6 py-2 pl-10 sticky left-0 bg-white z-10">
+                            <span className="text-xs text-zinc-600 font-medium capitalize">
+                              {action ? action.replaceAll("_", " ").toLowerCase() : ""}
+                            </span>
+                          </td>
+                          {filteredRoles.map((role) => (
+                            <td key={`${role._id}-${module}-${action}`} className="px-4 py-2 text-center">
+                              {hasAction(role, module, action) ? (
+                                <div className="inline-flex items-center justify-center w-6 h-6 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-none">
+                                  <Check className="w-3 h-3" />
+                                </div>
+                              ) : (
+                                <div className="inline-flex items-center justify-center w-6 h-6 bg-zinc-50 text-zinc-300 border border-zinc-200 rounded-none">
+                                  <X className="w-3 h-3" />
+                                </div>
+                              )}
+                            </td>
                           ))}
-                        </>
+                        </tr>
                       ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            )}
-          </>
+                    </Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         )}
 
         {/* Governance Alert */}
-        <div className="p-6 bg-indigo-50/50 border border-indigo-100 rounded-xl flex items-start gap-4">
-          <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
-            <AlertCircle className="w-5 h-5 text-indigo-600" />
+        <div className="bg-white border border-gray-200 rounded-none p-5 flex items-start gap-3">
+          <div className="p-2 bg-primary/10 rounded-none">
+            <AlertCircle size={18} className="text-primary" />
           </div>
-          <div className="space-y-1">
-            <h6 className="text-sm font-semibold text-indigo-900">Access Governance Policy Active</h6>
-            <p className="text-xs text-indigo-700/80 leading-relaxed font-medium">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900">Access Governance Policy Active</h3>
+            <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
               This matrix provides a read-only overview of all role permissions across the organization.
-              To modify permissions, navigate to the specific role&apos;s edit page from the Roles &amp; Permissions section.
+              To modify permissions, navigate to the specific role's edit page from the Roles &amp; Permissions section.
             </p>
           </div>
         </div>

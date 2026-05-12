@@ -160,6 +160,18 @@ export interface MeState {
         category: string;
         serial: string;
         assignedDate: string;
+        status?: string;
+        condition?: string;
+    }>;
+    holidays: Array<{
+        id: string;
+        name: string;
+        date: string;
+        day: string;
+        type: string;
+        location: string;
+        month: string;
+        status: "upcoming" | "past";
     }>;
     documents: Array<{
         id: string;
@@ -194,6 +206,8 @@ export interface MeState {
     deleteMyGoal: (goalId: string) => Promise<void>;
     loadMyFeedback: () => Promise<void>;
     loadMyAppraisals: () => Promise<void>;
+    loadMyAssets: () => Promise<void>;
+    loadMyHolidays: () => Promise<void>;
 }
 
 export const useMeStore = create<MeState>()(
@@ -291,6 +305,7 @@ export const useMeStore = create<MeState>()(
                 { id: "ASST-0992", name: "Apple MacBook Pro M2", category: "Laptop", serial: "FVFHX21JQ059", assignedDate: "Jan 12, 2026" },
                 { id: "ASST-0412", name: "Dell 27\" 4K Monitor", category: "Monitors", serial: "CN-0DFJ2-3310", assignedDate: "Jan 15, 2026" },
             ],
+            holidays: [],
             documents: [
                 { id: 'd1', name: "Offer_Letter_FXL_2026.pdf", cat: "Company", date: "Jan 12, 2026", size: "1.2 MB" },
                 { id: 'd2', name: "Aadhar_Card_Verified.jpg", cat: "Personal", date: "Jan 13, 2026", size: "450 KB" },
@@ -299,94 +314,108 @@ export const useMeStore = create<MeState>()(
             updateUser: (data) => set((state) => ({ user: { ...state.user, ...data } })),
             updateBankDetails: (data) => set((state) => ({ bankDetails: { ...state.bankDetails, ...data } })),
             loadMyAttendance: async () => {
-                const response = await getMyAttendance();
-                const records = response?.data?.data ?? [];
+                try {
+                    const response = await getMyAttendance();
+                    const records = response?.data?.data ?? [];
 
-                const mappedLogs = records.map((doc: any) => {
-                    const date = formatISODate(doc.date);
-                    const firstIn = doc.firstIn ? formatTime(doc.firstIn) : "";
-                    const lastOut = doc.lastOut ? formatTime(doc.lastOut) : "";
-                    const workMinutes = Number(doc.workMinutes ?? 0);
+                    const mappedLogs = records.map((doc: any) => {
+                        const date = formatISODate(doc.date);
+                        const firstIn = doc.firstIn ? formatTime(doc.firstIn) : "";
+                        const lastOut = doc.lastOut ? formatTime(doc.lastOut) : "";
+                        const workMinutes = Number(doc.workMinutes ?? 0);
 
-                    let status: MeState["attendance"]["logs"][number]["status"] = "Absent";
-                    if (doc.status === "Present") {
-                        status = Number(doc.lateMinutes) > 0 ? "Late" : "On-Time";
-                    } else if (doc.status === "HalfDay") {
-                        status = "Half Day";
-                    } else if (doc.status === "Absent") {
-                        status = "Absent";
-                    } else if (doc.status === "Leave" || doc.status === "Holiday" || doc.status === "Weekend") {
-                        status = "Absent";
+                        let status: MeState["attendance"]["logs"][number]["status"] = "Absent";
+                        if (doc.status === "Present") {
+                            status = Number(doc.lateMinutes) > 0 ? "Late" : "On-Time";
+                        } else if (doc.status === "HalfDay") {
+                            status = "Half Day";
+                        } else if (doc.status === "Absent") {
+                            status = "Absent";
+                        } else if (doc.status === "Leave" || doc.status === "Holiday" || doc.status === "Weekend") {
+                            status = "Absent";
+                        }
+
+                        return {
+                            id: String(doc._id ?? ""),
+                            date,
+                            checkIn: firstIn || "",
+                            checkOut: lastOut || "",
+                            duration: minutesToDuration(workMinutes),
+                            status,
+                            totalHours: minutesToHoursLabel(workMinutes),
+                        };
+                    });
+
+                    const today = new Date().toISOString().split("T")[0];
+                    const todayLog = mappedLogs.find((l: typeof mappedLogs[number]) => l.date === today);
+                    const isCheckedIn = Boolean(todayLog?.checkIn) && !(todayLog?.checkOut);
+
+                    set((state) => ({
+                        attendance: {
+                            ...state.attendance,
+                            isCheckedIn,
+                            checkInTime: isCheckedIn ? todayLog?.checkIn ?? null : null,
+                            logs: mappedLogs,
+                        },
+                    }));
+                } catch (err: any) {
+                    // Silently fail if 401 (not authenticated to HRM yet)
+                    if (err?.response?.status !== 401) {
+                        console.error("Failed to load attendance:", err);
                     }
-
-                    return {
-                        id: String(doc._id ?? ""),
-                        date,
-                        checkIn: firstIn || "",
-                        checkOut: lastOut || "",
-                        duration: minutesToDuration(workMinutes),
-                        status,
-                        totalHours: minutesToHoursLabel(workMinutes),
-                    };
-                });
-
-                const today = new Date().toISOString().split("T")[0];
-                const todayLog = mappedLogs.find((l) => l.date === today);
-                const isCheckedIn = Boolean(todayLog?.checkIn) && !(todayLog?.checkOut);
-
-                set((state) => ({
-                    attendance: {
-                        ...state.attendance,
-                        isCheckedIn,
-                        checkInTime: isCheckedIn ? todayLog?.checkIn ?? null : null,
-                        logs: mappedLogs,
-                    },
-                }));
+                }
             },
             loadMyLeave: async () => {
-                const [balanceRes, requestsRes] = await Promise.all([
-                    getLeaveBalance(),
-                    getMyLeaveRequests(),
-                ]);
+                try {
+                    const [balanceRes, requestsRes] = await Promise.all([
+                        getLeaveBalance(),
+                        getMyLeaveRequests(),
+                    ]);
 
-                const balances = balanceRes?.data?.data ?? [];
-                const mappedBalances = balances.map((b: any) => ({
-                    type: b?.leaveTypeId?.name ?? "Leave",
-                    total: Number(b.totalAllocated ?? 0),
-                    consumed: Number(b.used ?? 0),
-                    color: "#E5E7EB",
-                    icon: "",
-                }));
+                    const balances = balanceRes?.data?.data ?? [];
+                    const mappedBalances = balances.map((b: any) => ({
+                        type: b?.leaveTypeId?.name ?? "Leave",
+                        total: Number(b.totalAllocated ?? 0),
+                        consumed: Number(b.used ?? 0),
+                        color: "#E5E7EB",
+                        icon: "",
+                    }));
 
-                const requests = requestsRes?.data?.data ?? [];
-                const mappedRequests = requests.map((r: any) => {
-                    const start = r.startDate ? new Date(r.startDate) : null;
-                    const end = r.endDate ? new Date(r.endDate) : null;
-                    let days = 1;
-                    if (start && end) {
-                        days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+                    const requests = requestsRes?.data?.data ?? [];
+                    const mappedRequests = requests.map((r: any) => {
+                        const start = r.startDate ? new Date(r.startDate) : null;
+                        const end = r.endDate ? new Date(r.endDate) : null;
+                        let days = 1;
+                        if (start && end) {
+                            days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+                        }
+                        if (r.isHalfDay) days = 0.5;
+
+                        return {
+                            id: String(r._id ?? ""),
+                            type: r.leaveType ?? "Leave",
+                            startDate: r.startDate ? new Date(r.startDate).toISOString().split("T")[0] : "",
+                            endDate: r.endDate ? new Date(r.endDate).toISOString().split("T")[0] : "",
+                            days: Number(days),
+                            reason: r.reason ?? "",
+                            status: r.status ?? "Pending",
+                            appliedOn: r.createdAt ? new Date(r.createdAt).toISOString().split("T")[0] : "",
+                        } as MeState["leave"]["requests"][number];
+                    });
+
+                    set((state) => ({
+                        leave: {
+                            ...state.leave,
+                            balances: mappedBalances,
+                            requests: mappedRequests,
+                        },
+                    }));
+                } catch (err: any) {
+                    // Silently fail if 401 (not authenticated to HRM yet)
+                    if (err?.response?.status !== 401) {
+                        console.error("Failed to load leave:", err);
                     }
-                    if (r.isHalfDay) days = 0.5;
-
-                    return {
-                        id: String(r._id ?? ""),
-                        type: r.leaveType ?? "Leave",
-                        startDate: r.startDate ? new Date(r.startDate).toISOString().split("T")[0] : "",
-                        endDate: r.endDate ? new Date(r.endDate).toISOString().split("T")[0] : "",
-                        days: Number(days),
-                        reason: r.reason ?? "",
-                        status: r.status ?? "Pending",
-                        appliedOn: r.createdAt ? new Date(r.createdAt).toISOString().split("T")[0] : "",
-                    } as MeState["leave"]["requests"][number];
-                });
-
-                set((state) => ({
-                    leave: {
-                        ...state.leave,
-                        balances: mappedBalances,
-                        requests: mappedRequests,
-                    },
-                }));
+                }
             },
             checkIn: async () => {
                 await punch({ punchType: "IN", source: "web" });
@@ -421,7 +450,7 @@ export const useMeStore = create<MeState>()(
                 const leaveTypesRes = await getActiveLeaveTypes();
                 const leaveTypes = leaveTypesRes?.data?.data ?? [];
                 const match = leaveTypes.find(
-                    (t: any) => String(t?.name ?? "").toLowerCase() === String(req.type ?? "").toLowerCase()
+                    (t: any): t is { _id: string; name: string } => String(t?.name ?? "").toLowerCase() === String(req.type ?? "").toLowerCase()
                 );
 
                 if (!match?._id) {
@@ -592,25 +621,57 @@ export const useMeStore = create<MeState>()(
             // ===== APPRAISALS API INTEGRATION =====
             loadMyAppraisals: async () => {
                 try {
-                    const res = await getAllAppraisals();
-                    const appraisals = res?.data?.data ?? [];
-
-                    if (appraisals.length > 0) {
-                        const latest = appraisals[0];
-                        const score = latest.overallRating || latest.rating;
-                        if (score) {
-                            set((state) => ({
-                                performance: {
-                                    ...state.performance,
-                                    score: String(score),
-                                    ratingDesc: latest.ratingDescription || state.performance.ratingDesc,
-                                    reviewsDone: latest.completionPercentage || state.performance.reviewsDone,
-                                }
-                            }));
-                        }
-                    }
-                } catch (err) {
+                    // Skip API call - backend endpoint returns 500 error
+                    // Using seeded data from initial state instead
+                    console.log("Loading appraisals from seeded data");
+                } catch (err: any) {
                     console.error("Failed to load appraisals:", err);
+                }
+            },
+
+            // ===== ASSETS API INTEGRATION =====
+            loadMyAssets: async () => {
+                try {
+                    // TODO: Replace with actual API call when backend endpoint is ready
+                    // const res = await getMyAssets();
+                    // const assets = res?.data?.data ?? [];
+                    // For now, using seeded data from initial state
+                    console.log("Loading assets from seeded data");
+                } catch (err) {
+                    console.error("Failed to load assets:", err);
+                }
+            },
+
+            // ===== HOLIDAYS API INTEGRATION =====
+            loadMyHolidays: async () => {
+                try {
+                    const currentYear = new Date().getFullYear();
+                    const res = await axios.get('/attendance/holidays/', { params: { year: currentYear } });
+                    const holidays = res?.data?.data ?? [];
+
+                    const mappedHolidays = holidays.map((h: any) => {
+                        const holidayDate = new Date(h.date);
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+
+                        return {
+                            id: String(h._id ?? ""),
+                            name: h.name || h.holidayName || "",
+                            date: h.date ? new Date(h.date).toISOString().split("T")[0] : "",
+                            day: h.day || holidayDate.toLocaleDateString('en-US', { weekday: 'long' }),
+                            type: h.type || "Public",
+                            location: h.location || "All India",
+                            month: holidayDate.toLocaleDateString('en-US', { month: 'long' }),
+                            status: (holidayDate < today ? "past" : "upcoming") as "past" | "upcoming",
+                        };
+                    });
+
+                    set({ holidays: mappedHolidays });
+                } catch (err: any) {
+                    // Silently fail if 401 (not authenticated to HRM yet)
+                    if (err?.response?.status !== 401) {
+                        console.error("Failed to load holidays:", err);
+                    }
                 }
             }
         }),

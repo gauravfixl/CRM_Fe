@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { ListFilter, Search, Plus, Filter, MoreVertical, Trash2, UserPlus, CheckCircle2, AlertTriangle, Layers, ArrowRight, ShieldCheck } from "lucide-react";
@@ -68,7 +68,7 @@ export default function LeadBulkActionsPage() {
               ${selectedAction === action.id ? 'bg-zinc-900 border-zinc-900 text-white shadow-2xl' : 'bg-white border-zinc-100 text-zinc-900 hover:border-zinc-300'}
            `}
                         >
-                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform ${selectedAction === action.id ? 'bg-white/10' : action.bg}`}>
+                            <div className={`w-14 h-14 rounded-none flex items-center justify-center mb-6 group-hover:scale-110 transition-transform ${selectedAction === action.id ? 'bg-white/10' : action.bg}`}>
                                 <action.icon className={`h-6 w-6 ${selectedAction === action.id ? 'text-white' : action.color}`} />
                             </div>
                             <div className="flex justify-between items-center mb-2">
@@ -95,7 +95,7 @@ export default function LeadBulkActionsPage() {
                                 <div className="space-y-1.5 flex flex-col">
                                     <label className="text-xs font-black uppercase text-zinc-400 tracking-widest">Select Target Segment</label>
                                     <Select defaultValue="all">
-                                        <SelectTrigger className="h-12 rounded-2xl border-zinc-100 bg-zinc-50 font-bold">
+                                        <SelectTrigger className="h-12 rounded-none border-zinc-100 bg-zinc-50 font-bold">
                                             <SelectValue placeholder="Choose segment" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -115,7 +115,7 @@ export default function LeadBulkActionsPage() {
                                     <div className="space-y-1.5 flex flex-col">
                                         <label className="text-xs font-black uppercase text-zinc-400 tracking-widest">New Funnel Stage</label>
                                         <Select defaultValue="qualified">
-                                            <SelectTrigger className="h-12 rounded-2xl border-zinc-100 bg-zinc-50 font-bold">
+                                            <SelectTrigger className="h-12 rounded-none border-zinc-100 bg-zinc-50 font-bold">
                                                 <SelectValue placeholder="Choose stage" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -129,7 +129,7 @@ export default function LeadBulkActionsPage() {
                                 )}
 
                                 {selectedAction === 'delete' && (
-                                    <div className="p-6 bg-red-50 border border-red-100 rounded-3xl space-y-2">
+                                    <div className="p-6 bg-red-50 border border-red-100 rounded-none space-y-2">
                                         <p className="text-xs font-black text-red-600 uppercase tracking-widest">Crucial Warning</p>
                                         <p className="text-xs text-red-500 font-medium leading-relaxed">
                                             This will permanently delete records across the entire organizational database. This action cannot be undone.
@@ -139,7 +139,7 @@ export default function LeadBulkActionsPage() {
                             </div>
                             <DialogFooter className="pt-6">
                                 <CustomButton type="button" variant="ghost" onClick={() => setIsConfigOpen(false)}>Cancel Operation</CustomButton>
-                                <CustomButton type="submit" className={`px-10 rounded-2xl h-12 font-black uppercase tracking-tight
+                                <CustomButton type="submit" className={`px-10 rounded-none h-12 font-black uppercase tracking-tight
                    ${selectedAction === 'delete' ? 'bg-red-600 hover:bg-red-700 text-white shadow-red-200' : 'bg-zinc-900 hover:bg-zinc-800 text-white'}
                 `}>
                                     Confirm & Execute
@@ -150,7 +150,7 @@ export default function LeadBulkActionsPage() {
                 </Dialog>
 
                 <div className="bg-amber-50 border border-amber-100 p-8 rounded-[32px] flex gap-6 items-start">
-                    <div className="p-3 bg-white rounded-2xl text-amber-600 shadow-sm"><AlertTriangle className="h-6 w-6" /></div>
+                    <div className="p-3 bg-white rounded-none text-amber-600 shadow-sm"><AlertTriangle className="h-6 w-6" /></div>
                     <div className="space-y-4">
                         <h4 className="text-lg font-black text-amber-900 tracking-tight">Safety Protocol</h4>
                         <p className="text-sm text-amber-800/70 font-medium leading-relaxed max-w-2xl">

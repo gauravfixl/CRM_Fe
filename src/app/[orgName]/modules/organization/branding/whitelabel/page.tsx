@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Globe,
     Lock,
@@ -20,22 +20,48 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { SmallCard, SmallCardHeader, SmallCardContent } from "@/shared/components/custom/SmallCard";
+import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks";
 
 export default function WhiteLabelPage() {
     const [customDomain, setCustomDomain] = useState("portal.mycompany.com");
     const [isVerified, setIsVerified] = useState(false);
     const [removeBranding, setRemoveBranding] = useState(true);
     const [customLogin, setCustomLogin] = useState(true);
+    const [verifying, setVerifying] = useState(false);
 
-    const handleVerify = () => {
-        toast.promise(new Promise(res => setTimeout(res, 2000)), {
-            loading: "Checking DNS records...",
-            success: () => {
-                setIsVerified(true);
-                return "Domain verified successfully!";
-            },
-            error: "DNS propagation incomplete. Try again later."
-        });
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await getOrgAdminSettings();
+                const s = res?.data?.settings || res?.data?.data || res?.data || {};
+                const remoteDomain = s?.branding?.whitelabelDomain;
+                if (remoteDomain) {
+                    setCustomDomain(remoteDomain);
+                    setIsVerified(true);
+                }
+            } catch (err) {
+                // Silent â€” fall back to defaults
+            }
+        })();
+    }, []);
+
+    const handleVerify = async () => {
+        const trimmed = customDomain.trim();
+        if (!trimmed) {
+            toast.error("Domain cannot be empty");
+            return;
+        }
+        try {
+            setVerifying(true);
+            await updateOrgAdminSettings({ branding: { whitelabelDomain: trimmed } });
+            setIsVerified(true);
+            toast.success("Domain verified successfully!");
+        } catch (err: any) {
+            console.error("Failed to verify domain:", err);
+            toast.error(err?.response?.data?.message || "DNS propagation incomplete. Try again later.");
+        } finally {
+            setVerifying(false);
+        }
     };
 
     return (
@@ -55,7 +81,7 @@ export default function WhiteLabelPage() {
             </div>
 
             {/* DOMAIN CONFIG */}
-            <Card className="border border-border shadow-sm rounded-xl overflow-hidden relative group bg-card">
+            <Card className="border border-border shadow-sm rounded-none overflow-hidden relative group bg-card">
                 <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-primary via-indigo-500 to-purple-500" />
                 <CardHeader className="p-6 border-b border-border bg-muted/30">
                     <CardTitle className="text-lg font-bold flex items-center gap-2 text-foreground">
@@ -87,7 +113,7 @@ export default function WhiteLabelPage() {
                                 <Button
                                     className={`h-11 rounded-lg px-6 font-bold gap-2 shadow-sm transition-all active:scale-95 ${isVerified ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-primary hover:bg-primary/90 text-primary-foreground'}`}
                                     onClick={handleVerify}
-                                    disabled={isVerified}
+                                    disabled={isVerified || verifying}
                                 >
                                     {isVerified ? (
                                         <>
@@ -95,7 +121,7 @@ export default function WhiteLabelPage() {
                                         </>
                                     ) : (
                                         <>
-                                            <RefreshCw className="w-4 h-4" /> Verify DNS
+                                            <RefreshCw className="w-4 h-4" /> {verifying ? "Verifying..." : "Verify DNS"}
                                         </>
                                     )}
                                 </Button>
@@ -127,7 +153,7 @@ export default function WhiteLabelPage() {
                             )}
                         </div>
 
-                        <div className="w-full md:w-80 bg-muted/30 p-5 border border-border shadow-sm rounded-xl">
+                        <div className="w-full md:w-80 bg-muted/30 p-5 border border-border shadow-sm rounded-none">
                             <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4 border-b border-border pb-2">DNS Values</h4>
                             <div className="space-y-3">
                                 <div className="flex justify-between items-center text-sm">
@@ -154,7 +180,7 @@ export default function WhiteLabelPage() {
 
             {/* BRANDING REMOVAL */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <SmallCard className="bg-card shadow-sm border-border hover:border-primary/50 transition-colors rounded-xl overflow-hidden">
+                <SmallCard className="bg-card shadow-sm border-border hover:border-primary/50 transition-colors rounded-none overflow-hidden">
                     <SmallCardHeader className="flex flex-row items-center justify-between pb-2 bg-card">
                         <div className="space-y-1">
                             <CardTitle className="text-base font-bold text-foreground">Remove "Powered By"</CardTitle>
@@ -172,7 +198,7 @@ export default function WhiteLabelPage() {
                     </SmallCardHeader>
                 </SmallCard>
 
-                <SmallCard className="bg-card shadow-sm border-border hover:border-primary/50 transition-colors rounded-xl overflow-hidden">
+                <SmallCard className="bg-card shadow-sm border-border hover:border-primary/50 transition-colors rounded-none overflow-hidden">
                     <SmallCardHeader className="flex flex-row items-center justify-between pb-2 bg-card">
                         <div className="space-y-1">
                             <CardTitle className="text-base font-bold text-foreground">Custom Login URL</CardTitle>

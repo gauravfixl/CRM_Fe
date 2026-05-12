@@ -37,6 +37,7 @@ import { Separator } from "@/shared/components/ui/separator";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shared/components/ui/tooltip";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/ui/popover";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/shared/components/ui/alert-dialog";
 import { useHelpdeskStore, type Ticket } from "@/shared/data/helpdesk-store";
@@ -1039,52 +1040,48 @@ const SupportQueuePage = () => {
                 </DialogContent>
             </Dialog>
 
-            {/* Edit Ticket Dialog */}
-            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent className="max-w-xl p-0 overflow-hidden rounded-2xl">
-                    <DialogHeader className="bg-slate-50 border-b border-slate-200 p-6">
-                        <DialogTitle className="text-lg font-bold text-slate-900 uppercase">Edit Ticket</DialogTitle>
-                        <DialogDescription className="text-xs text-slate-500">Update subject, description, category and priority.</DialogDescription>
-                    </DialogHeader>
-                    <div className="p-6 space-y-4">
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Subject</Label>
-                            <Input value={editForm.subject || ""} onChange={e => setEditForm({ ...editForm, subject: e.target.value })} className="h-11 rounded-xl" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Description</Label>
-                            <Textarea value={editForm.description || ""} onChange={e => setEditForm({ ...editForm, description: e.target.value })} className="min-h-[120px] rounded-xl" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Category</Label>
-                                <Select value={editForm.category} onValueChange={v => setEditForm({ ...editForm, category: v })}>
-                                    <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        {categories.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Priority</Label>
-                                <Select value={editForm.priority} onValueChange={v => setEditForm({ ...editForm, priority: v as any })}>
-                                    <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Urgent">Urgent</SelectItem>
-                                        <SelectItem value="High">High</SelectItem>
-                                        <SelectItem value="Medium">Medium</SelectItem>
-                                        <SelectItem value="Low">Low</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
+            {/* Edit Ticket Side Sheet */}
+            <SideFormSheet
+                open={isEditDialogOpen}
+                onOpenChange={setIsEditDialogOpen}
+                title="Edit Ticket"
+                description="Update subject, description, category and priority."
+                icon={<Pencil size={20} />}
+                accentColor="#7c3aed"
+                width="lg"
+                submitLabel="Save Changes"
+                onSubmit={(e) => { e.preventDefault(); saveEdit(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Subject" required>
+                        <Input value={editForm.subject || ""} onChange={e => setEditForm({ ...editForm, subject: e.target.value })} />
+                    </Field>
+                    <Field label="Description">
+                        <Textarea value={editForm.description || ""} onChange={e => setEditForm({ ...editForm, description: e.target.value })} className="min-h-[120px]" />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Category">
+                            <Select value={editForm.category} onValueChange={v => setEditForm({ ...editForm, category: v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {categories.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Priority">
+                            <Select value={editForm.priority} onValueChange={v => setEditForm({ ...editForm, priority: v as any })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Urgent">Urgent</SelectItem>
+                                    <SelectItem value="High">High</SelectItem>
+                                    <SelectItem value="Medium">Medium</SelectItem>
+                                    <SelectItem value="Low">Low</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
                     </div>
-                    <DialogFooter className="p-4 bg-slate-50 border-t border-slate-200">
-                        <Button variant="ghost" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={saveEdit} className="bg-indigo-600 hover:bg-indigo-700 text-white">Save Changes</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                </div>
+            </SideFormSheet>
 
             {/* Bulk Action Dialog */}
             <Dialog open={isBulkActionOpen} onOpenChange={setIsBulkActionOpen}>

@@ -66,6 +66,7 @@ import {
     DialogDescription,
     DialogFooter,
 } from "@/shared/components/ui/dialog"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import {
     Popover,
     PopoverContent,
@@ -910,64 +911,55 @@ const PayslipsPage = () => {
                     </DialogContent>
                 </Dialog>
 
-                {/* ── Email Preview Dialog ─────────────── */}
-                <Dialog open={emailOpen} onOpenChange={setEmailOpen}>
-                    <DialogContent className="max-w-xl bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 mb-2">
-                                <Mail size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Email preview</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Review before sending to {currentPayslip?.employeeName}
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">To</p>
-                                <p className="text-sm font-semibold text-slate-800 mt-1">
-                                    {currentPayslip?.employeeName} <span className="text-slate-400 font-normal">&lt;{currentPayslip?.email ?? `${currentPayslip?.employeeId?.toLowerCase()}@fixl.com`}&gt;</span>
-                                </p>
-                            </div>
-                            <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Subject</p>
-                                <p className="text-sm font-semibold text-slate-800 mt-1">Your payslip for {currentPayslip?.month} — {payslipTemplate.companyName}</p>
-                            </div>
-                            <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                                <p className="text-sm text-slate-700 leading-relaxed">
-                                    Dear {currentPayslip?.employeeName},<br /><br />
-                                    Please find attached your payslip for <strong>{currentPayslip?.month}</strong>. Your net salary of
-                                    {" "}<span className="font-bold text-emerald-600">{formatINR(currentPayslip?.netAmount)}</span>{" "}
-                                    has been credited to your registered bank account {currentPayslip?.bankAccount ? `(${currentPayslip.bankAccount})` : ""}.<br /><br />
-                                    For any queries, please contact HR.<br /><br />
-                                    Regards,<br />
-                                    <strong>{payslipTemplate.companyName} — HR Team</strong>
-                                </p>
-                            </div>
-                            <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                                <FileText size={16} className="text-blue-600" />
-                                <span className="text-xs font-semibold text-blue-900">
-                                    Payslip_{currentPayslip?.empCode ?? currentPayslip?.employeeId}_{currentPayslip?.month.replace(/\s+/g, "_")}.html
-                                </span>
-                            </div>
+                {/* Email Preview Sheet */}
+                <SideFormSheet
+                    open={emailOpen}
+                    onOpenChange={setEmailOpen}
+                    title="Email preview"
+                    description={currentPayslip ? `Review before sending to ${currentPayslip.employeeName}` : undefined}
+                    icon={<Mail size={20} />}
+                    accentColor="#059669"
+                    width="lg"
+                    submitLabel="Send email"
+                    onSubmit={(e) => {
+                        e.preventDefault()
+                        if (currentPayslip) {
+                            updatePayslipStatus(currentPayslip.id, "Distributed")
+                            toast({ title: "Email sent", description: `Payslip emailed to ${currentPayslip.employeeName}.` })
+                        }
+                        setEmailOpen(false)
+                    }}
+                >
+                    <div className="space-y-3">
+                        <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">To</p>
+                            <p className="text-sm font-semibold text-slate-800 mt-1">
+                                {currentPayslip?.employeeName} <span className="text-slate-400 font-normal">&lt;{currentPayslip?.email ?? `${currentPayslip?.employeeId?.toLowerCase()}@fixl.com`}&gt;</span>
+                            </p>
                         </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setEmailOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button
-                                onClick={() => {
-                                    if (currentPayslip) {
-                                        updatePayslipStatus(currentPayslip.id, "Distributed")
-                                        toast({ title: "Email sent", description: `Payslip emailed to ${currentPayslip.employeeName}.` })
-                                    }
-                                    setEmailOpen(false)
-                                }}
-                                className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg h-10 px-5 font-bold text-xs border-none"
-                            >
-                                <Send size={13} className="mr-1.5" /> Send email
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                        <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Subject</p>
+                            <p className="text-sm font-semibold text-slate-800 mt-1">Your payslip for {currentPayslip?.month} — {payslipTemplate.companyName}</p>
+                        </div>
+                        <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                            <p className="text-sm text-slate-700 leading-relaxed">
+                                Dear {currentPayslip?.employeeName},<br /><br />
+                                Please find attached your payslip for <strong>{currentPayslip?.month}</strong>. Your net salary of
+                                {" "}<span className="font-bold text-emerald-600">{formatINR(currentPayslip?.netAmount)}</span>{" "}
+                                has been credited to your registered bank account {currentPayslip?.bankAccount ? `(${currentPayslip.bankAccount})` : ""}.<br /><br />
+                                For any queries, please contact HR.<br /><br />
+                                Regards,<br />
+                                <strong>{payslipTemplate.companyName} — HR Team</strong>
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                            <FileText size={16} className="text-blue-600" />
+                            <span className="text-xs font-semibold text-blue-900">
+                                Payslip_{currentPayslip?.empCode ?? currentPayslip?.employeeId}_{currentPayslip?.month.replace(/\s+/g, "_")}.html
+                            </span>
+                        </div>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── Template Sheet ─────────────────────── */}
                 <Sheet open={templateOpen} onOpenChange={setTemplateOpen}>
@@ -1053,55 +1045,37 @@ const PayslipsPage = () => {
                     </SheetContent>
                 </Sheet>
 
-                {/* ── Add Dialog ───────────────────────── */}
-                <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-                    <DialogContent className="max-w-2xl bg-white rounded-2xl p-0 font-sans max-h-[90vh] overflow-hidden flex flex-col">
-                        <DialogHeader className="p-6 border-b border-slate-100 space-y-1">
-                            <div className="h-10 w-10 bg-[#EC4899]/10 rounded-xl flex items-center justify-center text-[#EC4899] mb-2">
-                                <Plus size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Create manual payslip</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Use for adjustments or off-cycle payments. Prefer "Generate from run" for normal runs.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <ScrollArea className="flex-1 p-6">
-                            <PayslipFormFields form={newPayslipForm} onChange={setNewPayslipForm as any} />
-                        </ScrollArea>
-                        <DialogFooter className="p-4 border-t border-slate-100 bg-slate-50/50 gap-2">
-                            <Button variant="ghost" onClick={() => setAddDialogOpen(false)} className="h-10 px-5 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleAddManual} className="bg-[#EC4899] hover:bg-[#db2777] text-white rounded-lg h-10 px-6 font-bold text-xs border-none">
-                                Create payslip
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                {/* Add Manual Payslip Sheet */}
+                <SideFormSheet
+                    open={addDialogOpen}
+                    onOpenChange={setAddDialogOpen}
+                    title="Create manual payslip"
+                    description="Use for adjustments or off-cycle payments. Prefer &quot;Generate from run&quot; for normal runs."
+                    icon={<Plus size={20} />}
+                    accentColor="#4f46e5"
+                    width="xl"
+                    submitLabel="Create payslip"
+                    onSubmit={(e) => { e.preventDefault(); handleAddManual(); }}
+                >
+                    <PayslipFormFields form={newPayslipForm} onChange={setNewPayslipForm as any} />
+                </SideFormSheet>
 
-                {/* ── Edit Dialog ────────────────────── */}
-                <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-                    <DialogContent className="max-w-2xl bg-white rounded-2xl p-0 font-sans max-h-[90vh] overflow-hidden flex flex-col">
-                        <DialogHeader className="p-6 border-b border-slate-100 space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <Edit size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Edit payslip</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                {editForm?.employeeName} • {editForm?.month}
-                            </DialogDescription>
-                        </DialogHeader>
-                        {editForm && (
-                            <ScrollArea className="flex-1 p-6">
-                                <PayslipFormFields form={editForm} onChange={(v) => setEditForm({ ...editForm, ...v } as Payslip)} />
-                            </ScrollArea>
-                        )}
-                        <DialogFooter className="p-4 border-t border-slate-100 bg-slate-50/50 gap-2">
-                            <Button variant="ghost" onClick={() => setEditDialogOpen(false)} className="h-10 px-5 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleSaveEdit} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-6 font-bold text-xs border-none">
-                                Save changes
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                {/* Edit Payslip Sheet */}
+                <SideFormSheet
+                    open={editDialogOpen}
+                    onOpenChange={setEditDialogOpen}
+                    title="Edit payslip"
+                    description={editForm ? `${editForm.employeeName} • ${editForm.month}` : undefined}
+                    icon={<Edit size={20} />}
+                    accentColor="#7c3aed"
+                    width="xl"
+                    submitLabel="Save changes"
+                    onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }}
+                >
+                    {editForm && (
+                        <PayslipFormFields form={editForm} onChange={(v) => setEditForm({ ...editForm, ...v } as Payslip)} />
+                    )}
+                </SideFormSheet>
 
                 {/* ── Delete Confirm ───────────────────── */}
                 <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
@@ -1166,97 +1140,82 @@ const PayslipsPage = () => {
                     </DialogContent>
                 </Dialog>
 
-                {/* ── Password Dialog ───── */}
-                <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 mb-2">
-                                <KeyRound size={20} />
+                {/* Password Sheet */}
+                <SideFormSheet
+                    open={passwordDialogOpen}
+                    onOpenChange={setPasswordDialogOpen}
+                    title="Password protection"
+                    description={passwordTarget ? `Protect ${passwordTarget.employeeName}'s payslip PDF. Password hint is shown in the email.` : undefined}
+                    icon={<KeyRound size={20} />}
+                    accentColor="#d97706"
+                    width="md"
+                    submitLabel={passwordEnabled ? "Enable protection" : "Remove protection"}
+                    onSubmit={(e) => { e.preventDefault(); handleSavePassword(); }}
+                >
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
+                            <div>
+                                <Label className="text-xs font-bold text-slate-700">Enable password</Label>
+                                <p className="text-[11px] font-medium text-slate-500 mt-0.5">Employee must enter password to open</p>
                             </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Password protection</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Protect {passwordTarget?.employeeName}'s payslip PDF. Password hint is shown in the email.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
-                                <div>
-                                    <Label className="text-xs font-bold text-slate-700">Enable password</Label>
-                                    <p className="text-[11px] font-medium text-slate-500 mt-0.5">Employee must enter password to open</p>
-                                </div>
-                                <Switch checked={passwordEnabled} onCheckedChange={setPasswordEnabled} className="data-[state=checked]:bg-[#8B5CF6]" />
-                            </div>
-                            {passwordEnabled && (
-                                <div className="space-y-1.5">
-                                    <Label className="text-[11px] font-semibold text-slate-600">Password hint</Label>
-                                    <Select value={passwordHint} onValueChange={setPasswordHint}>
-                                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="PAN number">PAN number (all uppercase)</SelectItem>
-                                            <SelectItem value="DOB">Date of birth (DDMMYYYY)</SelectItem>
-                                            <SelectItem value="Employee code">Employee code</SelectItem>
-                                            <SelectItem value="First 4 PAN + DOB">First 4 PAN + DOB</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <p className="text-[10px] font-medium text-slate-500 italic">Actual password is derived from employee data — hint is what appears in the email.</p>
-                                </div>
-                            )}
+                            <Switch checked={passwordEnabled} onCheckedChange={setPasswordEnabled} className="data-[state=checked]:bg-[#8B5CF6]" />
                         </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setPasswordDialogOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleSavePassword} className="bg-amber-500 hover:bg-amber-600 text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                <Shield size={13} className="mr-1.5" /> {passwordEnabled ? "Enable protection" : "Remove protection"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                        {passwordEnabled && (
+                            <Field label="Password hint" hint="Actual password is derived from employee data — hint is what appears in the email.">
+                                <Select value={passwordHint} onValueChange={setPasswordHint}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="PAN number">PAN number (all uppercase)</SelectItem>
+                                        <SelectItem value="DOB">Date of birth (DDMMYYYY)</SelectItem>
+                                        <SelectItem value="Employee code">Employee code</SelectItem>
+                                        <SelectItem value="First 4 PAN + DOB">First 4 PAN + DOB</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                        )}
+                    </div>
+                </SideFormSheet>
 
-                {/* ── Bulk Template ───── */}
-                <Dialog open={bulkTemplateDialogOpen} onOpenChange={setBulkTemplateDialogOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <Palette size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Apply template to {selectedIds.length}</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                All selected payslips will switch to this design when downloaded/printed.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-2">
-                            {(["modern", "classic", "minimal"] as const).map((design) => (
-                                <button
-                                    key={design}
-                                    onClick={() => setBulkTemplateDesign(design)}
-                                    className={cn("w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all",
-                                        bulkTemplateDesign === design ? "border-[#8B5CF6] bg-[#8B5CF6]/5" : "border-slate-200 bg-white hover:border-slate-300")}
-                                >
-                                    <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center shrink-0",
-                                        design === "modern" ? "bg-gradient-to-br from-[#8B5CF6] to-[#EC4899] text-white" :
-                                            design === "classic" ? "bg-slate-800 text-white" :
-                                                "bg-slate-100 text-slate-600")}>
-                                        <Palette size={16} />
+                {/* Bulk Template Sheet */}
+                <SideFormSheet
+                    open={bulkTemplateDialogOpen}
+                    onOpenChange={setBulkTemplateDialogOpen}
+                    title={`Apply template to ${selectedIds.length}`}
+                    description="All selected payslips will switch to this design when downloaded/printed."
+                    icon={<Palette size={20} />}
+                    accentColor="#4f46e5"
+                    width="md"
+                    submitLabel={`Apply to ${selectedIds.length}`}
+                    onSubmit={(e) => { e.preventDefault(); handleBulkSetTemplate(); }}
+                >
+                    <div className="space-y-2">
+                        {(["modern", "classic", "minimal"] as const).map((design) => (
+                            <button
+                                key={design}
+                                type="button"
+                                onClick={() => setBulkTemplateDesign(design)}
+                                className={cn("w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all",
+                                    bulkTemplateDesign === design ? "border-[#8B5CF6] bg-[#8B5CF6]/5" : "border-slate-200 bg-white hover:border-slate-300")}
+                            >
+                                <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center shrink-0",
+                                    design === "modern" ? "bg-gradient-to-br from-[#8B5CF6] to-[#EC4899] text-white" :
+                                        design === "classic" ? "bg-slate-800 text-white" :
+                                            "bg-slate-100 text-slate-600")}>
+                                    <Palette size={16} />
+                                </div>
+                                <div className="text-left flex-1">
+                                    <div className="text-sm font-bold text-slate-900 capitalize">{design}</div>
+                                    <div className="text-[11px] font-medium text-slate-500">
+                                        {design === "modern" ? "Colorful gradient header with emphasis on net pay" :
+                                            design === "classic" ? "Traditional dark header, formal layout" :
+                                                "Minimal grayscale, easy to read"}
                                     </div>
-                                    <div className="text-left flex-1">
-                                        <div className="text-sm font-bold text-slate-900 capitalize">{design}</div>
-                                        <div className="text-[11px] font-medium text-slate-500">
-                                            {design === "modern" ? "Colorful gradient header with emphasis on net pay" :
-                                                design === "classic" ? "Traditional dark header, formal layout" :
-                                                    "Minimal grayscale, easy to read"}
-                                        </div>
-                                    </div>
-                                    {bulkTemplateDesign === design && <Check size={16} className="text-[#8B5CF6] shrink-0" />}
-                                </button>
-                            ))}
-                        </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setBulkTemplateDialogOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleBulkSetTemplate} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                Apply to {selectedIds.length}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                                </div>
+                                {bulkTemplateDesign === design && <Check size={16} className="text-[#8B5CF6] shrink-0" />}
+                            </button>
+                        ))}
+                    </div>
+                </SideFormSheet>
 
                 {/* ── Compare Dialog ───── */}
                 <Dialog open={compareOpen} onOpenChange={setCompareOpen}>

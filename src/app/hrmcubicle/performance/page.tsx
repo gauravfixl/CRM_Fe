@@ -36,6 +36,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Label } from "@/shared/components/ui/label";
 import { Input } from "@/shared/components/ui/input";
 import { Textarea } from "@/shared/components/ui/textarea";
@@ -591,108 +592,113 @@ const PerformanceOverviewPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* 🎯 New Objective Dialog */}
-      <Dialog open={isNewObjectiveOpen} onOpenChange={setIsNewObjectiveOpen}>
-        <DialogContent style={{ zoom: "90%" }} className="bg-white rounded-[2.5rem] border-none p-10 max-w-lg shadow-3xl text-start font-sans">
-          <DialogHeader className="space-y-5 text-start">
-            <div className="h-14 w-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 shadow-inner border border-indigo-100">
-              <Plus size={28} />
-            </div>
-            <div>
-              <DialogTitle className="text-2xl font-bold tracking-tight uppercase text-slate-900">Define performance goal</DialogTitle>
-              <DialogDescription className="font-semibold text-slate-500">Establish a new measurable objective for this cycle.</DialogDescription>
-            </div>
-          </DialogHeader>
-          <div className="py-8 space-y-8">
-            <div className="space-y-3">
-              <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Goal identification *</Label>
+      {/* 🎯 New Objective SideFormSheet */}
+      <SideFormSheet
+        open={isNewObjectiveOpen}
+        onOpenChange={setIsNewObjectiveOpen}
+        title="Define Performance Goal"
+        description="Establish a new measurable objective for this cycle."
+        icon={<Plus size={20} />}
+        accentColor="#4f46e5"
+        width="md"
+        submitLabel="Submit for Approval"
+        onSubmit={(e) => { e.preventDefault(); handleCreateGoal(); }}
+      >
+        <div className="space-y-4">
+          <Field label="Goal Identification" required>
+            <Input
+              placeholder="e.g. Lead the Q2 Security Audit"
+              value={newGoal.title}
+              onChange={e => setNewGoal({ ...newGoal, title: e.target.value })}
+            />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Classification">
+              <Select value={newGoal.category} onValueChange={v => setNewGoal({ ...newGoal, category: v as any })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Technical">Technical</SelectItem>
+                  <SelectItem value="Leadership">Leadership</SelectItem>
+                  <SelectItem value="Soft Skills">Soft Skills</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Timeline">
               <Input
-                className="rounded-2xl bg-slate-50 border-none h-14 font-semibold px-5 shadow-sm focus:ring-2 focus:ring-indigo-100 transition-all text-sm"
-                placeholder="e.g. Lead the Q2 Security Audit"
-                value={newGoal.title}
-                onChange={e => setNewGoal({ ...newGoal, title: e.target.value })}
+                type="date"
+                value={newGoal.dueDate}
+                onChange={e => setNewGoal({ ...newGoal, dueDate: e.target.value })}
               />
-            </div>
-            <div className="grid grid-cols-2 gap-5">
-              <div className="space-y-3">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Classification</Label>
-                <Select value={newGoal.category} onValueChange={v => setNewGoal({ ...newGoal, category: v as any })}>
-                  <SelectTrigger className="rounded-2xl bg-slate-50 border-none h-14 px-5 shadow-sm text-sm font-semibold">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border-slate-100 rounded-xl">
-                    <SelectItem value="Technical" className="font-semibold text-xs">TECHNICAL</SelectItem>
-                    <SelectItem value="Leadership" className="font-semibold text-xs">LEADERSHIP</SelectItem>
-                    <SelectItem value="Soft Skills" className="font-semibold text-xs">SOFT SKILLS</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-3">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Timeline</Label>
-                <Input
-                  type="date"
-                  className="rounded-2xl bg-slate-50 border-none h-14 px-5 shadow-sm text-sm font-semibold"
-                  value={newGoal.dueDate}
-                  onChange={e => setNewGoal({ ...newGoal, dueDate: e.target.value })}
-                />
-              </div>
-            </div>
-            <div className="space-y-3">
-              <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Impact weightage (%)</Label>
-              <Input
-                type="number"
-                className="rounded-2xl bg-slate-50 border-none h-14 px-5 shadow-sm text-sm font-semibold"
-                value={newGoal.weightage}
-                onChange={e => setNewGoal({ ...newGoal, weightage: parseInt(e.target.value) })}
-              />
-            </div>
+            </Field>
           </div>
-          <DialogFooter className="gap-4 pt-4">
-            <Button variant="ghost" className="rounded-xl h-12 font-bold px-8 text-slate-400 hover:text-rose-500 uppercase text-[10px] tracking-widest" onClick={() => { setIsNewObjectiveOpen(false); toast({ title: "Changes Discarded", description: "Goal creation aborted." }); }}>Discard</Button>
-            <Button className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 font-bold shadow-xl shadow-indigo-100 border-none uppercase text-[10px] tracking-widest transition-all" onClick={handleCreateGoal}>Submit for Approval</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <Field label="Impact Weightage (%)">
+            <Input
+              type="number"
+              value={newGoal.weightage}
+              onChange={e => setNewGoal({ ...newGoal, weightage: parseInt(e.target.value) })}
+            />
+          </Field>
+        </div>
+      </SideFormSheet>
 
-      {/* ⭐ Complete Assessment Dialog */}
-      <Dialog open={isAssessmentOpen} onOpenChange={setIsAssessmentOpen}>
-        <DialogContent style={{ zoom: "90%" }} className="bg-white rounded-[2.5rem] border-none p-10 max-w-xl shadow-3xl text-start font-sans">
-          <DialogHeader className="space-y-5 text-start">
-            <div className="h-16 w-16 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 shadow-inner border border-amber-100">
-              <Star size={32} />
+      {/* ⭐ Complete Assessment SideFormSheet */}
+      <SideFormSheet
+        open={isAssessmentOpen}
+        onOpenChange={setIsAssessmentOpen}
+        title="Self-Assessment Cycle"
+        description="Your input is critical for performance calibration and professional growth trajectory."
+        icon={<Star size={20} />}
+        accentColor="#d97706"
+        width="lg"
+        onSubmit={(e) => {
+          e.preventDefault();
+          setIsAssessmentOpen(false);
+          toast({ title: "Assessment Submitted", description: "Your self-review has been queued for manager calibration." });
+        }}
+        footer={
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 px-5 rounded-lg border-[#E5E7EB] text-[#374151] hover:bg-[#F3F4F6]"
+              onClick={() => { setIsAssessmentOpen(false); toast({ title: "Draft Saved", description: "Your reflections are saved locally." }); }}
+            >
+              Save Draft
+            </Button>
+            <Button
+              type="button"
+              className="h-10 px-5 rounded-lg text-white"
+              style={{ backgroundColor: "#d97706", boxShadow: "0 4px 12px #d9770633" }}
+              onClick={() => {
+                setIsAssessmentOpen(false);
+                toast({ title: "Assessment Submitted", description: "Your self-review has been queued for manager calibration." });
+              }}
+            >
+              Confirm Submission
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-[13px] font-semibold text-[#374151]">Overall Cycle Progress</span>
+              <span className="text-base font-bold text-indigo-600">75%</span>
             </div>
-            <div>
-              <DialogTitle className="text-3xl font-bold tracking-tight uppercase text-slate-900">Self-assessment cycle</DialogTitle>
-              <DialogDescription className="text-slate-500 font-semibold text-base">Your input is critical for performance calibration and professional growth trajectory.</DialogDescription>
-            </div>
-          </DialogHeader>
-          <div className="py-10 space-y-10">
-            <div className="space-y-5">
-              <div className="flex justify-between items-center px-1">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Overall cycle progress</Label>
-                <span className="text-xl font-black text-indigo-600">75%</span>
-              </div>
-              <Progress value={75} className="h-3 bg-slate-50 rounded-full shadow-inner" />
-            </div>
-            <div className="space-y-4">
-              <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 text-start block">Reflections on Q1 achievements *</Label>
-              <Textarea
-                className="rounded-[2rem] bg-slate-50 border-none min-h-[200px] p-8 font-semibold placeholder:text-slate-300 resize-none shadow-inner focus:ring-2 focus:ring-indigo-100 transition-all text-sm leading-relaxed"
-                placeholder="Highlight your key contributions, obstacles overcome, and areas where you’ve grown..."
-                value={assessment.reflections}
-                onChange={(e) => setAssessment({ ...assessment, reflections: e.target.value })}
-              />
-            </div>
+            <Progress value={75} className="h-2.5 bg-slate-100 rounded-full" />
           </div>
-          <DialogFooter className="gap-5">
-            <Button variant="outline" className="rounded-xl h-12 font-bold px-10 border-slate-100 text-slate-400 hover:bg-slate-50 uppercase text-[10px] tracking-widest" onClick={() => { setIsAssessmentOpen(false); toast({ title: "Draft Saved", description: "Your reflections are saved locally." }); }}>Save Draft</Button>
-            <Button className="flex-1 bg-slate-900 hover:bg-indigo-600 text-white rounded-xl h-12 font-bold shadow-xl border-none uppercase text-[10px] tracking-widest transition-all" onClick={() => {
-              setIsAssessmentOpen(false);
-              toast({ title: "Assessment Submitted", description: "Your self-review has been queued for manager calibration." });
-            }}>Confirm Submission</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <Field label="Reflections on Q1 Achievements" required>
+            <Textarea
+              className="min-h-[180px]"
+              placeholder="Highlight your key contributions, obstacles overcome, and areas where you've grown..."
+              value={assessment.reflections}
+              onChange={(e) => setAssessment({ ...assessment, reflections: e.target.value })}
+            />
+          </Field>
+        </div>
+      </SideFormSheet>
     </div>
 
   );

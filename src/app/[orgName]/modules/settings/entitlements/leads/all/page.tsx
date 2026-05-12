@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useMemo } from "react"
+import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import {
     Search,
@@ -418,11 +419,13 @@ export default function MasterLeadViewPage() {
                             Refresh
                         </Button>
                         <Button
-                            onClick={() => router.push(`/${params.orgName}/modules/settings/entitlements/leads/add`)}
+                            asChild
                             className="h-8 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium px-3 shadow-sm active:scale-95"
                         >
-                            <UserPlus className="w-3.5 h-3.5 mr-2" />
-                            New Lead
+                            <Link href={`/${orgName}/modules/settings/entitlements/leads/add`}>
+                                <UserPlus className="w-3.5 h-3.5 mr-2" />
+                                New Lead
+                            </Link>
                         </Button>
                     </div>
                 </div>

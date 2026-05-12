@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Mail,
     Upload,
@@ -19,20 +19,45 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
+import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks";
 
 export default function EmailBrandingPage() {
     const [template, setTemplate] = useState("welcome");
     const [headerImage, setHeaderImage] = useState<string | null>(null);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
-    const [footerText, setFooterText] = useState("© 2026 Fixl Solutions. All rights reserved.");
+    const [footerText, setFooterText] = useState("Â© 2026 Fixl Solutions. All rights reserved.");
     const [primaryColor, setPrimaryColor] = useState("#2563eb");
+    const [saving, setSaving] = useState(false);
 
-    const handleSave = () => {
-        toast.promise(new Promise(res => setTimeout(res, 1200)), {
-            loading: "Saving email template configurations...",
-            success: "Email branding updated successfully",
-            error: "Failed to save changes"
-        });
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await getOrgAdminSettings();
+                const s = res?.data?.settings || res?.data?.data || res?.data || {};
+                if (s?.branding?.emailFooter) setFooterText(s.branding.emailFooter);
+                if (s?.branding?.primaryColor) setPrimaryColor(s.branding.primaryColor);
+            } catch (err) {
+                // Silent â€” fall back to defaults
+            }
+        })();
+    }, []);
+
+    const handleSave = async () => {
+        try {
+            setSaving(true);
+            await updateOrgAdminSettings({
+                branding: {
+                    emailFooter: footerText,
+                    primaryColor,
+                },
+            });
+            toast.success("Email branding updated successfully");
+        } catch (err: any) {
+            console.error("Failed to save email branding:", err);
+            toast.error(err?.response?.data?.message || "Failed to save changes");
+        } finally {
+            setSaving(false);
+        }
     };
 
     const handleTestEmail = () => {
@@ -78,9 +103,10 @@ export default function EmailBrandingPage() {
                     <Button
                         className="h-9 bg-primary hover:bg-primary/90 text-primary-foreground gap-2 font-bold shadow-lg shadow-primary/20 transition-all active:scale-95"
                         onClick={handleSave}
+                        disabled={saving}
                     >
                         <CheckCircle2 className="w-4 h-4" />
-                        Save Changes
+                        {saving ? "Saving..." : "Save Changes"}
                     </Button>
                 </div>
             </div>
@@ -180,7 +206,7 @@ export default function EmailBrandingPage() {
                         </div>
                     </div>
 
-                    <Card className="border-none shadow-xl bg-zinc-200 dark:bg-zinc-900/50 h-full min-h-[600px] rounded-xl flex flex-col items-center pt-14 pb-8 px-4 relative">
+                    <Card className="border-none shadow-xl bg-zinc-200 dark:bg-zinc-900/50 h-full min-h-[600px] rounded-none flex flex-col items-center pt-14 pb-8 px-4 relative">
 
                         {/* EMAIL CANVAS - Theme Aware Preview */}
                         <div className="bg-white dark:bg-zinc-950 w-full max-w-md shadow-2xl rounded-sm overflow-hidden flex flex-col border dark:border-zinc-800 transition-colors">
@@ -240,9 +266,9 @@ export default function EmailBrandingPage() {
                                 <p>{footerText}</p>
                                 <div className="mt-2 flex gap-3 justify-center opacity-70">
                                     <a href="#" className="hover:underline">Privacy Policy</a>
-                                    <span>•</span>
+                                    <span>â€¢</span>
                                     <a href="#" className="hover:underline">Terms of Service</a>
-                                    <span>•</span>
+                                    <span>â€¢</span>
                                     <a href="#" className="hover:underline">Unsubscribe</a>
                                 </div>
                             </div>

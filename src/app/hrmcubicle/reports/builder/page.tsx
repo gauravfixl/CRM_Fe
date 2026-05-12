@@ -6,6 +6,7 @@ import {
   ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, Download,
   Filter, GripVertical, Play, Plus, Save, Trash2, X
 } from "lucide-react"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import { Button } from "@/shared/components/ui/button"
 import { Card } from "@/shared/components/ui/card"
 import { Badge } from "@/shared/components/ui/badge"
@@ -582,67 +583,55 @@ const CustomReportBuilderPage = () => {
       </Dialog>
 
       {/* Save Dialog */}
-      <Dialog open={saveDialogOpen} onOpenChange={(open) => { setSaveDialogOpen(open); if (!open) setReportNameError("") }}>
-        <DialogContent className="max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-black text-slate-900">Save Report</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs font-bold text-slate-500 mb-1 block">
-                Report Name <span className="text-red-500">*</span>
-              </label>
-              <Input
-                value={reportName}
-                onChange={(e) => {
-                  setReportName(e.target.value)
-                  if (reportNameError) setReportNameError(validateReportName(e.target.value))
-                }}
-                onBlur={() => setReportNameError(validateReportName(reportName))}
-                placeholder="Enter report name (3-80 chars)..."
-                maxLength={80}
-                className={cn("rounded-xl", reportNameError && "border-red-400 focus-visible:ring-red-300")}
-              />
-              <div className="flex items-center justify-between mt-1">
-                {reportNameError ? (
-                  <p className="text-[11px] text-red-500 font-medium">{reportNameError}</p>
-                ) : (
-                  <p className="text-[11px] text-slate-400">Min 3, max 80 characters.</p>
-                )}
-                <p className="text-[10px] text-slate-400">{reportName.length}/80</p>
-              </div>
-            </div>
-            <div>
-              <label className="text-xs font-bold text-slate-500 mb-1 block">Schedule</label>
-              <Select value={reportSchedule} onValueChange={(v) => setReportSchedule(v as typeof reportSchedule)}>
-                <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No Schedule</SelectItem>
-                  <SelectItem value="daily">Daily</SelectItem>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-[11px] text-slate-500">
-              <p className="font-bold text-slate-600 mb-1">Saving with:</p>
-              <p>• Source: <span className="font-semibold text-slate-700 capitalize">{selectedSource || "—"}</span></p>
-              <p>• Columns: <span className="font-semibold text-slate-700">{selectedColumns.length}</span></p>
-              <p>• Filters: <span className="font-semibold text-slate-700">{filters.length}</span></p>
-            </div>
+      <SideFormSheet
+        open={saveDialogOpen}
+        onOpenChange={(open) => { setSaveDialogOpen(open); if (!open) setReportNameError("") }}
+        title="Save Report"
+        description="Save this configuration as a reusable report template."
+        icon={<Save size={20} />}
+        accentColor="#8B5CF6"
+        width="md"
+        submitLabel="Save"
+        submitDisabled={!!validateReportName(reportName)}
+        onSubmit={(e) => { e.preventDefault(); handleSave() }}
+      >
+        <div className="space-y-4">
+          <Field
+            label="Report Name"
+            required
+            error={reportNameError || undefined}
+            hint={`Min 3, max 80 characters. ${reportName.length}/80`}
+          >
+            <Input
+              value={reportName}
+              onChange={(e) => {
+                setReportName(e.target.value)
+                if (reportNameError) setReportNameError(validateReportName(e.target.value))
+              }}
+              onBlur={() => setReportNameError(validateReportName(reportName))}
+              placeholder="Enter report name (3-80 chars)..."
+              maxLength={80}
+            />
+          </Field>
+          <Field label="Schedule">
+            <Select value={reportSchedule} onValueChange={(v) => setReportSchedule(v as typeof reportSchedule)}>
+              <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No Schedule</SelectItem>
+                <SelectItem value="daily">Daily</SelectItem>
+                <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-[11px] text-slate-500">
+            <p className="font-bold text-slate-600 mb-1">Saving with:</p>
+            <p>• Source: <span className="font-semibold text-slate-700 capitalize">{selectedSource || "—"}</span></p>
+            <p>• Columns: <span className="font-semibold text-slate-700">{selectedColumns.length}</span></p>
+            <p>• Filters: <span className="font-semibold text-slate-700">{filters.length}</span></p>
           </div>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" className="rounded-xl" onClick={() => setSaveDialogOpen(false)}>Cancel</Button>
-            <Button
-              className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-xl font-bold disabled:opacity-50"
-              onClick={handleSave}
-              disabled={!!validateReportName(reportName)}
-            >
-              <Save className="mr-1 h-4 w-4" /> Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </SideFormSheet>
     </div>
   )
 }

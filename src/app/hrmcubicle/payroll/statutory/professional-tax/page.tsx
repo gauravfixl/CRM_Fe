@@ -46,6 +46,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import {
     Select,
     SelectContent,
@@ -912,183 +913,155 @@ const PTManagement = () => {
                 </DialogContent>
             </Dialog>
 
-            {/* Add/Edit Dialog */}
-            <Dialog open={isAddOpen} onOpenChange={(o) => { setIsAddOpen(o); if (!o) setEditRecord(null) }}>
-                <DialogContent className="sm:max-w-[480px] rounded-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-slate-900">{editRecord ? "Edit PT Record" : "Add PT Record"}</DialogTitle>
-                        <DialogDescription className="text-xs text-slate-500">
-                            {editRecord ? "Update the PT deduction details." : "Enter employee details. PT will be auto-calculated based on state slabs."}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Employee ID</Label>
-                                <Input className="h-9 text-xs rounded-lg" value={formData.employeeId} onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })} disabled={!!editRecord} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Employee Name</Label>
-                                <Input className="h-9 text-xs rounded-lg" value={formData.employeeName} onChange={(e) => setFormData({ ...formData, employeeName: e.target.value })} />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">State</Label>
-                                <Select value={formData.state} onValueChange={(v) => setFormData({ ...formData, state: v })}>
-                                    <SelectTrigger className="h-9 text-xs rounded-lg">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {ptSlabs.map((s) => <SelectItem key={s.state} value={s.state}>{s.state}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Month</Label>
-                                <Input className="h-9 text-xs rounded-lg" value={formData.month} onChange={(e) => setFormData({ ...formData, month: e.target.value })} />
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-slate-500">Gross Salary (₹)</Label>
-                            <Input className="h-9 text-xs rounded-lg" type="number" value={formData.grossSalary} onChange={(e) => setFormData({ ...formData, grossSalary: e.target.value })} />
-                        </div>
-                        {formData.grossSalary && (
-                            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Calculated PT</p>
-                                <p className="text-lg font-bold text-[#8B5CF6]">₹{calculatePT(formData.state, parseFloat(formData.grossSalary))}</p>
-                                <p className="text-[10px] text-slate-400 mt-0.5">Based on {formData.state} slab rates</p>
-                            </div>
-                        )}
+            {/* Add/Edit PT Record Sheet */}
+            <SideFormSheet
+                open={isAddOpen}
+                onOpenChange={(o) => { setIsAddOpen(o); if (!o) setEditRecord(null) }}
+                title={editRecord ? "Edit PT Record" : "Add PT Record"}
+                description={editRecord ? "Update the PT deduction details." : "Enter employee details. PT will be auto-calculated based on state slabs."}
+                icon={<Building2 size={20} />}
+                accentColor={editRecord ? "#7c3aed" : "#4f46e5"}
+                width="md"
+                submitLabel={editRecord ? "Update" : "Add Record"}
+                onSubmit={(e) => { e.preventDefault(); handleSave(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Employee ID">
+                            <Input value={formData.employeeId} onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })} disabled={!!editRecord} />
+                        </Field>
+                        <Field label="Employee Name">
+                            <Input value={formData.employeeName} onChange={(e) => setFormData({ ...formData, employeeName: e.target.value })} />
+                        </Field>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => { setIsAddOpen(false); setEditRecord(null) }}>Cancel</Button>
-                        <Button className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-[#8B5CF6]/20" onClick={handleSave}>
-                            {editRecord ? "Update" : "Add Record"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Exemption Add/Edit Dialog */}
-            <Dialog open={isExemptionOpen} onOpenChange={(o) => { setIsExemptionOpen(o); if (!o) setEditExemption(null) }}>
-                <DialogContent className="sm:max-w-[560px] rounded-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-slate-900">{editExemption ? "Edit Exemption" : "New Exemption"}</DialogTitle>
-                        <DialogDescription className="text-xs text-slate-500">
-                            Record a PT exemption (senior citizen, disability, ex-servicemen etc).
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2 max-h-[60vh] overflow-y-auto pr-1">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Employee</Label>
-                                <Select
-                                    value={exemptionForm.employeeId}
-                                    onValueChange={(v) => {
-                                        const emp = uniqueEmployees.find(e => e.id === v)
-                                        setExemptionForm({ ...exemptionForm, employeeId: v, employeeName: emp?.name || "", state: emp?.state || exemptionForm.state })
-                                    }}
-                                >
-                                    <SelectTrigger className="h-9 text-xs rounded-lg">
-                                        <SelectValue placeholder="Select employee" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {uniqueEmployees.map(emp => (
-                                            <SelectItem key={emp.id} value={emp.id}>{emp.name} ({emp.id})</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">State</Label>
-                                <Select value={exemptionForm.state} onValueChange={(v) => setExemptionForm({ ...exemptionForm, state: v })}>
-                                    <SelectTrigger className="h-9 text-xs rounded-lg">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {ptSlabs.map(s => <SelectItem key={s.state} value={s.state}>{s.state}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Exemption Type</Label>
-                            <Select value={exemptionForm.exemptionType} onValueChange={(v) => setExemptionForm({ ...exemptionForm, exemptionType: v as PTExemption['exemptionType'] })}>
-                                <SelectTrigger className="h-9 text-xs rounded-lg">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="State">
+                            <Select value={formData.state} onValueChange={(v) => setFormData({ ...formData, state: v })}>
+                                <SelectTrigger>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="Senior Citizen">Senior Citizen</SelectItem>
-                                    <SelectItem value="Disability">Disability</SelectItem>
-                                    <SelectItem value="Parents of Disabled Child">Parents of Disabled Child</SelectItem>
-                                    <SelectItem value="Ex-Servicemen">Ex-Servicemen</SelectItem>
-                                    <SelectItem value="Other">Other</SelectItem>
+                                    {ptSlabs.map((s) => <SelectItem key={s.state} value={s.state}>{s.state}</SelectItem>)}
                                 </SelectContent>
                             </Select>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Certificate Number</Label>
-                            <Input className="h-9 text-xs rounded-lg" value={exemptionForm.certificateNumber} onChange={(e) => setExemptionForm({ ...exemptionForm, certificateNumber: e.target.value })} placeholder="e.g. SR-MH-2025-78912" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Valid From</Label>
-                                <Input type="date" className="h-9 text-xs rounded-lg" value={exemptionForm.validFrom} onChange={(e) => setExemptionForm({ ...exemptionForm, validFrom: e.target.value })} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Valid To</Label>
-                                <Input type="date" className="h-9 text-xs rounded-lg" value={exemptionForm.validTo} onChange={(e) => setExemptionForm({ ...exemptionForm, validTo: e.target.value })} />
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Document Name</Label>
-                            <Input className="h-9 text-xs rounded-lg" value={exemptionForm.documentName} onChange={(e) => setExemptionForm({ ...exemptionForm, documentName: e.target.value })} placeholder="e.g. senior_cert.pdf" />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Notes</Label>
-                            <Textarea className="min-h-[60px] text-xs rounded-lg" value={exemptionForm.notes} onChange={(e) => setExemptionForm({ ...exemptionForm, notes: e.target.value })} placeholder="Optional context..." />
-                        </div>
+                        </Field>
+                        <Field label="Month">
+                            <Input value={formData.month} onChange={(e) => setFormData({ ...formData, month: e.target.value })} />
+                        </Field>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => { setIsExemptionOpen(false); setEditExemption(null) }}>Cancel</Button>
-                        <Button className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-[#8B5CF6]/20" onClick={handleSaveExemption}>
-                            {editExemption ? "Update" : "Save Exemption"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Gross Salary (₹)">
+                        <Input type="number" value={formData.grossSalary} onChange={(e) => setFormData({ ...formData, grossSalary: e.target.value })} />
+                    </Field>
+                    {formData.grossSalary && (
+                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Calculated PT</p>
+                            <p className="text-lg font-bold text-[#8B5CF6]">₹{calculatePT(formData.state, parseFloat(formData.grossSalary))}</p>
+                            <p className="text-[10px] text-slate-400 mt-0.5">Based on {formData.state} slab rates</p>
+                        </div>
+                    )}
+                </div>
+            </SideFormSheet>
 
-            {/* Revoke Confirm Dialog */}
-            <Dialog open={!!revokeTarget} onOpenChange={(o) => { if (!o) { setRevokeTarget(null); setRevokeReason("") } }}>
-                <DialogContent className="sm:max-w-[440px] rounded-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                            <Ban size={18} className="text-rose-500" /> Revoke exemption
-                        </DialogTitle>
-                        <DialogDescription className="text-xs text-slate-500">
-                            This will mark the exemption as Revoked. PT deduction will resume for {revokeTarget?.employeeName}.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-2 space-y-3">
-                        <div className="p-3 rounded-xl bg-rose-50 border border-rose-100">
-                            <p className="text-[10px] font-bold text-rose-600 uppercase tracking-wider mb-1">Employee</p>
-                            <p className="text-sm font-bold text-slate-900">{revokeTarget?.employeeName}</p>
-                            <p className="text-[10px] text-slate-500 mt-0.5">{revokeTarget?.exemptionType} • {revokeTarget?.state}</p>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Reason</Label>
-                            <Textarea className="min-h-[80px] text-xs rounded-lg" value={revokeReason} onChange={(e) => setRevokeReason(e.target.value)} placeholder="Reason for revocation..." />
-                        </div>
+            {/* Exemption Add/Edit Sheet */}
+            <SideFormSheet
+                open={isExemptionOpen}
+                onOpenChange={(o) => { setIsExemptionOpen(o); if (!o) setEditExemption(null) }}
+                title={editExemption ? "Edit Exemption" : "New Exemption"}
+                description="Record a PT exemption (senior citizen, disability, ex-servicemen etc)."
+                icon={<ShieldCheck size={20} />}
+                accentColor={editExemption ? "#7c3aed" : "#4f46e5"}
+                width="lg"
+                submitLabel={editExemption ? "Update" : "Save Exemption"}
+                onSubmit={(e) => { e.preventDefault(); handleSaveExemption(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Employee">
+                            <Select
+                                value={exemptionForm.employeeId}
+                                onValueChange={(v) => {
+                                    const emp = uniqueEmployees.find(e => e.id === v)
+                                    setExemptionForm({ ...exemptionForm, employeeId: v, employeeName: emp?.name || "", state: emp?.state || exemptionForm.state })
+                                }}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select employee" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {uniqueEmployees.map(emp => (
+                                        <SelectItem key={emp.id} value={emp.id}>{emp.name} ({emp.id})</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="State">
+                            <Select value={exemptionForm.state} onValueChange={(v) => setExemptionForm({ ...exemptionForm, state: v })}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {ptSlabs.map(s => <SelectItem key={s.state} value={s.state}>{s.state}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </Field>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => { setRevokeTarget(null); setRevokeReason("") }}>Cancel</Button>
-                        <Button className="bg-rose-500 hover:bg-rose-600 text-white h-9 rounded-lg text-xs font-bold" onClick={handleRevokeConfirm}>
-                            Confirm Revoke
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Exemption Type">
+                        <Select value={exemptionForm.exemptionType} onValueChange={(v) => setExemptionForm({ ...exemptionForm, exemptionType: v as PTExemption['exemptionType'] })}>
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Senior Citizen">Senior Citizen</SelectItem>
+                                <SelectItem value="Disability">Disability</SelectItem>
+                                <SelectItem value="Parents of Disabled Child">Parents of Disabled Child</SelectItem>
+                                <SelectItem value="Ex-Servicemen">Ex-Servicemen</SelectItem>
+                                <SelectItem value="Other">Other</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field label="Certificate Number">
+                        <Input value={exemptionForm.certificateNumber} onChange={(e) => setExemptionForm({ ...exemptionForm, certificateNumber: e.target.value })} placeholder="e.g. SR-MH-2025-78912" />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Valid From">
+                            <Input type="date" value={exemptionForm.validFrom} onChange={(e) => setExemptionForm({ ...exemptionForm, validFrom: e.target.value })} />
+                        </Field>
+                        <Field label="Valid To">
+                            <Input type="date" value={exemptionForm.validTo} onChange={(e) => setExemptionForm({ ...exemptionForm, validTo: e.target.value })} />
+                        </Field>
+                    </div>
+                    <Field label="Document Name">
+                        <Input value={exemptionForm.documentName} onChange={(e) => setExemptionForm({ ...exemptionForm, documentName: e.target.value })} placeholder="e.g. senior_cert.pdf" />
+                    </Field>
+                    <Field label="Notes">
+                        <Textarea value={exemptionForm.notes} onChange={(e) => setExemptionForm({ ...exemptionForm, notes: e.target.value })} placeholder="Optional context..." />
+                    </Field>
+                </div>
+            </SideFormSheet>
+
+            {/* Revoke Confirm Sheet */}
+            <SideFormSheet
+                open={!!revokeTarget}
+                onOpenChange={(o) => { if (!o) { setRevokeTarget(null); setRevokeReason("") } }}
+                title="Revoke exemption"
+                description={revokeTarget ? `This will mark the exemption as Revoked. PT deduction will resume for ${revokeTarget.employeeName}.` : undefined}
+                icon={<Ban size={20} />}
+                accentColor="#e11d48"
+                width="md"
+                submitLabel="Confirm Revoke"
+                onSubmit={(e) => { e.preventDefault(); handleRevokeConfirm(); }}
+            >
+                <div className="space-y-3">
+                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-100">
+                        <p className="text-[10px] font-bold text-rose-600 uppercase tracking-wider mb-1">Employee</p>
+                        <p className="text-sm font-bold text-slate-900">{revokeTarget?.employeeName}</p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">{revokeTarget?.exemptionType} • {revokeTarget?.state}</p>
+                    </div>
+                    <Field label="Reason">
+                        <Textarea value={revokeReason} onChange={(e) => setRevokeReason(e.target.value)} placeholder="Reason for revocation..." />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             {/* State Employees Drill-down Dialog */}
             <Dialog open={!!drillState} onOpenChange={(o) => { if (!o) setDrillState(null) }}>

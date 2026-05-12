@@ -35,6 +35,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     Select,
     SelectContent,
@@ -307,159 +308,111 @@ const TeamsPage = () => {
                 </div>
             </main>
 
-            {/* Add Team Dialog */}
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                <DialogContent className="bg-white rounded-[2.5rem] border border-slate-300 p-8 max-w-lg shadow-3xl">
-                    <DialogHeader className="space-y-2">
-                        <div className="h-11 w-11 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 mb-1 shadow-inner">
-                            <Plus size={24} />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Create New Team</DialogTitle>
-                        <DialogDescription className="text-slate-500 font-medium text-xs">
-                            Define a new specialized unit to drive specific business objectives.
-                        </DialogDescription>
-                    </DialogHeader>
+            {/* Add Team Sheet */}
+            <SideFormSheet
+                open={isAddDialogOpen}
+                onOpenChange={setIsAddDialogOpen}
+                title="Create New Team"
+                description="Define a new specialized unit to drive specific business objectives."
+                icon={<Plus size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                submitLabel="Launch Team"
+                onSubmit={(e) => { e.preventDefault(); handleAddTeam(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Team Name" required>
+                        <Input
+                            placeholder="e.g. Growth Hacking Team"
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        />
+                    </Field>
 
-                    <div className="py-6 space-y-5">
-                        <div className="space-y-1.5">
-                            <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Team Name *</Label>
-                            <Input
-                                className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
-                                placeholder="e.g. Growth Hacking Team"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-5">
-                            <div className="space-y-1.5">
-                                <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Department *</Label>
-                                <Select value={formData.departmentId} onValueChange={(v) => setFormData({ ...formData, departmentId: v })}>
-                                    <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors">
-                                        <SelectValue placeholder="Select" />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold max-h-[250px]">
-                                        {departments.map(d => (
-                                            <SelectItem key={d.id} value={d.id} className="rounded-lg h-10">{d.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Team Lead *</Label>
-                                <Select value={formData.leadId} onValueChange={(v) => setFormData({ ...formData, leadId: v })}>
-                                    <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors">
-                                        <SelectValue placeholder="Select" />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold max-h-[300px]">
-                                        {employees.map(emp => (
-                                            <SelectItem key={emp.id} value={emp.id} className="rounded-lg h-10">{emp.firstName} {emp.lastName}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Team Mission</Label>
-                            <Input
-                                className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
-                                placeholder="State the core objective..."
-                                value={formData.mission}
-                                onChange={(e) => setFormData({ ...formData, mission: e.target.value })}
-                            />
-                        </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Department" required>
+                            <Select value={formData.departmentId} onValueChange={(v) => setFormData({ ...formData, departmentId: v })}>
+                                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                                <SelectContent className="max-h-[250px]">
+                                    {departments.map(d => (
+                                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Team Lead" required>
+                            <Select value={formData.leadId} onValueChange={(v) => setFormData({ ...formData, leadId: v })}>
+                                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                                <SelectContent className="max-h-[300px]">
+                                    {employees.map(emp => (
+                                        <SelectItem key={emp.id} value={emp.id}>{emp.firstName} {emp.lastName}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
                     </div>
 
-                    <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
-                        <Button
-                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all"
-                            onClick={handleAddTeam}
-                        >
-                            Launch Team
-                        </Button>
-                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => setIsAddDialogOpen(false)}>
-                            Cancel
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Team Mission">
+                        <Input
+                            placeholder="State the core objective..."
+                            value={formData.mission}
+                            onChange={(e) => setFormData({ ...formData, mission: e.target.value })}
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-            {/* Edit Team Dialog */}
-            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent className="bg-white rounded-[2.5rem] border border-slate-300 p-8 max-w-lg shadow-3xl">
-                    <DialogHeader className="space-y-2">
-                        <div className="h-11 w-11 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 mb-1 shadow-inner">
-                            <Edit size={24} />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Update Team</DialogTitle>
-                        <DialogDescription className="text-slate-500 font-medium text-xs">
-                            Modify team identity and strategic orientation.
-                        </DialogDescription>
-                    </DialogHeader>
+            {/* Edit Team Sheet */}
+            <SideFormSheet
+                open={isEditDialogOpen}
+                onOpenChange={setIsEditDialogOpen}
+                title="Update Team"
+                description="Modify team identity and strategic orientation."
+                icon={<Edit size={20} />}
+                accentColor="#7c3aed"
+                width="md"
+                submitLabel="Save Changes"
+                onSubmit={(e) => { e.preventDefault(); handleUpdateTeam(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Team Name" required>
+                        <Input
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        />
+                    </Field>
 
-                    <div className="py-6 space-y-5">
-                        <div className="space-y-1.5">
-                            <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Team Name *</Label>
-                            <Input
-                                className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-5">
-                            <div className="space-y-1.5">
-                                <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Department</Label>
-                                <Select value={formData.departmentId} onValueChange={(v) => setFormData({ ...formData, departmentId: v })}>
-                                    <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold">
-                                        {departments.map(d => (
-                                            <SelectItem key={d.id} value={d.id} className="rounded-lg h-10">{d.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Team Lead</Label>
-                                <Select value={formData.leadId} onValueChange={(v) => setFormData({ ...formData, leadId: v })}>
-                                    <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold">
-                                        {employees.map(emp => (
-                                            <SelectItem key={emp.id} value={emp.id} className="rounded-lg h-10">{emp.firstName} {emp.lastName}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Team Mission</Label>
-                            <Input
-                                className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
-                                value={formData.mission}
-                                onChange={(e) => setFormData({ ...formData, mission: e.target.value })}
-                            />
-                        </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Department">
+                            <Select value={formData.departmentId} onValueChange={(v) => setFormData({ ...formData, departmentId: v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {departments.map(d => (
+                                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Team Lead">
+                            <Select value={formData.leadId} onValueChange={(v) => setFormData({ ...formData, leadId: v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {employees.map(emp => (
+                                        <SelectItem key={emp.id} value={emp.id}>{emp.firstName} {emp.lastName}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
                     </div>
 
-                    <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
-                        <Button
-                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all font-outfit"
-                            onClick={handleUpdateTeam}
-                        >
-                            Save Changes
-                        </Button>
-                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => setIsEditDialogOpen(false)}>
-                            Cancel
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Team Mission">
+                        <Input
+                            value={formData.mission}
+                            onChange={(e) => setFormData({ ...formData, mission: e.target.value })}
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
         </div>
     );
 };

@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { CustomButton } from "@/components/custom/CustomButton"
 
@@ -41,11 +41,13 @@ import { Permission } from "@/components/custom/Permission"
 import { SmallCard, SmallCardContent, SmallCardDescription, SmallCardFooter, SmallCardHeader, SmallCardTitle } from "@/components/custom/SmallCard"
 import SubHeader from "@/components/custom/SubHeader"
 import { FlatCard } from "@/components/custom/FlatCard"
+import Loader from "@/shared/components/custom/Loader"
 export default function FirmsPage() {
   const { firms, setFirms } = useAppStore()
   const { showLoader, hideLoader } = useLoaderStore() // <-- use loader store
   const [searchTerm, setSearchTerm] = useState("")
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const [loading, setLoading] = useState<boolean>(true)
   const params_url = useParams() as { orgName?: string };
   const [orgName, setOrgName] = useState("")
   const userRole = useAuthStore((state) => state.userRole);
@@ -103,25 +105,33 @@ export default function FirmsPage() {
     }
   };
   // Fetch firms on mount
+  const loadedRef = useRef(false)
   useEffect(() => {
-    const fetchFirms = async () => {
+    if (loadedRef.current) return
+    loadedRef.current = true
+
+    const safety = window.setTimeout(() => {
+      setLoading(false)
+    }, 20000)
+
+    ;(async () => {
       try {
-        showLoader()
-        const res = await getAllFirms()
-        const firmsData = res?.data?.firms || []
-        setFirms(firmsData)
-      } catch (err: any) {
-        // Silently handle 401 errors - user might not be authenticated yet
-        if (err?.response?.status !== 401) {
-          console.error("Failed to fetch firms:", err)
+        const [firmsRes] = await Promise.allSettled([getAllFirms()])
+        if (firmsRes.status === "fulfilled") {
+          const firmsData = firmsRes.value?.data?.firms || []
+          setFirms(firmsData)
+        } else {
+          const err: any = firmsRes.reason
+          if (err?.response?.status !== 401) {
+            console.error("Failed to fetch firms:", err)
+          }
         }
       } finally {
-        hideLoader()
+        window.clearTimeout(safety)
+        setLoading(false)
       }
-    }
-
-    fetchFirms()
-  }, [setFirms, showLoader, hideLoader])
+    })()
+  }, [setFirms])
 
   const totalFirms = activeFirms.length
   // Count based on the actual status field (defaulting to Active if not set)
@@ -135,6 +145,14 @@ export default function FirmsPage() {
     const start = url.slice(0, startLength)
     const end = url.slice(-endLength)
     return `${start}...${end}`
+  }
+
+  if (loading) {
+    return (
+      <div className="relative h-full w-full">
+        <Loader />
+      </div>
+    )
   }
 
   return (

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
@@ -138,12 +138,12 @@ export default function LeadActivitiesPage() {
                                 className="relative flex items-start gap-8 group"
                             >
                                 {/* Timeline Node */}
-                                <div className={`relative z-10 flex-shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform duration-300 group-hover:scale-110 ${getActivityColor(activity.type)}`}>
+                                <div className={`relative z-10 flex-shrink-0 w-16 h-16 rounded-none flex items-center justify-center text-white shadow-lg transition-transform duration-300 group-hover:scale-110 ${getActivityColor(activity.type)}`}>
                                     {getActivityIcon(activity.type)}
                                 </div>
 
                                 {/* Content Card */}
-                                <div className="flex-1 bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200/60 dark:border-zinc-800 shadow-sm hover:shadow-xl transition-all duration-300 relative">
+                                <div className="flex-1 bg-white dark:bg-zinc-900 p-6 rounded-none border border-zinc-200/60 dark:border-zinc-800 shadow-sm hover:shadow-xl transition-all duration-300 relative">
 
                                     {/* Arrow indicator */}
                                     <div className="absolute -left-2 top-6 w-4 h-4 bg-white dark:bg-zinc-900 border-l border-t border-zinc-200/60 transition-colors rotate-[-45deg]" />
