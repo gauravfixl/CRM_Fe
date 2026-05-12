@@ -22,10 +22,10 @@ export default function IntegrationsSettingsPage() {
                     <p className="text-slate-500 font-medium text-[13px]">Synchronize your workspace with the global software ecosystem.</p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" className="h-10 px-6 border border-slate-200 rounded-xl font-bold text-[12px] text-slate-600">
+                    <Button variant="outline" className="h-10 px-6 border border-slate-200 rounded-none font-bold text-[12px] text-slate-600">
                         Developer API
                     </Button>
-                    <Button className="h-10 px-8 bg-slate-900 text-white rounded-xl font-bold text-[12px] gap-2 shadow-lg shadow-slate-100">
+                    <Button className="h-10 px-8 bg-slate-900 text-white rounded-none font-bold text-[12px] gap-2 shadow-lg shadow-slate-100">
                         <Plus size={16} />
                         Marketplace
                     </Button>
@@ -37,7 +37,7 @@ export default function IntegrationsSettingsPage() {
                     <Card key={i} className="group border-none shadow-sm bg-white rounded-[40px] overflow-hidden hover:shadow-2xl hover:shadow-indigo-500/5 transition-all duration-500">
                         <CardContent className="p-8 space-y-6">
                             <div className="flex items-start justify-between">
-                                <div className="h-16 w-16 bg-slate-50 border-2 border-slate-100 rounded-[24px] flex items-center justify-center text-3xl group-hover:bg-indigo-50 group-hover:border-indigo-100 transition-all duration-500">
+                                <div className="h-16 w-16 bg-slate-50 border-2 border-slate-100 rounded-none flex items-center justify-center text-3xl group-hover:bg-indigo-50 group-hover:border-indigo-100 transition-all duration-500">
                                     {app.icon}
                                 </div>
                                 <Badge className={app.status === 'Connected' ? 'bg-indigo-50 text-indigo-600 border-none font-bold text-[9px] px-3 h-6' : 'bg-slate-50 text-slate-400 border-none font-bold text-[9px] px-3 h-6'}>
@@ -67,7 +67,7 @@ export default function IntegrationsSettingsPage() {
                 <div className="absolute top-0 right-0 h-full w-1/3 bg-white/5 skew-x-12 translate-x-32" />
                 <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
                     <div className="space-y-4">
-                        <div className="h-12 w-12 bg-white/20 rounded-xl flex items-center justify-center text-white backdrop-blur-xl">
+                        <div className="h-12 w-12 bg-white/20 rounded-none flex items-center justify-center text-white backdrop-blur-xl">
                             <Zap size={24} className="fill-white" />
                         </div>
                         <h2 className="text-3xl font-bold leading-tight">
@@ -79,7 +79,7 @@ export default function IntegrationsSettingsPage() {
                     </div>
                     <div className="text-center md:text-right space-y-4">
                         <p className="text-[12px] font-bold text-indigo-200">Secure API access</p>
-                        <Button className="h-11 px-8 bg-white text-indigo-600 hover:bg-slate-50 rounded-xl font-bold text-[13px] shadow-2xl shadow-indigo-900/40">
+                        <Button className="h-11 px-8 bg-white text-indigo-600 hover:bg-slate-50 rounded-none font-bold text-[13px] shadow-2xl shadow-indigo-900/40">
                             Request Key
                         </Button>
                     </div>

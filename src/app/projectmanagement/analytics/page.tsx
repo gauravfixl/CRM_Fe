@@ -80,59 +80,39 @@ export default function AnalyticsHubPage() {
                 </Button>
             </div>
 
-            {/* Top Stats Row */}
+            {/* Top Stats Row - clickable KPI cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card>
-                    <CardContent className="p-4 flex items-center justify-between">
-                        <div className="space-y-1">
-                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Active Issues</p>
-                            <p className="text-2xl font-bold text-slate-900">{issues.length}</p>
+                {[
+                    { label: "Active Issues", value: issues.length, icon: <AlertCircle size={18} />, color: "text-indigo-800", bg: "bg-indigo-100", href: "/projectmanagement/my-work?tab=all" },
+                    { label: "Projects", value: projects.length, icon: <Layers size={18} />, color: "text-blue-800", bg: "bg-blue-100", href: "/projectmanagement/projects" },
+                    { label: "Completion", value: "78%", icon: <CheckCircle2 size={18} />, color: "text-emerald-800", bg: "bg-emerald-100", href: "/projectmanagement/reports/performance" },
+                    { label: "Team", value: 12, icon: <Users size={18} />, color: "text-amber-800", bg: "bg-amber-100", href: "/projectmanagement/people" },
+                ].map((stat, i) => (
+                    <a
+                        key={i}
+                        href={stat.href}
+                        className={`block border shadow-sm overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all h-[75px] rounded-none cursor-pointer ${stat.bg}`}
+                    >
+                        <div className="p-4 flex items-center justify-between w-full h-full">
+                            <div className="flex items-center gap-4">
+                                <div className={`h-10 w-10 bg-white ${stat.color} flex items-center justify-center shrink-0 rounded-none`}>
+                                    {stat.icon}
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-bold text-slate-700 uppercase tracking-tight leading-none">{stat.label}</span>
+                                    <span className="text-xl font-black text-slate-900 leading-none mt-1.5">{stat.value}</span>
+                                </div>
+                            </div>
                         </div>
-                        <div className="h-10 w-10 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600">
-                            <AlertCircle size={20} />
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="p-4 flex items-center justify-between">
-                        <div className="space-y-1">
-                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Projects</p>
-                            <p className="text-2xl font-bold text-slate-900">{projects.length}</p>
-                        </div>
-                        <div className="h-10 w-10 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
-                            <Layers size={20} />
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="p-4 flex items-center justify-between">
-                        <div className="space-y-1">
-                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Completion</p>
-                            <p className="text-2xl font-bold text-slate-900">78%</p>
-                        </div>
-                        <div className="h-10 w-10 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600">
-                            <CheckCircle2 size={20} />
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="p-4 flex items-center justify-between">
-                        <div className="space-y-1">
-                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Team</p>
-                            <p className="text-2xl font-bold text-slate-900">12</p>
-                        </div>
-                        <div className="h-10 w-10 bg-amber-50 rounded-lg flex items-center justify-center text-amber-600">
-                            <Users size={20} />
-                        </div>
-                    </CardContent>
-                </Card>
+                    </a>
+                ))}
             </div>
 
             {/* Charts Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
 
                 {/* Velocity Trend */}
-                <Card className="xl:col-span-2">
+                <Card className="xl:col-span-2 rounded-none">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-bold text-slate-800">System Velocity (7 Days)</CardTitle>
                     </CardHeader>
@@ -160,7 +140,7 @@ export default function AnalyticsHubPage() {
                 </Card>
 
                 {/* Status Breakdown */}
-                <Card>
+                <Card className="rounded-none">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-bold text-slate-800">Status Distribution</CardTitle>
                     </CardHeader>
@@ -198,7 +178,7 @@ export default function AnalyticsHubPage() {
                 </Card>
 
                 {/* Priority Breakdown */}
-                <Card>
+                <Card className="rounded-none">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-bold text-slate-800">Task Priorities</CardTitle>
                     </CardHeader>
@@ -220,7 +200,7 @@ export default function AnalyticsHubPage() {
                 </Card>
 
                 {/* Workload */}
-                <Card>
+                <Card className="rounded-none">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-bold text-slate-800">Team Workload</CardTitle>
                     </CardHeader>

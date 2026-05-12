@@ -9,8 +9,14 @@ import {
     CheckCircle2,
     Clock,
     AlertCircle,
-    LayoutList
+    LayoutList,
+    Plus,
+    ListTodo,
+    Eye,
+    ChevronRight
 } from "lucide-react"
+import QuickCreateModal from "@/shared/components/projectmanagement/quick-create-modal"
+import { cn } from "@/lib/utils"
 import { useIssueStore } from "@/shared/data/issue-store"
 import { useProjectStore } from "@/shared/data/projects-store"
 import { Badge } from "@/components/ui/badge"
@@ -61,12 +67,25 @@ export default function GlobalListPage() {
     const [statusFilter, setStatusFilter] = useState<string>("all")
     const [priorityFilter, setPriorityFilter] = useState<string>("all")
     const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null)
+    const [isCreateOpen, setIsCreateOpen] = useState(false)
 
     useEffect(() => {
         setMounted(true)
     }, [])
 
     if (!mounted) return null
+
+    const todoCount = issues.filter(i => i.status === "TODO").length
+    const inProgCount = issues.filter(i => i.status === "IN_PROGRESS").length
+    const reviewCount = issues.filter(i => i.status === "IN_REVIEW").length
+    const doneCount = issues.filter(i => i.status === "DONE").length
+
+    const kpis = [
+        { label: "To Do", value: todoCount, icon: <ListTodo size={18} />, color: "text-indigo-800", bg: "bg-indigo-100", filter: "TODO" },
+        { label: "In Progress", value: inProgCount, icon: <Clock size={18} />, color: "text-amber-800", bg: "bg-amber-100", filter: "IN_PROGRESS" },
+        { label: "In Review", value: reviewCount, icon: <Eye size={18} />, color: "text-blue-800", bg: "bg-blue-100", filter: "IN_REVIEW" },
+        { label: "Done", value: doneCount, icon: <CheckCircle2 size={18} />, color: "text-emerald-800", bg: "bg-emerald-100", filter: "DONE" },
+    ]
 
     const getProjectName = (projectId: string) => {
         const p = projects.find(proj => proj.id === projectId)
@@ -115,7 +134,7 @@ export default function GlobalListPage() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                 <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-sm">
+                        <div className="h-8 w-8 bg-indigo-600 flex items-center justify-center text-white shadow-sm rounded-none">
                             <LayoutList size={16} />
                         </div>
                         <h1 className="text-2xl font-bold text-slate-900 tracking-tight">All Tasks</h1>
@@ -124,10 +143,45 @@ export default function GlobalListPage() {
                         Comprehensive list view of all tasks across all projects.
                     </p>
                 </div>
+                <Button
+                    onClick={() => setIsCreateOpen(true)}
+                    className="h-9 px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-2 rounded-none"
+                >
+                    <Plus size={14} strokeWidth={3} /> New Task
+                </Button>
+            </div>
+
+            {/* KPI cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {kpis.map((stat, i) => (
+                    <button
+                        key={i}
+                        type="button"
+                        onClick={() => setStatusFilter(statusFilter === stat.filter ? "all" : stat.filter)}
+                        className={cn(
+                            "block border shadow-sm overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all h-[75px] rounded-none cursor-pointer text-left",
+                            stat.bg,
+                            statusFilter === stat.filter && "ring-2 ring-indigo-500"
+                        )}
+                    >
+                        <div className="p-4 flex items-center justify-between w-full h-full">
+                            <div className="flex items-center gap-4">
+                                <div className={`h-10 w-10 bg-white ${stat.color} flex items-center justify-center shrink-0 rounded-none`}>
+                                    {stat.icon}
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-bold text-slate-700 uppercase tracking-tight leading-none">{stat.label}</span>
+                                    <span className="text-xl font-black text-slate-900 leading-none mt-1.5">{stat.value}</span>
+                                </div>
+                            </div>
+                            <ChevronRight size={16} className="text-slate-500/60" />
+                        </div>
+                    </button>
+                ))}
             </div>
 
             {/* Toolbar */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50 p-4 rounded-none border border-slate-200">
                 <div className="flex items-center gap-3 flex-1">
                     <div className="relative flex-1 max-w-md">
                         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -169,7 +223,7 @@ export default function GlobalListPage() {
             </div>
 
             {/* List Table */}
-            <div className="flex-1 overflow-auto bg-white border border-slate-200 rounded-xl">
+            <div className="flex-1 overflow-auto bg-white border border-slate-200 rounded-none">
                 <Table>
                     <TableHeader className="bg-slate-50 sticky top-0 z-10">
                         <TableRow className="hover:bg-slate-50 border-b border-slate-200">
@@ -283,6 +337,7 @@ export default function GlobalListPage() {
                     </TableBody>
                 </Table>
             </div>
+            <QuickCreateModal isOpen={isCreateOpen} onOpenChange={setIsCreateOpen} />
         </div>
     )
 }

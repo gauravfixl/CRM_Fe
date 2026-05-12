@@ -21,7 +21,7 @@ export default function RolesSettingsPage() {
                     <h3 className="text-xl font-bold text-slate-900 tracking-tight">Security Matrix</h3>
                     <p className="text-slate-500 font-medium text-[13px]">Define granular access levels and operational permissions for workspace entities.</p>
                 </div>
-                <Button className="h-10 px-6 bg-slate-900 text-white rounded-xl font-bold text-[12px] gap-2 shadow-lg shadow-slate-100">
+                <Button className="h-10 px-6 bg-slate-900 text-white rounded-none font-bold text-[12px] gap-2 shadow-lg shadow-slate-100">
                     <Plus size={16} />
                     Create Custom Role
                 </Button>
@@ -32,7 +32,7 @@ export default function RolesSettingsPage() {
                     <Card key={i} className="group border-none shadow-sm bg-white rounded-[40px] overflow-hidden hover:shadow-2xl hover:shadow-indigo-500/5 transition-all duration-500">
                         <CardContent className="p-8 space-y-6">
                             <div className="flex items-start justify-between">
-                                <div className="h-14 w-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shadow-sm">
+                                <div className="h-14 w-14 bg-indigo-50 text-indigo-600 rounded-none flex items-center justify-center shadow-sm">
                                     <Shield size={24} />
                                 </div>
                                 <div className="text-right">
@@ -71,7 +71,7 @@ export default function RolesSettingsPage() {
                             { action: 'Invite Members', admin: true, manager: true, member: false, guest: false },
                             { action: 'Export Data', admin: true, manager: true, member: true, guest: false },
                         ].map((perm, i) => (
-                            <div key={i} className="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl border border-slate-50 group hover:border-indigo-100 transition-all">
+                            <div key={i} className="flex items-center justify-between p-4 bg-slate-50/50 rounded-none border border-slate-50 group hover:border-indigo-100 transition-all">
                                 <span className="text-[13px] font-bold text-slate-700 tracking-tight">{perm.action}</span>
                                 <div className="flex items-center gap-8">
                                     <div className="flex flex-col items-center gap-1">

@@ -219,6 +219,8 @@ export const useSprintStore = create<SprintStore>()(
                     )
                 }))
 
+                import('./event-bridges').then(eb => eb.emitSprintStarted(id, updatedSprint.name, updatedSprint.projectId)).catch(() => {})
+
                 return updatedSprint
             },
 
@@ -242,6 +244,8 @@ export const useSprintStore = create<SprintStore>()(
                         s.id === id ? updatedSprint : s
                     )
                 }))
+
+                import('./event-bridges').then(eb => eb.emitSprintCompleted(id, updatedSprint.name, updatedSprint.projectId)).catch(() => {})
 
                 return updatedSprint
             },

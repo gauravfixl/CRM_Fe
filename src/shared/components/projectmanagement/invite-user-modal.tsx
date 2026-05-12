@@ -1,16 +1,13 @@
 "use client"
 
 import React, { useState } from "react"
-import {
-    X,
-    Mail,
-    Shield,
-    UserPlus,
-    CheckCircle2,
-    Briefcase
-} from "lucide-react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
+import { Shield, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
     Select,
     SelectContent,
@@ -20,149 +17,134 @@ import {
 } from "@/components/ui/select"
 import { useTeamStore, UserRole } from "@/shared/data/team-store"
 import { useWorkspaceStore } from "@/shared/data/workspace-store"
+import SidePanel from "./side-panel"
 
 interface InviteUserModalProps {
     isOpen: boolean
     onClose: () => void
 }
 
+const schema = z.object({
+    name: z.string().trim().min(2, "Please enter the full name").max(80, "Name too long"),
+    email: z.string().trim().email("Enter a valid email address"),
+    role: z.enum(["MEMBER", "ADMIN", "VIEWER"]),
+})
+
+type FormValues = z.infer<typeof schema>
+
 export function InviteUserModal({ isOpen, onClose }: InviteUserModalProps) {
     const { addMember } = useTeamStore()
     const { activeWorkspaceId } = useWorkspaceStore()
-    const [email, setEmail] = useState("")
-    const [name, setName] = useState("")
-    const [role, setRole] = useState<UserRole>("MEMBER")
-    const [isSent, setIsSent] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
 
-    if (!isOpen) return null
+    const {
+        register,
+        handleSubmit,
+        reset,
+        setValue,
+        watch,
+        formState: { errors, isValid },
+    } = useForm<FormValues>({
+        resolver: zodResolver(schema),
+        mode: "onChange",
+        defaultValues: { name: "", email: "", role: "MEMBER" },
+    })
 
-    const handleInvite = () => {
-        if (!email.trim() || !name.trim()) return
+    const role = watch("role")
 
-        setIsSent(true)
+    React.useEffect(() => {
+        if (isOpen) reset()
+    }, [isOpen, reset])
 
-        // Add to store (simulated)
+    const onSubmit = async (values: FormValues) => {
+        setIsLoading(true)
+        await new Promise((r) => setTimeout(r, 400))
+
         addMember({
             id: `u-${Date.now()}`,
             workspaceId: activeWorkspaceId || 'ws-1',
-            name,
-            email,
-            avatar: `https://i.pravatar.cc/150?u=${email}`,
-            role,
+            name: values.name,
+            email: values.email,
+            avatar: `https://i.pravatar.cc/150?u=${values.email}`,
+            role: values.role as UserRole,
             joinedAt: new Date().toISOString().split('T')[0],
-            projectsCount: 0
+            projectsCount: 0,
         })
 
-        setTimeout(() => {
-            setIsSent(false)
-            setEmail("")
-            setName("")
-            onClose()
-        }, 1500)
+        setIsLoading(false)
+        onClose()
+        reset()
     }
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-            <div
-                className="bg-white w-full max-w-[500px] rounded-[32px] shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200"
-                style={{ zoom: "0.85" }}
-            >
-                {/* Header */}
-                <div className="flex items-center justify-between px-8 py-6 border-b border-slate-50">
-                    <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
-                            <UserPlus size={20} />
-                        </div>
-                        <div>
-                            <h2 className="text-[18px] font-black text-slate-800 tracking-tight">Invite People</h2>
-                            <p className="text-[12px] font-bold text-slate-400 uppercase tracking-widest">Workspace Directory</p>
-                        </div>
-                    </div>
-                    <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors">
-                        <X size={20} />
-                    </button>
+        <SidePanel
+            open={isOpen}
+            onClose={onClose}
+            title="Invite People"
+            description="Add a new member to this workspace and assign their role."
+            width="md"
+            footer={
+                <div className="flex items-center justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={onClose} className="font-bold text-slate-600 rounded-none">
+                        Cancel
+                    </Button>
+                    <Button
+                        type="submit"
+                        form="invite-user-form"
+                        disabled={!isValid || isLoading}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 rounded-none"
+                    >
+                        {isLoading ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...
+                            </>
+                        ) : (
+                            "Send Invitation"
+                        )}
+                    </Button>
+                </div>
+            }
+        >
+            <form id="invite-user-form" onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                <div className="space-y-2">
+                    <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        Full Name <span className="text-rose-500">*</span>
+                    </Label>
+                    <Input {...register("name")} placeholder="e.g. John Doe" className="rounded-none" />
+                    {errors.name && <p className="text-[11px] font-semibold text-rose-600">{errors.name.message}</p>}
                 </div>
 
-                <div className="p-8 space-y-6">
-                    {isSent ? (
-                        <div className="py-12 flex flex-col items-center justify-center text-center space-y-4 animate-in zoom-in duration-300">
-                            <div className="h-16 w-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center">
-                                <CheckCircle2 size={32} />
-                            </div>
-                            <div>
-                                <h3 className="text-xl font-bold text-slate-800">Invitation Sent!</h3>
-                                <p className="text-slate-500 font-medium">We've sent an invite to {email}</p>
-                            </div>
-                        </div>
-                    ) : (
-                        <>
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-[12px] font-black text-slate-500 uppercase tracking-widest ml-1">Full Name</label>
-                                    <div className="relative">
-                                        <Briefcase className="absolute left-4 top-3.5 h-4 w-4 text-slate-300" />
-                                        <Input
-                                            placeholder="e.g. John Doe"
-                                            value={name}
-                                            onChange={(e) => setName(e.target.value)}
-                                            className="h-12 pl-11 border-slate-200 rounded-xl text-[15px] font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500/10"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-[12px] font-black text-slate-500 uppercase tracking-widest ml-1">Email Address</label>
-                                    <div className="relative">
-                                        <Mail className="absolute left-4 top-3.5 h-4 w-4 text-slate-300" />
-                                        <Input
-                                            placeholder="name@company.com"
-                                            type="email"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            className="h-12 pl-11 border-slate-200 rounded-xl text-[15px] font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500/10"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-[12px] font-black text-slate-500 uppercase tracking-widest ml-1">Role & Permissions</label>
-                                    <Select value={role} onValueChange={(val) => setRole(val as UserRole)}>
-                                        <SelectTrigger className="h-12 border-slate-200 rounded-xl text-[14px] font-black text-slate-600">
-                                            <div className="flex items-center gap-2">
-                                                <Shield size={14} className="text-slate-400" />
-                                                <SelectValue />
-                                            </div>
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="MEMBER" className="font-bold">Member (Default)</SelectItem>
-                                            <SelectItem value="ADMIN" className="font-bold text-indigo-600">Admin (Full Access)</SelectItem>
-                                            <SelectItem value="VIEWER" className="font-bold text-slate-400">Viewer (Read Only)</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-
-                            <p className="text-[11px] text-slate-400 font-bold leading-relaxed text-center px-4">
-                                They will receive an email with a link to join your workspace. You can manage permissions later in settings.
-                            </p>
-                        </>
-                    )}
+                <div className="space-y-2">
+                    <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        Email Address <span className="text-rose-500">*</span>
+                    </Label>
+                    <Input type="email" {...register("email")} placeholder="name@company.com" className="rounded-none" />
+                    {errors.email && <p className="text-[11px] font-semibold text-rose-600">{errors.email.message}</p>}
                 </div>
 
-                {/* Footer */}
-                {!isSent && (
-                    <div className="p-6 bg-slate-50 flex items-center justify-end gap-3 border-t border-slate-100">
-                        <Button variant="ghost" onClick={onClose} className="text-[14px] font-bold text-slate-500">Cancel</Button>
-                        <Button
-                            onClick={handleInvite}
-                            disabled={!email.trim() || !name.trim()}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-black h-11 px-8 rounded-xl shadow-lg shadow-indigo-100 transition-all hover:scale-[1.02]"
-                        >
-                            Send Invitation
-                        </Button>
-                    </div>
-                )}
-            </div>
-        </div>
+                <div className="space-y-2">
+                    <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        Role & Permissions
+                    </Label>
+                    <Select value={role} onValueChange={(v) => setValue("role", v as any, { shouldValidate: true })}>
+                        <SelectTrigger className="rounded-none">
+                            <div className="flex items-center gap-2">
+                                <Shield size={14} className="text-slate-400" />
+                                <SelectValue />
+                            </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="MEMBER">Member (Default)</SelectItem>
+                            <SelectItem value="ADMIN">Admin (Full Access)</SelectItem>
+                            <SelectItem value="VIEWER">Viewer (Read Only)</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                    They will receive an email with a link to join this workspace. You can change permissions later in settings.
+                </p>
+            </form>
+        </SidePanel>
     )
 }

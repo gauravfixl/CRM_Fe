@@ -1,548 +1,567 @@
 "use client"
 
-import React, { useState, useMemo } from 'react'
+import * as React from "react"
+import { useRouter } from "next/navigation"
 import {
-    Search,
-    Plus,
-    Tag,
-    List,
-    Layers,
-    Database,
-    ShieldCheck,
-    Filter,
-    ArrowUpRight,
-    FileText,
-    Workflow,
-    Table2,
-    RefreshCw,
-    Activity,
-    Edit,
-    Trash2,
-    Sun,
-    Moon,
-    Monitor,
-    Wind
-} from 'lucide-react'
-import { Button } from "@/shared/components/ui/button"
-import { Input } from "@/shared/components/ui/input"
+    Plus, Search, Download, Layers, Type,
+    Trash2, PencilLine, Filter, MoreVertical, Eye,
+    Activity, CheckCircle2, Calendar as CalIcon, Hash,
+    ToggleLeft, List, Mail, Link as LinkIcon, Zap,
+} from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
+import { Button } from "@/shared/components/ui/button"
 import { Badge } from "@/shared/components/ui/badge"
-import { Switch } from "@/shared/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/shared/components/ui/dialog"
+import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-    DropdownMenuCheckboxItem
-} from "@/shared/components/ui/dropdown-menu"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
+import { Switch } from "@/shared/components/ui/switch"
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/shared/components/ui/sheet"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu"
+import { Progress } from "@/shared/components/ui/progress"
 import { toast } from "@/shared/utils/toast"
-import { motion, AnimatePresence } from 'framer-motion'
-import { useTheme } from 'next-themes'
-import { useBrandingStore } from '@/lib/useBrandingStore'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs"
 
-// --- Types ---
-interface Field {
-    id: string;
-    name: string;
-    type: string;
-    module: string;
-    required: boolean;
-    status: string;
-    options: string[];
-    color: string;
+type CustomField = {
+    id: string
+    label: string
+    fieldKey: string
+    entity: 'Contact' | 'Company' | 'Deal' | 'Ticket' | 'Subscription'
+    type: 'Text' | 'Number' | 'Date' | 'Boolean' | 'Dropdown' | 'Email' | 'URL'
+    options: string[]
+    required: boolean
+    defaultValue: string
+    description: string
+    enabled: boolean
+    usageCount: number
+    createdAt: string
 }
 
-// --- Initial Mock Data ---
-const INITIAL_FIELDS: Field[] = [
-    { id: "CF-001", name: "Industry vertical", type: "Dropdown", module: "Clients", required: true, status: "Active", options: ["Technology", "Finance", "Healthcare", "Retail"], color: "blue" },
-    { id: "CF-002", name: "Employee capacity", type: "Number", module: "Clients", required: false, status: "Active", options: [], color: "emerald" },
-    { id: "CF-003", name: "Contractual valuation", type: "Currency", module: "Contracts", required: true, status: "Active", options: [], color: "indigo" },
-    { id: "CF-004", name: "Incident criticality", type: "Dropdown", module: "Support", required: true, status: "Active", options: ["Low", "Medium", "High", "Critical"], color: "rose" }
+const ENTITIES: CustomField['entity'][] = ["Contact", "Company", "Deal", "Ticket", "Subscription"]
+const TYPES: CustomField['type'][] = ["Text", "Number", "Date", "Boolean", "Dropdown", "Email", "URL"]
+
+const TYPE_ICONS: Record<CustomField['type'], any> = {
+    Text: Type, Number: Hash, Date: CalIcon, Boolean: ToggleLeft,
+    Dropdown: List, Email: Mail, URL: LinkIcon,
+}
+const TYPE_COLORS: Record<CustomField['type'], string> = {
+    Text: "bg-slate-50 text-slate-600 border-slate-100",
+    Number: "bg-indigo-50 text-indigo-600 border-indigo-100",
+    Date: "bg-emerald-50 text-emerald-600 border-emerald-100",
+    Boolean: "bg-violet-50 text-violet-600 border-violet-100",
+    Dropdown: "bg-amber-50 text-amber-600 border-amber-100",
+    Email: "bg-cyan-50 text-cyan-600 border-cyan-100",
+    URL: "bg-rose-50 text-rose-600 border-rose-100",
+}
+
+const INITIAL: CustomField[] = [
+    { id: "CF-001", label: "Industry", fieldKey: "industry", entity: "Company", type: "Dropdown", options: ["Tech", "Finance", "Healthcare", "Retail", "Other"], required: false, defaultValue: "Other", description: "Primary industry of the company.", enabled: true, usageCount: 1240, createdAt: "Jan 15, 2024" },
+    { id: "CF-002", label: "Lead Score", fieldKey: "lead_score", entity: "Contact", type: "Number", options: [], required: false, defaultValue: "0", description: "Calculated lead-scoring value (0-100).", enabled: true, usageCount: 2840, createdAt: "Feb 02, 2024" },
+    { id: "CF-003", label: "Next Renewal", fieldKey: "next_renewal", entity: "Subscription", type: "Date", options: [], required: true, defaultValue: "", description: "Date when subscription renews.", enabled: true, usageCount: 820, createdAt: "Mar 10, 2024" },
+    { id: "CF-004", label: "Decision Maker", fieldKey: "decision_maker", entity: "Contact", type: "Boolean", options: [], required: false, defaultValue: "false", description: "Whether the contact is a buying decision-maker.", enabled: true, usageCount: 1820, createdAt: "Apr 22, 2024" },
+    { id: "CF-005", label: "Source URL", fieldKey: "source_url", entity: "Deal", type: "URL", options: [], required: false, defaultValue: "", description: "Original source URL where deal originated.", enabled: true, usageCount: 420, createdAt: "May 14, 2024" },
+    { id: "CF-006", label: "Account Manager Email", fieldKey: "account_manager_email", entity: "Company", type: "Email", options: [], required: false, defaultValue: "", description: "Email of assigned account manager.", enabled: false, usageCount: 0, createdAt: "Aug 01, 2024" },
 ]
 
-export default function CustomizationArchitect() {
-    const { theme } = useTheme()
-    const { setBranding, themeMode } = useBrandingStore()
-    const [mounted, setMounted] = useState(false)
-    const [fields, setFields] = useState<Field[]>(INITIAL_FIELDS)
+const validators = {
+    required: (v: string) => !v || !v.toString().trim() ? "This field is required" : "",
+    minLen: (n: number) => (v: string) => v && v.trim().length < n ? `Must be at least ${n} characters` : "",
+    key: (v: string) => v && !/^[a-z][a-z0-9_]*$/i.test(v) ? "Use lowercase letters, numbers, underscores; start with letter" : "",
+}
 
-    // Hydration check for next-themes
-    React.useEffect(() => {
-        setMounted(true)
-    }, [])
+export default function CustomFieldsPage() {
+    const router = useRouter()
+    const [fields, setFields] = React.useState<CustomField[]>(INITIAL)
+    const [search, setSearch] = React.useState("")
+    const [entityFilter, setEntityFilter] = React.useState("all")
+    const [typeFilter, setTypeFilter] = React.useState("all")
 
-    const [searchQuery, setSearchQuery] = useState("")
-    const [isReindexing, setIsReindexing] = useState(false)
+    const [isFormOpen, setIsFormOpen] = React.useState(false)
+    const [isDetailOpen, setIsDetailOpen] = React.useState(false)
+    const [isFilterOpen, setIsFilterOpen] = React.useState(false)
+    const [editingId, setEditingId] = React.useState<string | null>(null)
+    const [selected, setSelected] = React.useState<CustomField | null>(null)
 
-    // Filter states
-    const [moduleFilters, setModuleFilters] = useState<string[]>([])
-
-    // Dialog state
-    const [isDialogOpen, setIsDialogOpen] = useState(false)
-    const [editingField, setEditingField] = useState<Field | null>(null)
-    const [formData, setFormData] = useState<Partial<Field>>({
-        name: '',
-        type: 'Text',
-        module: 'Clients',
-        required: false,
-        status: 'Active',
-        options: [],
-        color: 'blue'
+    const [form, setForm] = React.useState({
+        label: "", fieldKey: "", entity: "Contact" as CustomField['entity'], type: "Text" as CustomField['type'],
+        optionsStr: "", required: false, defaultValue: "", description: "",
     })
+    const [errors, setErrors] = React.useState<Record<string, string>>({})
 
-    // Unique modules for filters
-    const allModules = useMemo(() => Array.from(new Set(fields.map(f => f.module))), [fields])
+    const stats = React.useMemo(() => ({
+        total: fields.length,
+        active: fields.filter(f => f.enabled).length,
+        required: fields.filter(f => f.required).length,
+        entities: new Set(fields.map(f => f.entity)).size,
+    }), [fields])
 
-    // Filtered fields
-    const filteredFields = useMemo(() => {
-        return fields.filter(field => {
-            const matchesSearch = field.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                field.module.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                field.type.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchesModule = moduleFilters.length === 0 || moduleFilters.includes(field.module);
-            return matchesSearch && matchesModule;
+    const filtered = React.useMemo(() => fields.filter(f => {
+        const matchSearch = f.label.toLowerCase().includes(search.toLowerCase()) || f.fieldKey.toLowerCase().includes(search.toLowerCase())
+        const matchEntity = entityFilter === "all" || f.entity === entityFilter
+        const matchType = typeFilter === "all" || f.type === typeFilter
+        return matchSearch && matchEntity && matchType
+    }), [fields, search, entityFilter, typeFilter])
+
+    const setFieldValue = (field: string, value: any) => {
+        setForm(prev => {
+            const next = { ...prev, [field]: value }
+            if (field === "label" && !editingId) {
+                next.fieldKey = value.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "")
+            }
+            return next
         })
-    }, [fields, searchQuery, moduleFilters])
-
-    // Stats
-    const stats = useMemo(() => {
-        const total = fields.length;
-        const active = fields.filter(f => f.status === 'Active').length;
-        const required = fields.filter(f => f.required).length;
-
-        return [
-            { label: "Active Nodes", value: `${total} Fields`, icon: Layers, color: "blue", bg: "bg-blue-50/50 dark:bg-blue-900/10" },
-            { label: "Status Logic", value: `${active} Active`, icon: Workflow, color: "emerald", bg: "bg-emerald-50/50 dark:bg-emerald-900/10" },
-            { label: "Mandatory Nodes", value: `${required} Required`, icon: ShieldCheck, color: "indigo", bg: "bg-indigo-50/50 dark:bg-indigo-900/10" },
-            { label: "Schema Health", value: "99.8%", icon: Activity, color: "orange", bg: "bg-orange-50/50 dark:bg-orange-900/10" }
-        ]
-    }, [fields])
-
-    // Handlers
-    const handleReindex = () => {
-        setIsReindexing(true)
-        const reindexPromise = new Promise(r => setTimeout(r, 1200))
-
-        toast.promise(reindexPromise, {
-            loading: 'Re-indexing schema metadata...',
-            success: "Schema metadata successfully synchronized",
-            error: 'Schema re-indexing failed'
-        })
-
-        reindexPromise.then(() => {
-            setIsReindexing(false)
-            setFields([...fields].sort(() => Math.random() - 0.5))
-        })
+        if (errors[field]) setErrors(prev => { const c = { ...prev }; delete c[field]; return c })
     }
 
-    const toggleModuleFilter = (module: string) => {
-        setModuleFilters(prev =>
-            prev.includes(module) ? prev.filter(m => m !== module) : [...prev, module]
-        )
+    const validate = (): boolean => {
+        const errs: Record<string, string> = {}
+        errs.label = validators.required(form.label) || validators.minLen(2)(form.label)
+        errs.fieldKey = validators.required(form.fieldKey) || validators.key(form.fieldKey)
+        if (form.type === "Dropdown" && !form.optionsStr.trim()) errs.optionsStr = "Dropdown options required"
+        Object.keys(errs).forEach(k => { if (!errs[k]) delete errs[k] })
+        setErrors(errs)
+        return Object.keys(errs).length === 0
     }
 
-    const openCreateDialog = () => {
-        setEditingField(null)
-        setFormData({
-            name: '',
-            type: 'Text',
-            module: 'Clients',
-            required: false,
-            status: 'Active',
-            options: [],
-            color: 'blue'
-        })
-        setIsDialogOpen(true)
+    const openCreate = () => {
+        setEditingId(null)
+        setForm({ label: "", fieldKey: "", entity: "Contact", type: "Text", optionsStr: "", required: false, defaultValue: "", description: "" })
+        setErrors({})
+        setIsFormOpen(true)
     }
 
-    const openEditDialog = (field: Field) => {
-        setEditingField(field)
-        setFormData(field)
-        setIsDialogOpen(true)
+    const openEdit = (f: CustomField) => {
+        setEditingId(f.id)
+        setForm({ label: f.label, fieldKey: f.fieldKey, entity: f.entity, type: f.type, optionsStr: f.options.join(", "), required: f.required, defaultValue: f.defaultValue, description: f.description })
+        setErrors({})
+        setIsFormOpen(true)
     }
 
     const handleSave = () => {
-        if (!formData.name) {
-            toast.error("Please provide a field designation")
-            return
-        }
-
-        if (editingField) {
-            setFields(fields.map(f => f.id === editingField.id ? { ...f, ...formData as Field } : f))
-            toast.success("Schema node configuration synchronized")
+        if (!validate()) { toast.error("Please correct the highlighted fields"); return }
+        const opts = form.optionsStr.split(",").map(s => s.trim()).filter(Boolean)
+        if (editingId) {
+            setFields(fields.map(f => f.id === editingId ? { ...f, label: form.label.trim(), fieldKey: form.fieldKey, entity: form.entity, type: form.type, options: opts, required: form.required, defaultValue: form.defaultValue, description: form.description.trim() } : f))
+            toast.success("Field updated")
         } else {
-            const newField: Field = {
-                id: `CF-${(fields.length + 1).toString().padStart(3, '0')}`,
-                name: formData.name as string,
-                type: formData.type as string,
-                module: formData.module as string,
-                required: formData.required as boolean,
-                status: formData.status as string,
-                options: formData.options || [],
-                color: formData.color || 'indigo'
+            const f: CustomField = {
+                id: `CF-${String(fields.length + 1).padStart(3, "0")}`,
+                label: form.label.trim(), fieldKey: form.fieldKey, entity: form.entity, type: form.type,
+                options: opts, required: form.required, defaultValue: form.defaultValue,
+                description: form.description.trim(), enabled: true, usageCount: 0,
+                createdAt: new Date().toLocaleDateString(),
             }
-            setFields([...fields, newField])
-            toast.success("New schema node successfully provisioned")
+            setFields([f, ...fields])
+            toast.success(`Field "${f.label}" created`)
         }
-        setIsDialogOpen(false)
+        setIsFormOpen(false)
     }
 
     const handleDelete = (id: string) => {
         setFields(fields.filter(f => f.id !== id))
-        toast.success("Schema node purged from registry")
+        toast.success("Field removed")
     }
 
-    const toggleStatus = (id: string) => {
-        setFields(fields.map(f => f.id === id ? { ...f, status: f.status === 'Active' ? 'Inactive' : 'Active' } : f))
-        toast.success("Node operational status toggled asynchronously")
+    const handleToggle = (id: string, current: boolean) => {
+        setFields(fields.map(f => f.id === id ? { ...f, enabled: !current } : f))
+        toast.success(current ? "Field hidden" : "Field visible")
+    }
+
+    const handleExport = () => {
+        const csv = [["ID", "Label", "Key", "Entity", "Type", "Required", "Enabled", "Usage"], ...fields.map(f => [f.id, f.label, f.fieldKey, f.entity, f.type, f.required, f.enabled, f.usageCount])].map(r => r.join(",")).join("\n")
+        const blob = new Blob([csv], { type: "text/csv" })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement("a"); a.href = url; a.download = "custom-fields.csv"; a.click(); URL.revokeObjectURL(url)
+        toast.success("Fields exported")
+    }
+
+    const openDetail = (f: CustomField) => { setSelected(f); setIsDetailOpen(true) }
+
+    const kpiCards = [
+        { title: "Total Fields", value: String(stats.total), subtitle: "Custom field definitions", icon: Layers, color: "indigo", trend: `+${stats.total}`, path: "/client-management/settings/fields" },
+        { title: "Active Fields", value: String(stats.active), subtitle: "Visible in forms", icon: Activity, color: "emerald", trend: `+${stats.active}`, path: "/client-management/settings/fields" },
+        { title: "Required Fields", value: String(stats.required), subtitle: "Mandatory inputs", icon: CheckCircle2, color: "amber", trend: `${stats.required}`, path: "/client-management/settings/fields" },
+        { title: "Entity Coverage", value: String(stats.entities), subtitle: "Entities customized", icon: Type, color: "violet", trend: "+1", path: "/client-management/settings/fields" },
+    ]
+    const colorMap: Record<string, { bg: string; border: string; text: string; iconBg: string }> = {
+        indigo: { bg: "bg-gradient-to-br from-indigo-50 to-indigo-100/50", border: "border-indigo-200/50", text: "text-indigo-600", iconBg: "bg-indigo-100" },
+        violet: { bg: "bg-gradient-to-br from-violet-50 to-violet-100/50", border: "border-violet-200/50", text: "text-violet-600", iconBg: "bg-violet-100" },
+        emerald: { bg: "bg-gradient-to-br from-emerald-50 to-emerald-100/50", border: "border-emerald-200/50", text: "text-emerald-600", iconBg: "bg-emerald-100" },
+        amber: { bg: "bg-gradient-to-br from-amber-50 to-amber-100/50", border: "border-amber-200/50", text: "text-amber-600", iconBg: "bg-amber-100" },
     }
 
     return (
-        <div className="px-8 py-8 space-y-8 bg-slate-50 dark:bg-slate-950 min-h-screen font-outfit transition-colors duration-300">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-                <div>
-                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Customization <span className="text-indigo-600">Architect</span></h1>
-                    <p className="text-lg font-medium text-slate-500 dark:text-slate-400 mt-1 text-[15px]">Design bespoke schemas, orchestrate custom data nodes, and fine-tune platform-wide behavior and metadata</p>
+        <div className="px-8 py-6 space-y-6 bg-slate-50 min-h-screen">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+                <div className="flex flex-col gap-1">
+                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+                        Custom <span className="text-indigo-600">Fields</span>
+                    </h1>
+                    <p className="text-[14px] font-medium text-slate-500">Extend CRM records with custom field definitions across entities.</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <Button variant="outline" className="h-11 px-5 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 dark:text-white font-bold shadow-sm gap-2" onClick={() => toast.success("Schema documentation exported")}>
-                        <FileText className="w-4 h-4 text-slate-400" /> Export blueprint
+                <div className="flex gap-3">
+                    <Button variant="outline" className="rounded-none h-10" onClick={() => setIsFilterOpen(true)}>
+                        <Filter className="h-4 w-4 mr-2" />Filter
                     </Button>
-                    <Button className="h-11 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg shadow-indigo-600/20 gap-2" onClick={openCreateDialog}>
-                        <Plus className="w-4 h-4" /> Provision field
+                    <Button variant="outline" className="rounded-none h-10" onClick={handleExport}>
+                        <Download className="h-4 w-4 mr-2" />Export
+                    </Button>
+                    <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-none h-10 px-5" onClick={openCreate}>
+                        <Plus className="h-4 w-4 mr-2" />New Field
                     </Button>
                 </div>
             </div>
 
-            <Tabs defaultValue="schema" className="space-y-8">
-                <TabsList className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1.5 rounded-2xl h-14 w-fit shadow-md">
-                    <TabsTrigger value="schema" className="px-8 rounded-xl data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-600 font-bold text-sm h-full text-slate-500 transition-all">Schema architect</TabsTrigger>
-                    <TabsTrigger value="aesthetics" className="px-8 rounded-xl data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-600 font-bold text-sm h-full text-slate-500 transition-all">System aesthetics</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="schema" className="space-y-8">
-                    {/* Metrics */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        {stats.map((stat, i) => (
-                            <Card key={i} className={`${stat.bg} py-6 px-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm group hover:shadow-md transition-all flex items-center gap-4`}>
-                                <div className={`h-11 w-11 rounded-xl flex items-center justify-center border shadow-sm shrink-0 bg-white dark:bg-slate-900 ${stat.color === 'blue' ? 'border-blue-100 dark:border-blue-900/50 text-blue-600' :
-                                    stat.color === 'emerald' ? 'border-emerald-100 dark:border-emerald-900/50 text-emerald-600' :
-                                        stat.color === 'indigo' ? 'border-indigo-100 dark:border-indigo-900/50 text-indigo-600' :
-                                            'border-orange-100 dark:border-orange-900/50 text-orange-600'
-                                    }`}>
-                                    <stat.icon className="w-5 h-5" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none mb-1.5">{stat.label}</p>
-                                    <h4 className="text-lg font-bold text-slate-900 dark:text-white truncate tracking-tight">{stat.value}</h4>
-                                </div>
-                                <div className="flex items-center gap-1 text-[9px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded-full border border-emerald-100 dark:border-emerald-900/50 hidden lg:flex">
-                                    <ArrowUpRight className="w-2.5 h-2.5" /> 14%
-                                </div>
-                            </Card>
-                        ))}
-                    </div>
-
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="relative flex-1 max-w-md group">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
-                            <input
-                                placeholder="Filter global schema nodes..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="h-12 w-full pl-11 pr-4 bg-white dark:bg-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-sm transition-all"
-                            />
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" className={`h-12 px-5 rounded-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 dark:text-white font-bold text-[11px] shadow-sm gap-2 transition-colors ${moduleFilters.length > 0 ? 'text-indigo-600 border-indigo-200 bg-indigo-50/50' : 'text-slate-600'}`}>
-                                        <Filter className="w-4 h-4" /> {moduleFilters.length > 0 ? `Filtered (${moduleFilters.length})` : 'Global filters'}
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-56 rounded-2xl p-2 font-outfit dark:bg-slate-900 dark:border-slate-800">
-                                    <DropdownMenuLabel className="text-[10px] tracking-widest text-slate-400">Filter by Module</DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
-                                    {allModules.map(module => (
-                                        <DropdownMenuCheckboxItem
-                                            key={module}
-                                            checked={moduleFilters.includes(module)}
-                                            onCheckedChange={() => toggleModuleFilter(module)}
-                                            className="rounded-xl"
-                                        >
-                                            {module}
-                                        </DropdownMenuCheckboxItem>
-                                    ))}
-                                    {moduleFilters.length > 0 && (
-                                        <>
-                                            <DropdownMenuSeparator />
-                                            <Button
-                                                variant="ghost"
-                                                className="w-full justify-start text-[10px] font-bold text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 h-8 rounded-lg px-2"
-                                                onClick={() => setModuleFilters([])}
-                                            >
-                                                Clear all filters
-                                            </Button>
-                                        </>
-                                    )}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-
-                            <Button
-                                variant="outline"
-                                className={`h-12 px-5 rounded-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 dark:text-white font-bold text-[11px] text-slate-600 dark:text-slate-400 shadow-sm gap-2 ${isReindexing ? 'animate-pulse' : ''}`}
-                                onClick={handleReindex}
-                                disabled={isReindexing}
-                            >
-                                <RefreshCw className={`w-4 h-4 ${isReindexing ? 'animate-spin' : ''}`} /> {isReindexing ? 'Re-indexing...' : 'Re-index schema'}
-                            </Button>
-                        </div>
-                    </div>
-
-                    <div className="relative min-h-[400px]">
-                        <AnimatePresence mode="popLayout">
-                            {isReindexing ? (
-                                <motion.div
-                                    key="loader"
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-[2px] z-10 rounded-3xl"
-                                >
-                                    <div className="relative">
-                                        <div className="h-16 w-16 rounded-full border-4 border-slate-200 dark:border-slate-800 border-t-indigo-600 animate-spin" />
-                                        <Database className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-indigo-600" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {kpiCards.map((kpi, i) => {
+                    const cc = colorMap[kpi.color]
+                    const Icon = kpi.icon
+                    return (
+                        <Card key={i} className={`rounded-none cursor-pointer hover:shadow-md transition ${cc.bg} ${cc.border} border`} onClick={() => router.push(kpi.path)}>
+                            <CardContent className="p-5">
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <p className="text-xs font-semibold text-slate-500 tracking-wide mb-1">{kpi.title}</p>
+                                        <div className="flex items-baseline gap-2">
+                                            <h3 className="text-2xl font-bold text-slate-900">{kpi.value}</h3>
+                                            <span className={`text-xs font-bold ${cc.text}`}>{kpi.trend}</span>
+                                        </div>
+                                        <p className="mt-2 text-xs text-slate-400">{kpi.subtitle}</p>
                                     </div>
-                                    <p className="mt-4 text-sm font-bold text-slate-900 dark:text-white tracking-tight">Synchronizing schema matrix</p>
-                                    <p className="text-xs text-slate-500 animate-pulse">Propagating entropy across nodes...</p>
-                                </motion.div>
-                            ) : null}
+                                    <div className={`h-10 w-10 rounded-none flex items-center justify-center ${cc.iconBg}`}>
+                                        <Icon className={`h-5 w-5 ${cc.text}`} />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )
+                })}
+            </div>
 
-                            <motion.div
-                                layout
-                                className="grid grid-cols-1 gap-4"
-                            >
-                                {filteredFields.length > 0 ? (
-                                    filteredFields.map((f, idx) => (
-                                        <Card key={f.id} className="p-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl flex flex-col lg:flex-row lg:items-center justify-between gap-8 group hover:shadow-xl transition-all border-l-4 border-l-indigo-600">
-                                            <div className="flex items-center gap-6 flex-1 min-w-[300px]">
-                                                <div className={`h-16 w-16 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center justify-center shrink-0 shadow-sm ${f.color === 'blue' ? 'text-blue-600' : f.color === 'emerald' ? 'text-emerald-600' : f.color === 'indigo' ? 'text-indigo-600' : 'text-rose-600'}`}>
-                                                    <Table2 className="w-8 h-8 group-hover:rotate-12 transition-transform" />
-                                                </div>
-                                                <div className="space-y-1.5 flex-1">
-                                                    <div className="flex items-center gap-3">
-                                                        <h4 className="text-md font-black text-slate-900 dark:text-white tracking-tight group-hover:text-indigo-600 transition-colors leading-none">{f.name}</h4>
-                                                        <Badge className={`text-[9px] font-extrabold px-2.5 py-0.5 rounded-full border-0 tracking-widest ${f.status === 'Active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>{f.status}</Badge>
-                                                        {f.required && <Badge className="text-[9px] font-extrabold px-2.5 py-0.5 rounded-full border-0 tracking-widest bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">Required node</Badge>}
-                                                    </div>
-                                                    <div className="flex flex-wrap items-center gap-6 text-[10px] font-bold text-slate-400 tracking-widest">
-                                                        <span className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-slate-300 border-b-2 border-slate-100 dark:border-slate-800 pb-0.5"><Database className="w-3.5 h-3.5 text-indigo-500" /> Module: {f.module}</span>
-                                                        <span className="flex items-center gap-1.5"><Tag className="w-3.5 h-3.5" /> Data type: {f.type}</span>
-                                                        {f.options.length > 0 && <span className="flex items-center gap-1.5"><List className="w-3.5 h-3.5" /> Entropy: {f.options.length} Options</span>}
-                                                    </div>
-                                                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-6">
+                    <Card className="rounded-none">
+                        <CardHeader className="border-b border-slate-100 flex flex-row items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                                <CardTitle className="text-base font-semibold">Custom Fields</CardTitle>
+                                <Badge className="rounded-none bg-slate-100 text-slate-600">{filtered.length}</Badge>
+                            </div>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                <Input placeholder="Search fields..." value={search} onChange={e => setSearch(e.target.value)}
+                                    className="pl-10 rounded-none w-64 h-9" />
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="text-[11px] font-bold text-slate-400 tracking-wider border-b border-slate-50 bg-slate-50/30">
+                                            <th className="px-6 py-3">Field</th>
+                                            <th className="px-6 py-3">Type</th>
+                                            <th className="px-6 py-3">Entity</th>
+                                            <th className="px-6 py-3">Usage</th>
+                                            <th className="px-6 py-3">Enabled</th>
+                                            <th className="px-6 py-3"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50">
+                                        {filtered.length > 0 ? filtered.map(f => {
+                                            const Icon = TYPE_ICONS[f.type]
+                                            return (
+                                                <tr key={f.id} className="group hover:bg-slate-50/80 transition cursor-pointer" onClick={() => openDetail(f)}>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`h-9 w-9 rounded-none border flex items-center justify-center ${TYPE_COLORS[f.type]}`}>
+                                                                <Icon className="h-4 w-4" />
+                                                            </div>
+                                                            <div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <p className="text-sm font-semibold text-slate-800">{f.label}</p>
+                                                                    {f.required && <Badge className="rounded-none bg-rose-50 text-rose-600 text-[9px] border border-rose-100">Required</Badge>}
+                                                                </div>
+                                                                <p className="text-[11px] font-mono text-slate-500">{f.fieldKey}</p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`px-2 py-0.5 rounded-none text-[11px] font-semibold border ${TYPE_COLORS[f.type]}`}>{f.type}</span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <Badge className="rounded-none bg-slate-100 text-slate-700">{f.entity}</Badge>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm font-bold text-slate-900">{f.usageCount.toLocaleString()}</td>
+                                                    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                                                        <Switch checked={f.enabled} onCheckedChange={() => handleToggle(f.id, f.enabled)} className="data-[state=checked]:bg-indigo-600" />
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button variant="ghost" size="icon" className="rounded-none">
+                                                                    <MoreVertical className="h-4 w-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end" className="w-44 rounded-none">
+                                                                <DropdownMenuItem className="flex items-center gap-2" onClick={() => openEdit(f)}>
+                                                                    <PencilLine className="h-4 w-4" /> Edit
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem className="flex items-center gap-2" onClick={() => openDetail(f)}>
+                                                                    <Eye className="h-4 w-4" /> View Details
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem className="flex items-center gap-2 text-rose-500 border-t mt-1" onClick={() => handleDelete(f.id)}>
+                                                                    <Trash2 className="h-4 w-4" /> Remove
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </td>
+                                                </tr>
+                                            )
+                                        }) : (
+                                            <tr><td colSpan={6} className="px-6 py-12 text-center text-sm text-slate-500">No custom fields match your filters.</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="rounded-none">
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle className="text-base font-semibold">Field Distribution by Entity</CardTitle>
+                                <p className="text-sm text-slate-500 mt-1">Number of custom fields per entity</p>
+                            </div>
+                            <Layers className="h-5 w-5 text-slate-400" />
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {ENTITIES.map((e, idx) => {
+                                const list = fields.filter(f => f.entity === e)
+                                const max = Math.max(...ENTITIES.map(en => fields.filter(f => f.entity === en).length), 1)
+                                const progress = (list.length / max) * 100
+                                return (
+                                    <div key={idx} className="space-y-2 cursor-pointer hover:bg-slate-50 p-2 -m-2 transition" onClick={() => setEntityFilter(e)}>
+                                        <div className="flex justify-between items-center text-[11px] font-bold">
+                                            <span className="text-slate-700">{e} <span className="text-slate-400 font-medium ml-2">{list.length} fields</span></span>
+                                            <span className="text-slate-900">{list.reduce((s, f) => s + f.usageCount, 0).toLocaleString()} uses</span>
+                                        </div>
+                                        <Progress value={progress} className="h-1.5 bg-slate-50" />
+                                    </div>
+                                )
+                            })}
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <div className="space-y-6">
+                    <Card className="rounded-none">
+                        <CardHeader>
+                            <CardTitle className="text-xs font-bold text-slate-400 tracking-wider uppercase">Most Used Fields</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            {[...fields].sort((a, b) => b.usageCount - a.usageCount).slice(0, 4).map((f, idx) => {
+                                const Icon = TYPE_ICONS[f.type]
+                                return (
+                                    <div key={idx} className="flex items-center justify-between cursor-pointer hover:bg-slate-50 -mx-2 px-2 py-2 transition" onClick={() => openDetail(f)}>
+                                        <div className="flex items-center gap-3">
+                                            <div className={`h-9 w-9 rounded-none border flex items-center justify-center ${TYPE_COLORS[f.type]}`}>
+                                                <Icon className="h-4 w-4" />
                                             </div>
-                                            <div className="flex items-center gap-3 shrink-0">
-                                                <div className="flex items-center gap-3 mr-4 p-2 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl">
-                                                    <span className="text-[9px] font-bold text-slate-400 tracking-widest">Operational</span>
-                                                    <Switch
-                                                        checked={f.status === 'Active'}
-                                                        onCheckedChange={() => toggleStatus(f.id)}
-                                                        className="data-[state=checked]:bg-indigo-600 shadow-sm"
-                                                    />
-                                                </div>
-                                                <Button
-                                                    variant="outline"
-                                                    className="h-11 px-5 rounded-xl border-slate-200 dark:border-slate-800 font-bold text-[10px] gap-2 bg-white dark:bg-slate-900 dark:text-white"
-                                                    onClick={() => openEditDialog(f)}
-                                                >
-                                                    <Edit className="w-3.5 h-3.5" /> Edit logic
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-11 w-11 text-rose-500 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/30"
-                                                    onClick={() => handleDelete(f.id)}
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </Button>
+                                            <div>
+                                                <p className="text-xs font-bold text-slate-800 leading-none">{f.label}</p>
+                                                <p className="text-[10px] text-slate-400 mt-1 font-mono">{f.fieldKey}</p>
                                             </div>
-                                        </Card>
-                                    ))
-                                ) : (
-                                    <div className="py-20 text-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800">
-                                        <Table2 className="w-12 h-12 text-slate-200 dark:text-slate-800 mx-auto mb-4" />
-                                        <h3 className="text-lg font-bold text-slate-400">No schema definitions found in logic registry</h3>
-                                        <p className="text-sm text-slate-400 mt-1">Refine your search parameters or provision a new field node</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs font-bold text-slate-900">{f.usageCount.toLocaleString()}</p>
+                                            <Badge className="rounded-none bg-slate-100 text-slate-600 text-[9px]">{f.entity}</Badge>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </CardContent>
+                    </Card>
+
+                    <Card className="rounded-none border-indigo-100 bg-indigo-50/10">
+                        <CardHeader>
+                            <CardTitle className="text-xs font-bold text-indigo-600 tracking-wider flex items-center gap-2 uppercase">
+                                <Zap className="h-4 w-4" /> Tips
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            <div className="p-3 bg-white border border-indigo-100 rounded-none">
+                                <p className="text-[11px] text-slate-600">
+                                    Use <span className="text-indigo-600 font-bold">consistent naming</span> in field keys (snake_case).
+                                </p>
+                            </div>
+                            <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-none" onClick={() => router.push('/client-management/settings/roles')}>
+                                Manage Permissions
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+
+            {/* Form Sheet */}
+            <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <SheetContent side="right" className="sm:max-w-md w-full p-0 rounded-none flex flex-col">
+                    <SheetHeader className="p-6 border-b bg-gradient-to-br from-indigo-50 to-violet-50">
+                        <SheetTitle className="text-[18px] font-semibold text-slate-900">{editingId ? "Edit Field" : "Create Custom Field"}</SheetTitle>
+                        <p className="text-[12px] text-slate-500">Configure field metadata and validation.</p>
+                    </SheetHeader>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Field Label <span className="text-rose-500">*</span></Label>
+                            <Input value={form.label} onChange={e => setFieldValue("label", e.target.value)} placeholder="e.g., Industry" className={`h-10 rounded-none ${errors.label ? "border-rose-500" : ""}`} />
+                            {errors.label && <p className="text-[11px] text-rose-500">{errors.label}</p>}
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Field Key <span className="text-rose-500">*</span></Label>
+                            <Input value={form.fieldKey} onChange={e => setFieldValue("fieldKey", e.target.value)} placeholder="e.g., industry" className={`h-10 rounded-none font-mono text-xs ${errors.fieldKey ? "border-rose-500" : ""}`} />
+                            {errors.fieldKey && <p className="text-[11px] text-rose-500">{errors.fieldKey}</p>}
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-[12px] font-semibold">Entity</Label>
+                                <Select value={form.entity} onValueChange={(v: any) => setFieldValue("entity", v)}>
+                                    <SelectTrigger className="h-10 rounded-none"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-none">
+                                        {ENTITIES.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[12px] font-semibold">Type</Label>
+                                <Select value={form.type} onValueChange={(v: any) => setFieldValue("type", v)}>
+                                    <SelectTrigger className="h-10 rounded-none"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-none">
+                                        {TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        {form.type === "Dropdown" && (
+                            <div className="space-y-1.5">
+                                <Label className="text-[12px] font-semibold">Options (comma separated) <span className="text-rose-500">*</span></Label>
+                                <Input value={form.optionsStr} onChange={e => setFieldValue("optionsStr", e.target.value)} placeholder="e.g., Tech, Finance, Retail" className={`h-10 rounded-none ${errors.optionsStr ? "border-rose-500" : ""}`} />
+                                {errors.optionsStr && <p className="text-[11px] text-rose-500">{errors.optionsStr}</p>}
+                            </div>
+                        )}
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Default Value</Label>
+                            <Input value={form.defaultValue} onChange={e => setFieldValue("defaultValue", e.target.value)} placeholder="Optional default" className="h-10 rounded-none" />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Description</Label>
+                            <textarea value={form.description} onChange={e => setFieldValue("description", e.target.value)} placeholder="Field description..." rows={3} className="w-full p-2 text-sm rounded-none border border-slate-200" />
+                        </div>
+                        <div className="flex items-center justify-between p-3 border border-slate-200">
+                            <div>
+                                <p className="text-sm font-semibold text-slate-800">Required Field</p>
+                                <p className="text-[11px] text-slate-500">Must be filled when creating records</p>
+                            </div>
+                            <Switch checked={form.required} onCheckedChange={(v) => setFieldValue("required", v)} className="data-[state=checked]:bg-indigo-600" />
+                        </div>
+                    </div>
+                    <div className="p-5 border-t flex gap-3 bg-white">
+                        <Button variant="outline" className="flex-1 h-10 rounded-none" onClick={() => setIsFormOpen(false)}>Cancel</Button>
+                        <Button className="flex-1 h-10 bg-indigo-600 hover:bg-indigo-700 text-white rounded-none" onClick={handleSave}>
+                            {editingId ? "Save Changes" : "Create Field"}
+                        </Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* Filter Sheet */}
+            <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <SheetContent side="right" className="sm:max-w-md w-full p-0 rounded-none flex flex-col">
+                    <SheetHeader className="p-6 border-b bg-gradient-to-br from-slate-50 to-indigo-50">
+                        <SheetTitle className="text-[18px] font-semibold">Filter Fields</SheetTitle>
+                    </SheetHeader>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Entity</Label>
+                            <Select value={entityFilter} onValueChange={setEntityFilter}>
+                                <SelectTrigger className="h-10 rounded-none"><SelectValue /></SelectTrigger>
+                                <SelectContent className="rounded-none">
+                                    <SelectItem value="all">All Entities</SelectItem>
+                                    {ENTITIES.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Type</Label>
+                            <Select value={typeFilter} onValueChange={setTypeFilter}>
+                                <SelectTrigger className="h-10 rounded-none"><SelectValue /></SelectTrigger>
+                                <SelectContent className="rounded-none">
+                                    <SelectItem value="all">All Types</SelectItem>
+                                    {TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div className="p-5 border-t flex gap-3 bg-white">
+                        <Button variant="outline" className="flex-1 h-10 rounded-none" onClick={() => { setEntityFilter("all"); setTypeFilter("all"); toast.success("Filters reset") }}>Reset</Button>
+                        <Button className="flex-1 h-10 bg-indigo-600 hover:bg-indigo-700 rounded-none" onClick={() => { setIsFilterOpen(false); toast.success("Filters applied") }}>Apply</Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* Detail Sheet */}
+            <Sheet open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+                <SheetContent side="right" className="sm:max-w-md w-full p-0 rounded-none flex flex-col">
+                    <SheetHeader className="p-6 border-b bg-gradient-to-br from-slate-50 to-indigo-50">
+                        <SheetTitle className="text-[18px] font-semibold">Field Details</SheetTitle>
+                    </SheetHeader>
+                    {selected && (
+                        <>
+                            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                                <div className="flex items-start gap-3">
+                                    {(() => {
+                                        const Icon = TYPE_ICONS[selected.type]
+                                        return (
+                                            <div className={`h-12 w-12 rounded-none border flex items-center justify-center ${TYPE_COLORS[selected.type]}`}>
+                                                <Icon className="h-5 w-5" />
+                                            </div>
+                                        )
+                                    })()}
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-lg font-semibold text-slate-900">{selected.label}</p>
+                                            {selected.required && <Badge className="rounded-none bg-rose-50 text-rose-600 border border-rose-100 text-[10px]">Required</Badge>}
+                                        </div>
+                                        <p className="text-xs font-mono text-slate-500">{selected.fieldKey}</p>
+                                    </div>
+                                </div>
+                                {selected.description && <p className="text-sm text-slate-600">{selected.description}</p>}
+                                <div className="grid grid-cols-2 gap-3 pt-3 border-t">
+                                    <div><p className="text-[11px] text-slate-400 uppercase">ID</p><p className="font-semibold text-slate-900">{selected.id}</p></div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Type</p>
+                                        <span className={`px-2 py-0.5 rounded-none text-[11px] font-semibold border ${TYPE_COLORS[selected.type]}`}>{selected.type}</span>
+                                    </div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Entity</p><Badge className="rounded-none">{selected.entity}</Badge></div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Usage</p><p className="font-semibold text-slate-900">{selected.usageCount.toLocaleString()}</p></div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Default</p><p className="font-semibold text-slate-900 font-mono text-xs">{selected.defaultValue || "—"}</p></div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Created</p><p className="font-semibold text-slate-900">{selected.createdAt}</p></div>
+                                </div>
+                                {selected.options.length > 0 && (
+                                    <div>
+                                        <p className="text-[11px] text-slate-400 uppercase mb-2">Options</p>
+                                        <div className="flex flex-wrap gap-1">
+                                            {selected.options.map(o => <Badge key={o} className="rounded-none bg-slate-100 text-slate-700">{o}</Badge>)}
+                                        </div>
                                     </div>
                                 )}
-                            </motion.div>
-                        </AnimatePresence>
-
-                        {!isReindexing && (
-                            <Button
-                                className="w-full mt-4 h-16 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-white dark:hover:bg-slate-900 hover:border-indigo-400 hover:text-indigo-600 transition-all font-bold text-xs tracking-widest text-slate-400 gap-2 shadow-sm"
-                                onClick={openCreateDialog}
-                            >
-                                <Plus className="w-4 h-4" /> Provision new schema node
-                            </Button>
-                        )}
-                    </div>
-                </TabsContent>
-
-                <TabsContent value="aesthetics" className="space-y-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <Card className="p-8 rounded-3xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none transition-all">
-                            <div className="flex items-center gap-4 mb-8">
-                                <div className="h-14 w-14 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center border border-indigo-100 dark:border-indigo-900/50">
-                                    <Moon className="w-7 h-7 text-indigo-600" />
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">Appearance mode</h3>
-                                    <p className="text-sm text-slate-500 font-medium">Define your preferred platform look and feel</p>
-                                </div>
                             </div>
-
-                            <div className="grid grid-cols-3 gap-3">
-                                {[
-                                    { id: 'light', label: 'Light', icon: Sun },
-                                    { id: 'dark', label: 'Dark', icon: Moon },
-                                    { id: 'system', label: 'System', icon: Monitor }
-                                ].map((item) => (
-                                    <button
-                                        key={item.id}
-                                        onClick={() => {
-                                            setBranding({ themeMode: item.id as any })
-                                            toast.success(`${item.label} mode activated`)
-                                        }}
-                                        className={`flex flex-col items-center justify-center gap-3 p-5 rounded-2xl border-2 transition-all group ${mounted && themeMode === item.id
-                                            ? 'border-indigo-600 bg-indigo-50/30 dark:bg-indigo-900/10 text-indigo-600'
-                                            : 'border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 text-slate-500'
-                                            }`}
-                                    >
-                                        <item.icon className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                                        <span className="text-xs font-bold tracking-widest">{item.label}</span>
-                                        {mounted && themeMode === item.id && <div className="h-1.5 w-1.5 rounded-full bg-indigo-600" />}
-                                    </button>
-                                ))}
+                            <div className="p-5 border-t flex gap-3 bg-white">
+                                <Button variant="outline" className="flex-1 h-10 rounded-none" onClick={() => { setIsDetailOpen(false); openEdit(selected) }}>
+                                    <PencilLine className="h-4 w-4 mr-2" />Edit
+                                </Button>
+                                <Button variant="outline" className="flex-1 h-10 rounded-none text-rose-500 border-rose-200 hover:bg-rose-50" onClick={() => { handleDelete(selected.id); setIsDetailOpen(false) }}>
+                                    <Trash2 className="h-4 w-4 mr-2" />Remove
+                                </Button>
                             </div>
-                        </Card>
-
-                        <Card className="p-8 rounded-3xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none transition-all">
-                            <div className="flex items-center gap-4 mb-8">
-                                <div className="h-14 w-14 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center border border-emerald-100 dark:border-emerald-900/50">
-                                    <Wind className="w-7 h-7 text-emerald-600" />
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">Motion graphics</h3>
-                                    <p className="text-sm text-slate-500 font-medium">Optimize UI responsiveness and transitions</p>
-                                </div>
-                            </div>
-
-                            <div className="space-y-6">
-                                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                                    <div className="space-y-1">
-                                        <Label className="text-sm font-bold text-slate-900 dark:text-white">Reduced Motion</Label>
-                                        <p className="text-xs text-slate-500 font-medium tracking-tight">Limit non-essential structural transitions</p>
-                                    </div>
-                                    <Switch
-                                        className="data-[state=checked]:bg-emerald-600"
-                                        onCheckedChange={(checked) => toast.success(`Reduced motion ${checked ? 'enabled' : 'disabled'}`)}
-                                    />
-                                </div>
-                                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                                    <div className="space-y-1">
-                                        <Label className="text-sm font-bold text-slate-900 dark:text-white">Glassmorphism Effects</Label>
-                                        <p className="text-xs text-slate-500 font-medium tracking-tight">Enable sophisticated backdrop filters</p>
-                                    </div>
-                                    <Switch
-                                        defaultChecked
-                                        className="data-[state=checked]:bg-emerald-600"
-                                        onCheckedChange={(checked) => toast.success(`Glassmorphism ${checked ? 'enabled' : 'disabled'}`)}
-                                    />
-                                </div>
-                            </div>
-                        </Card>
-                    </div>
-                </TabsContent>
-            </Tabs>
-
-            {/* Field upsert dialog */}
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="max-w-md rounded-3xl font-outfit dark:bg-slate-950 dark:border-slate-800">
-                    <DialogHeader>
-                        <DialogTitle className="text-2xl font-bold text-slate-900 dark:text-white">
-                            {editingField ? "Configure node logic" : "Provision schema node"}
-                        </DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label className="text-xs font-bold text-slate-400 dark:text-slate-500 tracking-widest">Field Designation</Label>
-                            <Input
-                                placeholder="e.g. Lead Qualification Rank"
-                                value={formData.name}
-                                onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                className="rounded-xl h-11 focus:ring-indigo-500 shadow-sm dark:bg-slate-900 dark:border-slate-800 dark:text-white"
-                            />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-400 dark:text-slate-500 tracking-widest">Data Type</Label>
-                                <Select value={formData.type} onValueChange={v => setFormData({ ...formData, type: v })}>
-                                    <SelectTrigger className="rounded-xl h-11 focus:ring-indigo-500 shadow-sm dark:bg-slate-900 dark:border-slate-800 dark:text-white">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="dark:bg-slate-900 dark:border-slate-800">
-                                        <SelectItem value="Text">Text node</SelectItem>
-                                        <SelectItem value="Number">Numerical matrix</SelectItem>
-                                        <SelectItem value="Dropdown">Dropdown selector</SelectItem>
-                                        <SelectItem value="Currency">Financial value</SelectItem>
-                                        <SelectItem value="Date">Chronological marker</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-400 dark:text-slate-500 tracking-widest">Parent Module</Label>
-                                <Select value={formData.module} onValueChange={v => setFormData({ ...formData, module: v })}>
-                                    <SelectTrigger className="rounded-xl h-11 focus:ring-indigo-500 shadow-sm dark:bg-slate-900 dark:border-slate-800 dark:text-white">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="dark:bg-slate-900 dark:border-slate-800">
-                                        <SelectItem value="Clients">Clients core</SelectItem>
-                                        <SelectItem value="Contracts">Contracts layer</SelectItem>
-                                        <SelectItem value="Support">Support desk</SelectItem>
-                                        <SelectItem value="Marketing">Marketing hub</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
-                            <div className="space-y-0.5">
-                                <Label className="text-sm font-bold text-slate-900 dark:text-white">Mandatory schema requirement</Label>
-                                <p className="text-[11px] text-slate-500 font-medium">Enforce data integrity for this node</p>
-                            </div>
-                            <Switch
-                                checked={formData.required}
-                                onCheckedChange={checked => setFormData({ ...formData, required: checked })}
-                                className="data-[state=checked]:bg-indigo-600"
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="rounded-xl h-11 px-6 font-bold dark:border-slate-800 dark:text-white">Discard</Button>
-                        <Button onClick={handleSave} className="rounded-xl h-11 px-8 bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg shadow-indigo-600/20">
-                            {editingField ? "Sync schema" : "Provision node"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                        </>
+                    )}
+                </SheetContent>
+            </Sheet>
         </div>
     )
 }

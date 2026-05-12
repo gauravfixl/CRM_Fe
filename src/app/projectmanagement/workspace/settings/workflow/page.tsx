@@ -20,7 +20,7 @@ export default function WorkflowSettingsPage() {
                     <h3 className="text-xl font-bold text-slate-900 tracking-tight">Workflow Architect</h3>
                     <p className="text-slate-500 font-medium text-[13px]">Construct and automate the logical sequences of your project lifecycles.</p>
                 </div>
-                <Button className="h-10 px-6 bg-indigo-600 text-white rounded-xl font-bold text-[12px] gap-2 shadow-lg shadow-indigo-100">
+                <Button className="h-10 px-6 bg-indigo-600 text-white rounded-none font-bold text-[12px] gap-2 shadow-lg shadow-indigo-100">
                     <Plus size={16} />
                     New Blueprint
                 </Button>
@@ -28,7 +28,7 @@ export default function WorkflowSettingsPage() {
 
             <div className="grid grid-cols-1 gap-4">
                 {WORKFLOWS.map((wf, i) => (
-                    <Card key={i} className="group border-none shadow-sm bg-white rounded-[32px] overflow-hidden hover:shadow-xl hover:shadow-indigo-50/50 transition-all duration-500">
+                    <Card key={i} className="group border-none shadow-sm bg-white rounded-none overflow-hidden hover:shadow-xl hover:shadow-indigo-50/50 transition-all duration-500">
                         <CardContent className="p-6 flex items-center justify-between gap-6">
                             <div className="flex items-center gap-6">
                                 <div className="h-16 w-16 bg-slate-900 rounded-[20px] flex items-center justify-center text-white shrink-0 shadow-lg group-hover:scale-105 transition-transform">
@@ -51,8 +51,8 @@ export default function WorkflowSettingsPage() {
                                     <p className="text-[9px] font-medium text-slate-400 mt-1">Architecture</p>
                                 </div>
                                 <div className="flex gap-2">
-                                    <Button variant="outline" className="h-9 border border-slate-200 rounded-lg font-bold text-[11px] px-4 hover:bg-slate-50 text-slate-600">Editor</Button>
-                                    <Button className="h-9 w-9 bg-slate-900 text-white rounded-lg hover:bg-indigo-600 transition-colors">
+                                    <Button variant="outline" className="h-9 border border-slate-200 rounded-none font-bold text-[11px] px-4 hover:bg-slate-50 text-slate-600">Editor</Button>
+                                    <Button className="h-9 w-9 bg-slate-900 text-white rounded-none hover:bg-indigo-600 transition-colors">
                                         <Play size={14} />
                                     </Button>
                                 </div>
@@ -82,7 +82,7 @@ export default function WorkflowSettingsPage() {
                         { name: 'Done', color: 'bg-emerald-600' }
                     ].map((step, i, arr) => (
                         <React.Fragment key={i}>
-                            <div className={`h-24 w-40 ${step.color} rounded-[24px] flex flex-col items-center justify-center space-y-2 shadow-2xl border-2 border-white/5 group-hover:scale-105 transition-transform duration-500`}>
+                            <div className={`h-24 w-40 ${step.color} rounded-none flex flex-col items-center justify-center space-y-2 shadow-2xl border-2 border-white/5 group-hover:scale-105 transition-transform duration-500`}>
                                 <LayoutGrid size={20} className="opacity-50" />
                                 <span className="text-[11px] font-bold">{step.name}</span>
                             </div>
