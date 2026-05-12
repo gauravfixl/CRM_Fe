@@ -303,7 +303,11 @@ const ScheduledReportsPage = () => {
                   </TableRow>
                 ) : (
                   filteredSchedules.map((sch) => (
-                    <TableRow key={sch.id} className="hover:bg-slate-50">
+                    <TableRow
+                      key={sch.id}
+                      onClick={() => openEdit(sch)}
+                      className="hover:bg-slate-50 cursor-pointer"
+                    >
                       <TableCell className="font-semibold text-sm text-slate-800">{sch.reportName}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-[10px] font-bold rounded-full capitalize">{sch.frequency}</Badge>
@@ -324,7 +328,7 @@ const ScheduledReportsPage = () => {
                           {sch.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-1">
                           <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleTestRun(sch)} title="Test Run">
                             <Play className="h-3 w-3 text-[#8B5CF6]" />

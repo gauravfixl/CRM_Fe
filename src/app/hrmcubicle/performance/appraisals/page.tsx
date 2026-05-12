@@ -528,7 +528,10 @@ const PerformanceAppraisalsPage = () => {
                                     exit={{ opacity: 0, scale: 0.95 }}
                                     transition={{ delay: i * 0.05 }}
                                 >
-                                    <Card className="group border border-slate-100 shadow-sm hover:shadow-xl transition-all rounded-3xl bg-white overflow-hidden p-0 ring-1 ring-slate-100/50">
+                                    <Card
+                                        onClick={() => { setActiveAppraisal(appraisal); setIsViewOpen(true); }}
+                                        className="group border border-slate-100 shadow-sm hover:shadow-xl transition-all rounded-3xl bg-white overflow-hidden p-0 ring-1 ring-slate-100/50 cursor-pointer"
+                                    >
                                         <div className="flex flex-col lg:flex-row">
                                             <div className="p-6 lg:w-72 shrink-0 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-50 bg-slate-50/20 text-start">
                                                 <div className="flex items-center gap-4">

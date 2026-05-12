@@ -444,7 +444,10 @@ const AutomationRulesPage = () => {
                                         exit={{ opacity: 0, scale: 0.95 }}
                                         transition={{ delay: i * 0.05 }}
                                     >
-                                        <Card className={`border-2 transition-all rounded-[2.5rem] bg-white overflow-hidden shadow-sm group ${rule.isActive ? 'border-indigo-100' : 'border-slate-100 opacity-70'}`}>
+                                        <Card
+                                            onClick={() => openEditDialog(rule)}
+                                            className={`border-2 transition-all rounded-[2.5rem] bg-white overflow-hidden shadow-sm group cursor-pointer ${rule.isActive ? 'border-indigo-100' : 'border-slate-100 opacity-70'}`}
+                                        >
                                             <CardContent className="p-0">
                                                 <div className="p-8">
                                                     <div className="flex justify-between items-start mb-6">
@@ -464,11 +467,13 @@ const AutomationRulesPage = () => {
                                                                 </p>
                                                             </div>
                                                         </div>
-                                                        <Switch
-                                                            checked={rule.isActive}
-                                                            onCheckedChange={() => toggleRule(rule.id)}
-                                                            className="data-[state=checked]:bg-indigo-600"
-                                                        />
+                                                        <div onClick={(e) => e.stopPropagation()}>
+                                                            <Switch
+                                                                checked={rule.isActive}
+                                                                onCheckedChange={() => toggleRule(rule.id)}
+                                                                className="data-[state=checked]:bg-indigo-600"
+                                                            />
+                                                        </div>
                                                     </div>
 
                                                     <div className="grid grid-cols-2 gap-4">

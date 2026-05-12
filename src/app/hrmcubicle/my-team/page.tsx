@@ -23,11 +23,20 @@ import { useTeamStore } from "@/shared/data/team-store";
 import Link from "next/link";
 import { useToast } from "@/shared/components/ui/use-toast";
 import TeamReportsPanel from "@/shared/components/hrm/my-team/panels/team-reports-panel";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/shared/components/ui/sheet";
 
 const TeamOverviewPage = () => {
   const { toast } = useToast();
   const { members, attendance, leaves, approveLeave, rejectLeave } = useTeamStore();
   const [activeTab, setActiveTab] = useState("overview");
+  const [selectedMember, setSelectedMember] = useState<any | null>(null);
+  const [selectedLeave, setSelectedLeave] = useState<any | null>(null);
 
   const activeMembersCount = (members || []).filter(m => m.status === 'Active').length;
   const onLeaveCount = (members || []).filter(m => m.status === 'On Leave').length;
@@ -139,7 +148,10 @@ const TeamOverviewPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {(members || []).slice(0, 4).map((member, i) => (
                 <motion.div key={member.id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-                  <Card className="border-none bg-white p-4 rounded-xl group hover:shadow-lg transition-all border border-white/50">
+                  <Card
+                    onClick={() => setSelectedMember(member)}
+                    className="border-none bg-white p-4 rounded-xl group hover:shadow-lg transition-all border border-white/50 cursor-pointer"
+                  >
                     <div className="flex items-center gap-4 mb-4">
                       <Avatar className="h-10 w-10 ring-2 ring-white shadow-sm bg-indigo-50 text-indigo-600 font-bold text-xs uppercase">
                         <AvatarFallback>{member.avatar}</AvatarFallback>
@@ -196,7 +208,8 @@ const TeamOverviewPage = () => {
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, scale: 0.9 }}
-                      className="p-3.5 bg-slate-50/80 rounded-xl group border border-transparent hover:border-slate-100 transition-all hover:bg-white"
+                      onClick={() => setSelectedLeave(item)}
+                      className="p-3.5 bg-slate-50/80 rounded-xl group border border-transparent hover:border-slate-100 transition-all hover:bg-white cursor-pointer"
                     >
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3">
@@ -209,7 +222,7 @@ const TeamOverviewPage = () => {
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
                         <span className="text-[10px] font-bold text-slate-400">{item.days} Day(s)</span>
                         <div className="flex gap-2">
                           <Button size="sm" variant="ghost" className="h-7 px-3 rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-600 font-bold text-[10px]" onClick={() => handleReject(item.id, item.empName)}>Reject</Button>
@@ -256,6 +269,95 @@ const TeamOverviewPage = () => {
           <TeamReportsPanel />
         </TabsContent>
       </Tabs>
+
+      {/* 🪟 Slide-in: Member Details */}
+      <Sheet open={!!selectedMember} onOpenChange={(open) => !open && setSelectedMember(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-md bg-white rounded-none border-l border-slate-200 p-0 flex flex-col">
+          {selectedMember && (
+            <>
+              <SheetHeader className="p-6 border-b border-slate-100 bg-slate-50/50">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-14 w-14 ring-2 ring-white shadow">
+                    <AvatarFallback className="bg-indigo-100 text-indigo-700 font-bold">{selectedMember.avatar}</AvatarFallback>
+                  </Avatar>
+                  <div className="text-start min-w-0">
+                    <SheetTitle className="text-base font-bold text-slate-900 tracking-tight">{selectedMember.name}</SheetTitle>
+                    <SheetDescription className="text-xs font-medium text-slate-500">{selectedMember.designation}</SheetDescription>
+                  </div>
+                </div>
+              </SheetHeader>
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-none flex items-center justify-between">
+                  <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wide">Status</p>
+                  <Badge className={`${selectedMember.status === 'Active' ? 'bg-emerald-200 text-emerald-800' : 'bg-amber-200 text-amber-800'} border-none text-[10px] font-bold`}>{selectedMember.status}</Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-white border border-slate-100 rounded-none col-span-2">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Department</p>
+                    <p className="text-xs font-bold text-slate-800 mt-1">{selectedMember.department}</p>
+                  </div>
+                  <div className="p-3 bg-white border border-slate-100 rounded-none col-span-2">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Designation</p>
+                    <p className="text-xs font-bold text-slate-800 mt-1">{selectedMember.designation}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 h-10 rounded-none border-slate-200 text-slate-700 font-bold text-xs"
+                  onClick={() => setSelectedMember(null)}
+                >
+                  Close
+                </Button>
+                <Link href="/hrmcubicle/my-team/members" className="flex-1">
+                  <Button className="w-full h-10 rounded-none bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs">View Full Profile</Button>
+                </Link>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* 🪟 Slide-in: Leave Request Details */}
+      <Sheet open={!!selectedLeave} onOpenChange={(open) => !open && setSelectedLeave(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-md bg-white rounded-none border-l border-slate-200 p-0 flex flex-col">
+          {selectedLeave && (
+            <>
+              <SheetHeader className="p-6 border-b border-slate-100 bg-slate-50/50">
+                <Badge className="w-fit bg-amber-100 text-amber-700 border-none text-[10px] font-bold">Pending</Badge>
+                <SheetTitle className="text-lg font-bold text-slate-900 tracking-tight text-start mt-2">{selectedLeave.type}</SheetTitle>
+                <SheetDescription className="text-xs font-medium text-slate-500 text-start">Request from {selectedLeave.empName}</SheetDescription>
+              </SheetHeader>
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-none">
+                  <p className="text-[10px] font-bold text-indigo-700 uppercase tracking-wide mb-1">Duration</p>
+                  <p className="text-2xl font-bold text-indigo-900">{selectedLeave.days} {selectedLeave.days === 1 ? 'Day' : 'Days'}</p>
+                </div>
+                <div className="p-4 bg-slate-50 border border-slate-100 rounded-none">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-2">Employee</p>
+                  <p className="text-sm font-bold text-slate-800">{selectedLeave.empName}</p>
+                </div>
+              </div>
+              <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 h-10 rounded-none border-rose-200 text-rose-600 hover:bg-rose-50 font-bold text-xs"
+                  onClick={() => { handleReject(selectedLeave.id, selectedLeave.empName); setSelectedLeave(null); }}
+                >
+                  Reject
+                </Button>
+                <Button
+                  className="flex-1 h-10 rounded-none bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs"
+                  onClick={() => { handleApprove(selectedLeave.id, selectedLeave.empName); setSelectedLeave(null); }}
+                >
+                  Approve
+                </Button>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

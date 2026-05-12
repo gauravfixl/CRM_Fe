@@ -725,8 +725,12 @@ const PayslipsPage = () => {
                                                 </TableRow>
                                             ) : (
                                                 filteredPayslips.map((ps) => (
-                                                    <TableRow key={ps.id} className={cn("group border-slate-50", selectedIds.includes(ps.id) ? "bg-[#EC4899]/5 hover:bg-[#EC4899]/10" : "hover:bg-slate-50/70")}>
-                                                        <TableCell className="pl-6 py-3">
+                                                    <TableRow
+                                                        key={ps.id}
+                                                        onClick={() => { setCurrentPayslip(ps); setPreviewOpen(true); }}
+                                                        className={cn("group border-slate-50 cursor-pointer", selectedIds.includes(ps.id) ? "bg-[#EC4899]/5 hover:bg-[#EC4899]/10" : "hover:bg-slate-50/70")}
+                                                    >
+                                                        <TableCell className="pl-6 py-3" onClick={(e) => e.stopPropagation()}>
                                                             <Checkbox
                                                                 checked={selectedIds.includes(ps.id)}
                                                                 onCheckedChange={() => toggleSelect(ps.id)}
@@ -787,7 +791,7 @@ const PayslipsPage = () => {
                                                             </div>
                                                         </TableCell>
                                                         <TableCell className="py-3 text-[11px] font-medium text-slate-500">{ps.generatedDate ?? "—"}</TableCell>
-                                                        <TableCell className="text-right pr-6 py-3">
+                                                        <TableCell className="text-right pr-6 py-3" onClick={(e) => e.stopPropagation()}>
                                                             <div className="flex justify-end gap-1">
                                                                 <Tooltip>
                                                                     <TooltipTrigger asChild>

@@ -195,11 +195,13 @@ const AttendanceApprovalsPage = () => {
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     transition={{ delay: i * 0.05 }}
-                                    className={`p-6 hover:bg-slate-50/50 transition-all group flex items-start gap-8 ${selectedIds.includes(req.id) ? 'bg-indigo-50/30' : ''}`}
+                                    onClick={() => openAuditTrail(req)}
+                                    className={`p-6 hover:bg-slate-50/50 transition-all group flex items-start gap-8 cursor-pointer ${selectedIds.includes(req.id) ? 'bg-indigo-50/30' : ''}`}
                                 >
                                     <Checkbox
                                         checked={selectedIds.includes(req.id)}
                                         onCheckedChange={() => toggleSelection(req.id)}
+                                        onClick={(e) => e.stopPropagation()}
                                         className="mt-1 h-6 w-6 rounded-lg border-slate-300 data-[state=checked]:bg-[#6366f1] data-[state=checked]:border-[#6366f1]"
                                     />
 
@@ -238,7 +240,7 @@ const AttendanceApprovalsPage = () => {
                                         </div>
                                     </div>
 
-                                    <div className="flex flex-col gap-2 min-w-[150px]">
+                                    <div className="flex flex-col gap-2 min-w-[150px]" onClick={(e) => e.stopPropagation()}>
                                         <Button className="w-full bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold h-10 shadow-lg shadow-emerald-100 hover:scale-[1.02] transition-all text-sm" onClick={() => handleApprove(req.id)}>
                                             <CheckCircle2 className="mr-2 h-4 w-4" /> Approve
                                         </Button>

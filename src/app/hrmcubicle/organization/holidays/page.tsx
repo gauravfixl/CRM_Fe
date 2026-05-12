@@ -368,7 +368,10 @@ const HolidayCalendarPage = () => {
                                 exit={{ opacity: 0, scale: 0.9 }}
                                 transition={{ delay: i * 0.05 }}
                             >
-                                <Card className="group relative border-none shadow-sm hover:shadow-2xl transition-all rounded-[2.5rem] bg-white overflow-hidden ring-1 ring-slate-100 h-full flex flex-col">
+                                <Card
+                                    onClick={() => { setSelectedHoliday(holiday); setFormData(holiday); setErrors({}); setIsEditDialogOpen(true); }}
+                                    className="group relative border-none shadow-sm hover:shadow-2xl transition-all rounded-[2.5rem] bg-white overflow-hidden ring-1 ring-slate-100 h-full flex flex-col cursor-pointer"
+                                >
                                     <div className={`h-2 w-full ${getTypeStyles(holiday.type).split(' ')[0]}`} />
                                     <CardContent className="p-6 flex-1 flex flex-col">
                                         <div className="flex justify-between items-start mb-6">
@@ -379,7 +382,7 @@ const HolidayCalendarPage = () => {
 
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" className="h-8 w-8 p-0 text-slate-300 hover:text-slate-600 rounded-full">
+                                                    <Button variant="ghost" className="h-8 w-8 p-0 text-slate-300 hover:text-slate-600 rounded-full" onClick={(e) => e.stopPropagation()}>
                                                         <MoreVertical size={16} />
                                                     </Button>
                                                 </DropdownMenuTrigger>

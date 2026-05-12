@@ -239,7 +239,7 @@ const MyDocumentsPage = () => {
                                 {viewMode === 'list' ? (
                                     <div className="divide-y divide-slate-50">
                                         {documents.length > 0 ? documents.map((doc, i) => (
-                                            <div key={i} className={`group flex items-center p-6 hover:bg-white/80 transition-all text-start gap-6 cursor-pointer ${selectedIds.includes(doc.id) ? 'bg-indigo-50/30' : ''}`} onClick={() => toggleSelect(doc.id)}>
+                                            <div key={i} className={`group flex items-center p-6 hover:bg-white/80 transition-all text-start gap-6 cursor-pointer ${selectedIds.includes(doc.id) ? 'bg-indigo-50/30' : ''}`} onClick={() => setDetailDoc(doc)}>
                                                 <Checkbox
                                                     checked={selectedIds.includes(doc.id)}
                                                     onCheckedChange={() => toggleSelect(doc.id)}
@@ -282,8 +282,8 @@ const MyDocumentsPage = () => {
                                 ) : (
                                     <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-6">
                                         {documents.map((doc, i) => (
-                                            <div key={i} className={`relative group cursor-pointer`} onClick={() => toggleSelect(doc.id)}>
-                                                <div className={`absolute top-2 left-2 z-20`}>
+                                            <div key={i} className={`relative group cursor-pointer`} onClick={() => setDetailDoc(doc)}>
+                                                <div className={`absolute top-2 left-2 z-20`} onClick={(e) => { e.stopPropagation(); toggleSelect(doc.id); }}>
                                                     <Checkbox checked={selectedIds.includes(doc.id)} className="h-4 w-4 rounded border-indigo-200" />
                                                 </div>
                                                 <Card className={`bg-white border rounded-2xl p-6 text-center transition-all ${selectedIds.includes(doc.id) ? 'ring-2 ring-indigo-500 border-transparent shadow-md' : 'border-slate-200/60 shadow-sm hover:shadow-md'}`}>

@@ -329,7 +329,9 @@ const DesignationsPage = () => {
                                     exit={{ opacity: 0, scale: 0.9 }}
                                     transition={{ delay: i * 0.05 }}
                                 >
-                                    <Card className={`group border-none shadow-sm hover:shadow-xl transition-all rounded-[2rem] overflow-hidden ring-1 ring-slate-100 ${i % 5 === 0 ? 'bg-indigo-50/50 hover:bg-indigo-50' :
+                                    <Card
+                                        onClick={() => { setSelectedDesignation(designation); setIsViewMembersDialogOpen(true); }}
+                                        className={`group border-none shadow-sm hover:shadow-xl transition-all rounded-[2rem] overflow-hidden ring-1 ring-slate-100 cursor-pointer ${i % 5 === 0 ? 'bg-indigo-50/50 hover:bg-indigo-50' :
                                         i % 5 === 1 ? 'bg-emerald-50/50 hover:bg-emerald-50' :
                                             i % 5 === 2 ? 'bg-amber-50/50 hover:bg-amber-50' :
                                                 i % 5 === 3 ? 'bg-rose-50/50 hover:bg-rose-50' :
@@ -355,7 +357,7 @@ const DesignationsPage = () => {
 
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" className="h-8 w-8 p-0 text-slate-300 hover:text-slate-600">
+                                                        <Button variant="ghost" className="h-8 w-8 p-0 text-slate-300 hover:text-slate-600" onClick={(e) => e.stopPropagation()}>
                                                             <MoreVertical size={16} />
                                                         </Button>
                                                     </DropdownMenuTrigger>
@@ -401,7 +403,7 @@ const DesignationsPage = () => {
                                                 )}
                                             </div>
 
-                                            <div className="pt-3 border-t border-slate-100/50">
+                                            <div className="pt-3 border-t border-slate-100/50" onClick={(e) => e.stopPropagation()}>
                                                 <Button
                                                     variant="ghost"
                                                     className="w-full h-9 rounded-lg font-bold text-[10px] gap-2 text-indigo-600 hover:bg-white/50"

@@ -3204,9 +3204,10 @@ function ListView(props: {
                                 return (
                                     <TableRow
                                         key={iv.id}
-                                        className={`border-slate-100 hover:bg-slate-50/50 ${selected ? "bg-violet-50/40" : ""}`}
+                                        onClick={() => setActiveInterview(iv)}
+                                        className={`border-slate-100 hover:bg-slate-50/50 cursor-pointer ${selected ? "bg-violet-50/40" : ""}`}
                                     >
-                                        <TableCell className="pl-5">
+                                        <TableCell className="pl-5" onClick={(e) => e.stopPropagation()}>
                                             <Checkbox
                                                 checked={selected}
                                                 onCheckedChange={() => toggleSelect(iv.id)}

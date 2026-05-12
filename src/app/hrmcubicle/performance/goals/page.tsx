@@ -390,7 +390,26 @@ const GoalsPage = () => {
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: i * 0.05 }}
                                 >
-                                    <Card className="group border border-slate-100 shadow-sm hover:shadow-xl transition-all rounded-3xl bg-white overflow-hidden hover:border-indigo-100 p-0">
+                                    <Card
+                                        onClick={() => {
+                                            setActiveGoal(goal);
+                                            setFormData({
+                                                title: goal.title,
+                                                progress: goal.progress,
+                                                status: goal.status,
+                                                dueDate: goal.dueDate,
+                                                description: goal.description || "",
+                                                priority: goal.priority,
+                                                category: goal.category,
+                                                alignment: goal.alignment,
+                                                weightage: goal.weightage,
+                                                employee: "",
+                                            });
+                                            setErrors({});
+                                            setIsDialogOpen(true);
+                                        }}
+                                        className="group border border-slate-100 shadow-sm hover:shadow-xl transition-all rounded-3xl bg-white overflow-hidden hover:border-indigo-100 p-0 cursor-pointer"
+                                    >
                                         <CardContent className="p-5 text-start">
                                             <div className="flex flex-col lg:flex-row gap-5">
                                                 <div className="flex-1 space-y-4">
@@ -427,7 +446,7 @@ const GoalsPage = () => {
                                                     </div>
                                                 </div>
 
-                                                <div className="flex lg:flex-col justify-center gap-1.5 shrink-0 lg:border-l border-slate-50 lg:pl-5 min-w-[180px]">
+                                                <div className="flex lg:flex-col justify-center gap-1.5 shrink-0 lg:border-l border-slate-50 lg:pl-5 min-w-[180px]" onClick={(e) => e.stopPropagation()}>
                                                     {(goal.status === "Draft" || goal.status === "Awaiting Approval") && (
                                                         <Button
                                                             className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-9 px-4 font-bold text-[10px] tracking-widest gap-2 transition-all border-none shadow-md shadow-emerald-100"

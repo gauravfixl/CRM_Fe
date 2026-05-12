@@ -30,6 +30,13 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/sha
 import { Progress } from "@/shared/components/ui/progress";
 import { EditProfileDialog } from "@/shared/components/hrm/me/edit-profile-dialog";
 import { useToast } from "@/shared/components/ui/use-toast";
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetDescription,
+} from "@/shared/components/ui/sheet";
 
 import { useMeStore } from "@/shared/data/me-store";
 
@@ -70,6 +77,22 @@ const ProfilePage = () => {
     });
 
     const [bannerImage, setBannerImage] = useState("/images/profile-banner.png");
+
+    // Request log + Experience detail panels
+    const initialRequestLog = [
+        { id: 'r1', title: 'Mobile Number Update', date: 'Oct 24, 2024', status: 'Approved', detail: 'Updated mobile from +91-9876XXXXXX to +91-9988XXXXXX.', approver: 'HR Admin' },
+        { id: 'r2', title: 'Address Change', date: 'Sep 12, 2024', status: 'Rejected', detail: 'Address proof was missing, please re-submit with utility bill.', approver: 'HR Admin' },
+        { id: 'r3', title: 'Bank Account Update', date: 'Aug 05, 2024', status: 'Approved', detail: 'Bank account updated successfully and verified via penny drop.', approver: 'Finance Ops' },
+    ];
+    const [requestLog, setRequestLog] = useState(initialRequestLog);
+    const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
+    const [selectedExperience, setSelectedExperience] = useState<any | null>(null);
+
+    const handleDeleteRequest = (id: string) => {
+        setRequestLog(prev => prev.filter(r => r.id !== id));
+        setSelectedRequest(null);
+        toast({ title: 'Request removed', description: 'The selected request log entry has been deleted.' });
+    };
 
     // Sync profileData whenever store data changes
     useEffect(() => {
@@ -429,7 +452,11 @@ const ProfilePage = () => {
                         </div>
                         <div className="p-6 space-y-6">
                             {user.workExperience.map((exp, i) => (
-                                <div key={i} className={`flex gap-6 group/exp cursor-pointer ${i > 0 ? 'border-t border-slate-50 pt-8' : ''}`}>
+                                <div
+                                    key={i}
+                                    onClick={() => setSelectedExperience(exp)}
+                                    className={`flex gap-6 group/exp cursor-pointer ${i > 0 ? 'border-t border-slate-50 pt-8' : ''}`}
+                                >
                                     <div className="w-12 h-12 rounded-xl bg-white shadow-md shadow-slate-100 ring-1 ring-slate-100 flex items-center justify-center shrink-0 group-hover/exp:scale-105 transition-all">
                                         <Building2 size={24} className="text-slate-400 group-hover/exp:text-[#6366f1]" />
                                     </div>
@@ -478,25 +505,32 @@ const ProfilePage = () => {
 
                     {/* Request History Log */}
                     <Card className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden text-start group hover:shadow-2xl transition-all">
-                        <div className="px-8 py-6 bg-slate-50/30 border-b border-slate-50">
+                        <div className="px-8 py-6 bg-slate-50/30 border-b border-slate-50 flex items-center justify-between">
                             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2.5">
                                 <Clock size={16} className="text-slate-400" /> Profile Request Log
                             </h3>
+                            <Badge variant="outline" className="text-[9px] font-bold text-slate-500">{requestLog.length} records</Badge>
                         </div>
                         <div className="p-6 space-y-4">
-                            {[
-                                { title: 'Mobile Number Update', date: 'Oct 24, 2024', status: 'Approved' },
-                                { title: 'Address Change', date: 'Sep 12, 2024', status: 'Rejected' },
-                                { title: 'Bank Account Update', date: 'Aug 05, 2024', status: 'Approved' }
-                            ].map((req, i) => (
-                                <div key={i} className="flex items-center justify-between pb-5 border-b border-slate-50 last:border-0 last:pb-0">
+                            {requestLog.length === 0 && (
+                                <p className="text-xs font-bold text-slate-400 text-center py-6">No request log entries.</p>
+                            )}
+                            {requestLog.map((req) => (
+                                <div
+                                    key={req.id}
+                                    onClick={() => setSelectedRequest(req)}
+                                    className="flex items-center justify-between pb-5 border-b border-slate-50 last:border-0 last:pb-0 cursor-pointer hover:bg-slate-50/60 -mx-4 px-4 py-2 transition-colors"
+                                >
                                     <div className="space-y-0.5">
                                         <h4 className="font-bold text-slate-800 text-xs">{req.title}</h4>
                                         <p className="text-[9px] uppercase font-bold text-slate-400">{req.date}</p>
                                     </div>
-                                    <Badge className={`${req.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'} border-none font-bold text-[9px] px-2.5 py-0.5`}>
-                                        {req.status}
-                                    </Badge>
+                                    <div className="flex items-center gap-2">
+                                        <Badge className={`${req.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'} border-none font-bold text-[9px] px-2.5 py-0.5`}>
+                                            {req.status}
+                                        </Badge>
+                                        <ChevronRight size={14} className="text-slate-300" />
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -510,6 +544,106 @@ const ProfilePage = () => {
                 initialData={profileData}
                 onSave={handleSaveProfile}
             />
+
+            {/* 🪟 Slide-in: Request Log Details */}
+            <Sheet open={!!selectedRequest} onOpenChange={(open) => !open && setSelectedRequest(null)}>
+                <SheetContent side="right" className="w-full sm:max-w-md bg-white rounded-none border-l border-slate-200 p-0 flex flex-col">
+                    {selectedRequest && (
+                        <>
+                            <SheetHeader className="p-6 border-b border-slate-100 bg-slate-50/50">
+                                <Badge className={`w-fit text-[10px] font-bold px-2 py-1 border-none rounded-md ${selectedRequest.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                                    {selectedRequest.status}
+                                </Badge>
+                                <SheetTitle className="text-lg font-bold text-slate-900 tracking-tight text-start mt-2">
+                                    {selectedRequest.title}
+                                </SheetTitle>
+                                <SheetDescription className="text-xs font-medium text-slate-500 text-start">
+                                    Submitted on {selectedRequest.date}
+                                </SheetDescription>
+                            </SheetHeader>
+                            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                                <div className="p-4 bg-slate-50 border border-slate-100 rounded-none">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-2">Details</p>
+                                    <p className="text-xs font-medium text-slate-700 leading-relaxed">{selectedRequest.detail}</p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="p-3 bg-white border border-slate-100 rounded-none">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Approver</p>
+                                        <p className="text-xs font-bold text-slate-800 mt-1">{selectedRequest.approver}</p>
+                                    </div>
+                                    <div className="p-3 bg-white border border-slate-100 rounded-none">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Submitted</p>
+                                        <p className="text-xs font-bold text-slate-800 mt-1">{selectedRequest.date}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    className="flex-1 h-10 rounded-none border-slate-200 text-slate-700 font-bold text-xs"
+                                    onClick={() => setSelectedRequest(null)}
+                                >
+                                    Close
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    className="flex-1 h-10 rounded-none border-rose-200 text-rose-600 hover:bg-rose-50 font-bold text-xs"
+                                    onClick={() => handleDeleteRequest(selectedRequest.id)}
+                                >
+                                    <Trash2 size={14} className="mr-1.5" /> Delete
+                                </Button>
+                            </div>
+                        </>
+                    )}
+                </SheetContent>
+            </Sheet>
+
+            {/* 🪟 Slide-in: Work Experience Details */}
+            <Sheet open={!!selectedExperience} onOpenChange={(open) => !open && setSelectedExperience(null)}>
+                <SheetContent side="right" className="w-full sm:max-w-md bg-white rounded-none border-l border-slate-200 p-0 flex flex-col">
+                    {selectedExperience && (
+                        <>
+                            <SheetHeader className="p-6 border-b border-slate-100 bg-slate-50/50">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-12 w-12 rounded-none bg-white shadow border border-slate-100 flex items-center justify-center">
+                                        <Building2 size={22} className="text-indigo-500" />
+                                    </div>
+                                    <div className="text-start">
+                                        <SheetTitle className="text-lg font-bold text-slate-900 tracking-tight">{selectedExperience.company}</SheetTitle>
+                                        <SheetDescription className="text-xs font-medium text-slate-500">{selectedExperience.role}</SheetDescription>
+                                    </div>
+                                </div>
+                            </SheetHeader>
+                            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="p-3 bg-white border border-slate-100 rounded-none">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Duration</p>
+                                        <p className="text-xs font-bold text-slate-800 mt-1">{selectedExperience.duration}</p>
+                                    </div>
+                                    <div className="p-3 bg-white border border-slate-100 rounded-none">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Role</p>
+                                        <p className="text-xs font-bold text-slate-800 mt-1">{selectedExperience.role}</p>
+                                    </div>
+                                </div>
+                                <div className="p-4 bg-slate-50 border border-slate-100 rounded-none">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-2">Summary</p>
+                                    <p className="text-xs font-medium text-slate-700 leading-relaxed">
+                                        Worked as <strong>{selectedExperience.role}</strong> at <strong>{selectedExperience.company}</strong> during <strong>{selectedExperience.duration}</strong>.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+                                <Button
+                                    className="w-full h-10 rounded-none bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs"
+                                    onClick={() => setSelectedExperience(null)}
+                                >
+                                    Close
+                                </Button>
+                            </div>
+                        </>
+                    )}
+                </SheetContent>
+            </Sheet>
         </div >
     );
 };

@@ -365,7 +365,14 @@ const ContinuousFeedbackPage = () => {
                                         exit={{ opacity: 0, y: -10 }}
                                         transition={{ delay: i * 0.05 }}
                                     >
-                                        <Card className="group border border-slate-100 shadow-sm hover:shadow-xl transition-all rounded-3xl bg-white overflow-hidden p-0">
+                                        <Card
+                                            onClick={() => {
+                                                setActiveFeedback(fb);
+                                                setEditData({ message: fb.message, category: fb.category, isPublic: fb.isPublic, isAnonymous: fb.isAnonymous });
+                                                setIsEditOpen(true);
+                                            }}
+                                            className="group border border-slate-100 shadow-sm hover:shadow-xl transition-all rounded-3xl bg-white overflow-hidden p-0 cursor-pointer"
+                                        >
                                             <CardContent className="p-6">
                                                 <div className="flex flex-col md:flex-row gap-8 items-start">
                                                     <div className="flex flex-col items-center gap-3 shrink-0 md:w-28">
@@ -418,7 +425,7 @@ const ContinuousFeedbackPage = () => {
 
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" className="h-9 w-9 text-slate-300 hover:text-slate-600 rounded-xl hover:bg-slate-50">
+                                                            <Button variant="ghost" className="h-9 w-9 text-slate-300 hover:text-slate-600 rounded-xl hover:bg-slate-50" onClick={(e) => e.stopPropagation()}>
                                                                 <MoreVertical size={16} />
                                                             </Button>
                                                         </DropdownMenuTrigger>

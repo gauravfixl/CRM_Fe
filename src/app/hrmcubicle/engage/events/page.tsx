@@ -346,8 +346,11 @@ const EventsPage = () => {
                                                 exit={{ opacity: 0, scale: 0.95 }}
                                                 transition={{ delay: idx * 0.05 }}
                                             >
-                                                <Card className={`group relative rounded-[2.5rem] border-none overflow-hidden transition-all duration-500 hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] h-full flex flex-col ${item.itemType === 'celebration' ? 'bg-gradient-to-br from-rose-50 to-amber-50' : 'bg-white border-2 border-slate-100 shadow-sm'
-                                                    }`}>
+                                                <Card
+                                                    onClick={() => item.itemType === 'event' && handleEdit(item as Event)}
+                                                    className={`group relative rounded-[2.5rem] border-none overflow-hidden transition-all duration-500 hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] h-full flex flex-col cursor-pointer ${item.itemType === 'celebration' ? 'bg-gradient-to-br from-rose-50 to-amber-50' : 'bg-white border-2 border-slate-100 shadow-sm'
+                                                    }`}
+                                                >
                                                     {/* Top Accents */}
                                                     {item.itemType === 'celebration' ? (
                                                         <div className="absolute top-4 right-4 h-12 w-12 bg-white/60 backdrop-blur-md rounded-2xl flex items-center justify-center text-rose-500 shadow-sm rotate-3 group-hover:rotate-12 transition-transform">

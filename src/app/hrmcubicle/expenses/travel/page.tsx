@@ -328,14 +328,18 @@ const TravelManagementPage = () => {
                         activeRequests.map((req) => {
                             const StatusIcon = travelStatusConfig[req.status].icon;
                             return (
-                                <Card key={req.id} className="rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow">
+                                <Card
+                                    key={req.id}
+                                    onClick={() => openDetail(req)}
+                                    className="rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                                >
                                     <CardContent className="p-5">
                                         <div className="flex items-start justify-between mb-3">
                                             <Badge variant="secondary" className={cn("text-xs", travelStatusConfig[req.status].bg, travelStatusConfig[req.status].color)}>
                                                 <StatusIcon className="h-3 w-3 mr-1" />
                                                 {req.status}
                                             </Badge>
-                                            <div className="flex items-center gap-1">
+                                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                                                 <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-slate-500" title="View" onClick={() => openDetail(req)}>
                                                     <Eye className="h-3.5 w-3.5" />
                                                 </Button>

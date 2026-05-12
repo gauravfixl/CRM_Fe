@@ -88,9 +88,11 @@ const NotificationsPage = () => {
         return styles[category] || styles['System'];
     };
 
+    const [detailNotif, setDetailNotif] = useState<Notification | null>(null);
+
     const handleNotificationClick = (notification: Notification) => {
         if (!notification.isRead) markAsRead(notification.id);
-        if (notification.actionUrl) router.push(notification.actionUrl);
+        setDetailNotif(notification);
     };
 
     const categories: { label: string, value: NotificationCategory | 'All', icon: any }[] = [

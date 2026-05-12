@@ -295,7 +295,10 @@ const DepartmentsPage = () => {
                                     exit={{ opacity: 0, scale: 0.9 }}
                                     transition={{ delay: i * 0.05 }}
                                 >
-                                    <Card className="group border-none shadow-sm hover:shadow-xl transition-all rounded-[1.5rem] bg-white overflow-hidden ring-1 ring-slate-100">
+                                    <Card
+                                        onClick={() => { window.location.href = `/hrmcubicle/organization/departments/${department.id}`; }}
+                                        className="group border-none shadow-sm hover:shadow-xl transition-all rounded-[1.5rem] bg-white overflow-hidden ring-1 ring-slate-100 cursor-pointer"
+                                    >
                                         <CardContent className="p-3.5 space-y-2.5 flex flex-col">
                                             <div className="flex items-start justify-between">
                                                 <div className="flex items-center gap-2.5">
@@ -314,7 +317,7 @@ const DepartmentsPage = () => {
 
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" className="h-8 w-8 p-0 text-slate-300 hover:text-slate-600">
+                                                        <Button variant="ghost" className="h-8 w-8 p-0 text-slate-300 hover:text-slate-600" onClick={(e) => e.stopPropagation()}>
                                                             <MoreVertical size={16} />
                                                         </Button>
                                                     </DropdownMenuTrigger>

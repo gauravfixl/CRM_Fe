@@ -61,6 +61,9 @@ const PerformanceOverviewPage = () => {
   const [goalFilter, setGoalFilter] = React.useState('All');
   const [assessment, setAssessment] = React.useState({ reflections: "" });
 
+  const [selectedFeedback, setSelectedFeedback] = React.useState<any | null>(null);
+  const [selectedGoal, setSelectedGoal] = React.useState<any | null>(null);
+
   const [newGoal, setNewGoal] = React.useState<any>({
     title: "",
     description: "",
@@ -236,7 +239,11 @@ const PerformanceOverviewPage = () => {
                   <div className="divide-y divide-slate-50">
                     {(performance?.praises || []).length > 0 ? (
                       (performance.praises).slice(0, 3).map((fb: any, i: number) => (
-                        <div key={i} className="p-6 flex items-start gap-4 hover:bg-slate-50/50 transition-colors">
+                        <div
+                          key={i}
+                          onClick={() => setSelectedFeedback(fb)}
+                          className="p-6 flex items-start gap-4 hover:bg-slate-50/50 transition-colors cursor-pointer"
+                        >
                           <Avatar className="h-12 w-12 border-2 border-white shadow-md font-bold rounded-xl overflow-hidden">
                             <AvatarFallback className="bg-indigo-50 text-indigo-700">{fb.from[0]}</AvatarFallback>
                           </Avatar>
@@ -387,7 +394,11 @@ const PerformanceOverviewPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {filteredGoals.length > 0 ? (
               filteredGoals.map((goal: any, i: number) => (
-                <Card key={i} className="border-none bg-slate-50/50 p-6 rounded-3xl hover:bg-white hover:shadow-xl transition-all border border-transparent hover:border-slate-100 group">
+                <Card
+                  key={i}
+                  onClick={() => setSelectedGoal(goal)}
+                  className="border-none bg-slate-50/50 p-6 rounded-3xl hover:bg-white hover:shadow-xl transition-all border border-transparent hover:border-slate-100 group cursor-pointer"
+                >
                   <div className="flex justify-between items-start mb-6">
                     <div className="space-y-1.5">
                       <h4 className="font-extrabold text-slate-900 text-lg group-hover:text-indigo-600 transition-colors tracking-tight">{goal.title}</h4>

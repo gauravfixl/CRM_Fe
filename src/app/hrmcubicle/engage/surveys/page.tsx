@@ -303,7 +303,10 @@ const SurveysEngagePage = () => {
                                     animate={{ opacity: 1, scale: 1, y: 0 }}
                                     transition={{ delay: idx * 0.05 }}
                                 >
-                                    <Card className="group relative rounded-[2rem] border-2 border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 bg-white overflow-hidden p-0 h-full flex flex-col">
+                                    <Card
+                                        onClick={() => { setSelectedSurvey(survey); setIsAnalyticsOpen(true); }}
+                                        className="group relative rounded-[2rem] border-2 border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 bg-white overflow-hidden p-0 h-full flex flex-col cursor-pointer"
+                                    >
                                         <div className="bg-emerald-50/50 px-6 py-3 border-b border-emerald-100/20 flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <Flame size={14} className="text-emerald-600" />
@@ -317,7 +320,7 @@ const SurveysEngagePage = () => {
                                                 <h3 className="text-lg font-black text-slate-900 leading-[1.2] group-hover:text-emerald-600 transition-colors italic line-clamp-1">{survey.title}</h3>
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" className="h-8 w-8 p-0 rounded-lg hover:bg-emerald-50 text-slate-300 hover:text-emerald-600 transition-all">
+                                                        <Button variant="ghost" className="h-8 w-8 p-0 rounded-lg hover:bg-emerald-50 text-slate-300 hover:text-emerald-600 transition-all" onClick={(e) => e.stopPropagation()}>
                                                             <MoreHorizontal size={16} />
                                                         </Button>
                                                     </DropdownMenuTrigger>
@@ -350,7 +353,7 @@ const SurveysEngagePage = () => {
                                                 </div>
                                             </div>
 
-                                            <div className="mt-6 pt-5 border-t border-slate-50 flex items-center justify-center">
+                                            <div className="mt-6 pt-5 border-t border-slate-50 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
                                                 <Button onClick={() => { setSelectedSurvey(survey); setIsAnalyticsOpen(true); }} className="w-full rounded-xl h-10 bg-slate-900 text-white font-black text-[10px] capitalize tracking-[0.2em] transition-all hover:bg-slate-800 shadow-md">
                                                     View Insights <ChevronRight size={14} className="ml-1" />
                                                 </Button>

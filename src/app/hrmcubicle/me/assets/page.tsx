@@ -52,6 +52,8 @@ const MyAssetsPage = () => {
     const [isVerifyOpen, setIsVerifyOpen] = React.useState(false);
     const [isTrackingOpen, setIsTrackingOpen] = React.useState(false);
     const [selectedAsset, setSelectedAsset] = React.useState<any>(null);
+    const [detailAsset, setDetailAsset] = React.useState<any | null>(null);
+    const [detailLog, setDetailLog] = React.useState<any | null>(null);
 
     const [requestForm, setRequestForm] = React.useState({
         category: 'Laptop',
@@ -124,7 +126,10 @@ const MyAssetsPage = () => {
                 >
                     {assets.map((asset, i) => (
                         <motion.div key={i} variants={itemVariants}>
-                            <Card className={`border shadow-md shadow-slate-200/30 hover:shadow-lg transition-all rounded-2xl overflow-hidden group ${asset.color}`}>
+                            <Card
+                                onClick={() => setDetailAsset(asset)}
+                                className={`border shadow-md shadow-slate-200/30 hover:shadow-lg transition-all rounded-2xl overflow-hidden group ${asset.color} cursor-pointer`}
+                            >
                                 <CardContent className="p-5 text-start space-y-4">
                                     <div className="flex justify-between items-start">
                                         <div className="h-10 w-10 rounded-xl bg-white shadow-md shadow-slate-200/50 border border-slate-50 flex items-center justify-center text-xl group-hover:scale-105 transition-transform">
@@ -153,7 +158,7 @@ const MyAssetsPage = () => {
                                         <Button
                                             variant="ghost"
                                             className="w-full justify-between h-9 px-4 rounded-xl bg-white/50 hover:bg-indigo-600 hover:text-white font-bold text-[8px] tracking-tight transition-all shadow-sm group/btn border-none capitalize"
-                                            onClick={() => { setSelectedAsset(asset); setIsPoliciesOpen(true); }}
+                                            onClick={(e) => { e.stopPropagation(); setSelectedAsset(asset); setIsPoliciesOpen(true); }}
                                         >
                                             Policies
                                             <ChevronRight size={12} className="group-hover/btn:translate-x-1 transition-transform" />
@@ -161,7 +166,7 @@ const MyAssetsPage = () => {
                                         <Button
                                             variant="ghost"
                                             className="w-full justify-between h-9 px-4 rounded-xl bg-rose-50/50 text-rose-600 hover:bg-rose-600 hover:text-white font-bold text-[8px] tracking-tight transition-all shadow-sm group/btn border-none capitalize"
-                                            onClick={() => { setSelectedAsset(asset); setIsReturnOpen(true); }}
+                                            onClick={(e) => { e.stopPropagation(); setSelectedAsset(asset); setIsReturnOpen(true); }}
                                         >
                                             Return Asset
                                             <RefreshCcw size={12} className="group-hover/btn:rotate-180 transition-transform" />
@@ -233,7 +238,11 @@ const MyAssetsPage = () => {
                         <div className="p-5">
                             <div className="space-y-3">
                                 {maintenanceLogs.map((log) => (
-                                    <div key={log.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50/50 border border-slate-100 hover:bg-white hover:shadow-sm transition-all group/log">
+                                    <div
+                                        key={log.id}
+                                        onClick={() => setDetailLog(log)}
+                                        className="flex items-center justify-between p-3 rounded-xl bg-slate-50/50 border border-slate-100 hover:bg-white hover:shadow-sm transition-all group/log cursor-pointer"
+                                    >
                                         <div className="flex items-center gap-3">
                                             <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center shadow-sm border border-slate-50">
                                                 {log.icon}
@@ -578,6 +587,115 @@ const MyAssetsPage = () => {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* 🪟 Slide-in: Asset Details */}
+            <Sheet open={!!detailAsset} onOpenChange={(open) => !open && setDetailAsset(null)}>
+                <SheetContent side="right" className="w-full sm:max-w-md bg-white rounded-none border-l border-slate-200 p-0 flex flex-col">
+                    {detailAsset && (
+                        <>
+                            <SheetHeader className="p-6 border-b border-slate-100 bg-slate-50/50">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-12 w-12 rounded-none bg-white shadow border border-slate-100 flex items-center justify-center">
+                                        {detailAsset.icon}
+                                    </div>
+                                    <div className="text-start min-w-0">
+                                        <SheetTitle className="text-base font-bold text-slate-900 tracking-tight truncate">{detailAsset.name}</SheetTitle>
+                                        <SheetDescription className="text-xs font-medium text-slate-500">{detailAsset.type} • {detailAsset.id}</SheetDescription>
+                                    </div>
+                                </div>
+                            </SheetHeader>
+                            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                                <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-none flex items-center justify-between">
+                                    <div>
+                                        <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wide">Status</p>
+                                        <p className="text-sm font-bold text-emerald-900 mt-1">{detailAsset.status}</p>
+                                    </div>
+                                    <CheckCircle2 className="text-emerald-600" size={28} />
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="p-3 bg-white border border-slate-100 rounded-none">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Asset ID</p>
+                                        <p className="text-xs font-bold text-slate-800 mt-1">{detailAsset.id}</p>
+                                    </div>
+                                    <div className="p-3 bg-white border border-slate-100 rounded-none">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Type</p>
+                                        <p className="text-xs font-bold text-slate-800 mt-1">{detailAsset.type}</p>
+                                    </div>
+                                    <div className="p-3 bg-white border border-slate-100 rounded-none col-span-2">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Serial Number</p>
+                                        <p className="text-xs font-bold text-slate-800 mt-1 font-mono">{detailAsset.serial}</p>
+                                    </div>
+                                    <div className="p-3 bg-white border border-slate-100 rounded-none col-span-2">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Specifications</p>
+                                        <p className="text-xs font-bold text-slate-800 mt-1">{detailAsset.specs}</p>
+                                    </div>
+                                    <div className="p-3 bg-white border border-slate-100 rounded-none col-span-2">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Allocation Date</p>
+                                        <p className="text-xs font-bold text-slate-800 mt-1">{detailAsset.date}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex flex-wrap gap-2">
+                                <Button
+                                    variant="outline"
+                                    className="flex-1 h-10 rounded-none border-slate-200 text-slate-700 font-bold text-xs"
+                                    onClick={() => { setSelectedAsset(detailAsset); setIsPoliciesOpen(true); setDetailAsset(null); }}
+                                >
+                                    Policies
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    className="flex-1 h-10 rounded-none border-rose-200 text-rose-600 hover:bg-rose-50 font-bold text-xs"
+                                    onClick={() => { setSelectedAsset(detailAsset); setIsReturnOpen(true); setDetailAsset(null); }}
+                                >
+                                    <RefreshCcw size={14} className="mr-1.5" /> Return
+                                </Button>
+                            </div>
+                        </>
+                    )}
+                </SheetContent>
+            </Sheet>
+
+            {/* 🪟 Slide-in: Maintenance Log Details */}
+            <Sheet open={!!detailLog} onOpenChange={(open) => !open && setDetailLog(null)}>
+                <SheetContent side="right" className="w-full sm:max-w-md bg-white rounded-none border-l border-slate-200 p-0 flex flex-col">
+                    {detailLog && (
+                        <>
+                            <SheetHeader className="p-6 border-b border-slate-100 bg-slate-50/50">
+                                <Badge className="w-fit bg-emerald-100 text-emerald-700 border-none text-[10px] font-bold">{detailLog.status}</Badge>
+                                <SheetTitle className="text-lg font-bold text-slate-900 tracking-tight text-start mt-2">{detailLog.type}</SheetTitle>
+                                <SheetDescription className="text-xs font-medium text-slate-500 text-start">Performed on {detailLog.date}</SheetDescription>
+                            </SheetHeader>
+                            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                                <div className="p-4 bg-slate-50 border border-slate-100 rounded-none">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-2">Activity Details</p>
+                                    <p className="text-xs font-medium text-slate-700 leading-relaxed">
+                                        {detailLog.type} was {detailLog.status.toLowerCase()} on {detailLog.date}. All system parameters were validated and recorded for compliance.
+                                    </p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="p-3 bg-white border border-slate-100 rounded-none">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Status</p>
+                                        <p className="text-xs font-bold text-slate-800 mt-1">{detailLog.status}</p>
+                                    </div>
+                                    <div className="p-3 bg-white border border-slate-100 rounded-none">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Date</p>
+                                        <p className="text-xs font-bold text-slate-800 mt-1">{detailLog.date}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+                                <Button
+                                    className="w-full h-10 rounded-none bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs"
+                                    onClick={() => setDetailLog(null)}
+                                >
+                                    Close
+                                </Button>
+                            </div>
+                        </>
+                    )}
+                </SheetContent>
+            </Sheet>
         </div>
     );
 };

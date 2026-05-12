@@ -70,6 +70,13 @@ import { Label } from "@/shared/components/ui/label";
 import { Input } from "@/shared/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Textarea } from "@/shared/components/ui/textarea";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/shared/components/ui/sheet";
 
 // ZUSTAND STORES
 import { useTeamStore } from "@/shared/data/team-store";
@@ -81,7 +88,7 @@ import { useMeStore } from "@/shared/data/me-store";
 import { useAttendanceStore } from "@/shared/data/attendance-store";
 
 // Professional UI Constants
-const CARD_RADIUS = "rounded-2xl";
+const CARD_RADIUS = "rounded-none";
 
 const HRAdminDashboard = () => {
   const router = useRouter();
@@ -89,6 +96,8 @@ const HRAdminDashboard = () => {
 
   // Dialog States
   const [activeModal, setActiveModal] = useState<string | null>(null);
+  // Slide-in details panel state
+  const [selectedApproval, setSelectedApproval] = useState<any | null>(null);
 
   // --- 1. DATA HOOKS ---
   const { members, addMember } = useTeamStore();
@@ -885,10 +894,11 @@ const HRAdminDashboard = () => {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
                         transition={{ delay: idx * 0.05 }}
-                        className="p-3 rounded-2xl bg-white border border-slate-100 shadow-sm hover:translate-y-[-2px] transition-all group/item text-start relative overflow-hidden"
+                        onClick={() => setSelectedApproval(item)}
+                        className="p-3 rounded-none bg-white border border-slate-100 shadow-sm hover:translate-y-[-2px] hover:border-indigo-200 hover:shadow-md transition-all group/item text-start relative overflow-hidden cursor-pointer"
                       >
                         <div className="flex justify-between items-start mb-2.5">
-                          <Badge variant="outline" className={`text-[7px] font-bold py-0.5 px-2 border-none rounded-md 
+                          <Badge variant="outline" className={`text-[7px] font-bold py-0.5 px-2 border-none rounded-md
                               ${item.category === 'Leave' ? 'bg-amber-50 text-amber-600' :
                               item.category === 'Expense' ? 'bg-emerald-50 text-emerald-600' :
                                 'bg-indigo-50 text-indigo-600'}`}>
@@ -907,7 +917,7 @@ const HRAdminDashboard = () => {
                             <span className="block text-[8px] font-bold text-slate-400 tracking-tight mt-0.5">Direct Report</span>
                           </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                           <Button
                             className="flex-1 h-8 bg-indigo-600 hover:bg-indigo-700 text-white text-[9px] font-bold rounded-lg transition-all shadow-md border-none"
                             onClick={() => handleApprove(item.id, item.requestedBy.name)}
@@ -1291,6 +1301,139 @@ const HRAdminDashboard = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 🪟 Slide-in Approval Details Panel */}
+      <Sheet open={!!selectedApproval} onOpenChange={(open) => !open && setSelectedApproval(null)}>
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-md bg-white rounded-none border-l border-slate-200 p-0 flex flex-col"
+        >
+          {selectedApproval && (
+            <>
+              <SheetHeader className="p-6 border-b border-slate-100 bg-slate-50/50">
+                <div className="flex items-center gap-3 mb-2">
+                  <Badge className={`text-[10px] font-bold px-2 py-1 border-none rounded-md
+                    ${selectedApproval.category === 'Leave' ? 'bg-amber-100 text-amber-700' :
+                      selectedApproval.category === 'Expense' ? 'bg-emerald-100 text-emerald-700' :
+                        'bg-indigo-100 text-indigo-700'}`}>
+                    {selectedApproval.category} Request
+                  </Badge>
+                  <Badge className="bg-amber-100 text-amber-700 border-none text-[10px] font-bold">
+                    {selectedApproval.status}
+                  </Badge>
+                </div>
+                <SheetTitle className="text-lg font-bold text-slate-900 tracking-tight text-start">
+                  {selectedApproval.details?.title || 'Request Details'}
+                </SheetTitle>
+                <SheetDescription className="text-xs font-medium text-slate-500 text-start">
+                  Review the details before approving or dismissing.
+                </SheetDescription>
+              </SheetHeader>
+
+              <ScrollArea className="flex-1">
+                <div className="p-6 space-y-5">
+                  {/* Requester block */}
+                  <div className="p-4 bg-slate-50 border border-slate-100 rounded-none flex items-center gap-3">
+                    <Avatar className="h-12 w-12 ring-2 ring-white shadow">
+                      <AvatarImage src={`https://i.pravatar.cc/150?u=${selectedApproval.requestedBy.id}`} />
+                      <AvatarFallback className="bg-indigo-100 text-indigo-700 font-bold">
+                        {selectedApproval.requestedBy.avatar}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="text-start">
+                      <p className="text-sm font-bold text-slate-900">{selectedApproval.requestedBy.name}</p>
+                      <p className="text-[11px] font-medium text-slate-500">Direct Report</p>
+                    </div>
+                  </div>
+
+                  {/* Details grid */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 bg-white border border-slate-100 rounded-none">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Category</p>
+                      <p className="text-xs font-bold text-slate-800 mt-1">{selectedApproval.category}</p>
+                    </div>
+                    <div className="p-3 bg-white border border-slate-100 rounded-none">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Status</p>
+                      <p className="text-xs font-bold text-slate-800 mt-1">{selectedApproval.status}</p>
+                    </div>
+                    {selectedApproval.details?.from && (
+                      <div className="p-3 bg-white border border-slate-100 rounded-none">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">From</p>
+                        <p className="text-xs font-bold text-slate-800 mt-1">{selectedApproval.details.from}</p>
+                      </div>
+                    )}
+                    {selectedApproval.details?.to && (
+                      <div className="p-3 bg-white border border-slate-100 rounded-none">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">To</p>
+                        <p className="text-xs font-bold text-slate-800 mt-1">{selectedApproval.details.to}</p>
+                      </div>
+                    )}
+                    {selectedApproval.details?.amount && (
+                      <div className="p-3 bg-white border border-slate-100 rounded-none col-span-2">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Amount</p>
+                        <p className="text-sm font-bold text-emerald-600 mt-1">₹ {selectedApproval.details.amount}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Reason / description */}
+                  {selectedApproval.details?.reason && (
+                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-none">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-2">Reason</p>
+                      <p className="text-xs font-medium text-slate-700 leading-relaxed">
+                        {selectedApproval.details.reason}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Timeline mock */}
+                  <div className="p-4 bg-white border border-slate-100 rounded-none">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-3">Activity</p>
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3">
+                        <div className="h-2 w-2 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
+                        <div>
+                          <p className="text-xs font-bold text-slate-800">Request submitted</p>
+                          <p className="text-[10px] text-slate-400 font-medium">By {selectedApproval.requestedBy.name}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="h-2 w-2 rounded-full bg-amber-500 mt-1.5 shrink-0" />
+                        <div>
+                          <p className="text-xs font-bold text-slate-800">Awaiting your review</p>
+                          <p className="text-[10px] text-slate-400 font-medium">Pending action</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </ScrollArea>
+
+              <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex gap-2">
+                <Button
+                  className="flex-1 h-10 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-none border-none shadow-md"
+                  onClick={() => {
+                    handleApprove(selectedApproval.id, selectedApproval.requestedBy.name);
+                    setSelectedApproval(null);
+                  }}
+                >
+                  <Check size={14} className="mr-1.5" /> Approve
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 h-10 border-slate-200 bg-white text-slate-600 hover:text-rose-600 hover:border-rose-200 font-bold text-xs rounded-none"
+                  onClick={() => {
+                    handleReject(selectedApproval.id);
+                    setSelectedApproval(null);
+                  }}
+                >
+                  <X size={14} className="mr-1.5" /> Reject
+                </Button>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
 
       {/* Broadcast Dialog */}
       <Dialog open={activeModal === 'add-announcement'} onOpenChange={closeModal}>

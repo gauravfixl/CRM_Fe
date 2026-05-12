@@ -253,7 +253,10 @@ const RewardsPage = () => {
                                     animate={{ opacity: 1, scale: 1, y: 0 }}
                                     transition={{ delay: idx * 0.05 }}
                                 >
-                                    <Card className="group relative rounded-[2rem] border-2 border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 bg-white overflow-hidden p-0 h-full flex flex-col">
+                                    <Card
+                                        onClick={() => openEdit(rec)}
+                                        className="group relative rounded-[2rem] border-2 border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 bg-white overflow-hidden p-0 h-full flex flex-col cursor-pointer"
+                                    >
                                         {/* Award Label */}
                                         <div className="bg-amber-50/50 px-6 py-3 border-b border-amber-100/20 flex items-center justify-between">
                                             <div className="flex items-center gap-2">
@@ -264,7 +267,7 @@ const RewardsPage = () => {
                                                 <Badge className="bg-amber-500 text-white border-none font-black text-[10px] px-2 py-0.5 rounded-full shadow-lg">+{rec.points} PTS</Badge>
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-700">
+                                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-700" onClick={(e) => e.stopPropagation()}>
                                                             <MoreHorizontal size={14} />
                                                         </Button>
                                                     </DropdownMenuTrigger>

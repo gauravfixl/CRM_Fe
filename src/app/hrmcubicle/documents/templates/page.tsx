@@ -373,8 +373,11 @@ const TemplatesPage = () => {
                                     key={template.id}
                                     className="group"
                                 >
-                                    <Card className={`border border-slate-100 shadow-sm group-hover:shadow-xl transition-all duration-500 bg-white rounded-[2rem] p-6 overflow-hidden relative border-t-4 ${selectedTemplateIds.includes(template.id) ? 'border-t-indigo-600 bg-indigo-50/5' : 'border-t-indigo-600/10 hover:border-t-indigo-600'}`}>
-                                        <div className="absolute top-4 left-4 z-20">
+                                    <Card
+                                        onClick={() => setPreviewingTemplate(template)}
+                                        className={`border border-slate-100 shadow-sm group-hover:shadow-xl transition-all duration-500 bg-white rounded-[2rem] p-6 overflow-hidden relative border-t-4 cursor-pointer ${selectedTemplateIds.includes(template.id) ? 'border-t-indigo-600 bg-indigo-50/5' : 'border-t-indigo-600/10 hover:border-t-indigo-600'}`}
+                                    >
+                                        <div className="absolute top-4 left-4 z-20" onClick={(e) => e.stopPropagation()}>
                                             <input
                                                 type="checkbox"
                                                 className="rounded-lg border-slate-300 text-indigo-600 cursor-pointer w-4 h-4"
@@ -390,7 +393,7 @@ const TemplatesPage = () => {
                                             <div className="h-12 w-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-inner border border-indigo-100 group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 ml-8">
                                                 <FileCode size={24} />
                                             </div>
-                                            <div className="flex gap-2">
+                                            <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                                                 <Button variant="ghost" size="icon" className="h-10 w-10 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all border-none" onClick={() => setEditingTemplate(template)}>
                                                     <Edit3 size={18} />
                                                 </Button>

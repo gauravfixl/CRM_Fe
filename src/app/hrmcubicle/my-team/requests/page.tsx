@@ -260,7 +260,11 @@ const TeamRequestsPage = () => {
                 <TabsContent value="history" className="">
                     <div className="bg-slate-100 p-6 rounded-[2rem] border border-slate-200 shadow-inner space-y-4">
                         {filteredRequests.map((req) => (
-                            <Card key={req.id} className="border-none shadow-sm opacity-80 hover:opacity-100 transition-all bg-white overflow-hidden text-start rounded-2xl border border-slate-100/50">
+                            <Card
+                                key={req.id}
+                                onClick={() => { setSelectedRequest(req); setShowDetails(true); }}
+                                className="border-none shadow-sm opacity-80 hover:opacity-100 transition-all bg-white overflow-hidden text-start rounded-2xl border border-slate-100/50 cursor-pointer"
+                            >
                                 <CardContent className="p-4 flex items-center justify-between">
                                     <div className="flex items-center gap-3 text-start">
                                         <Avatar className="h-9 w-9 ring-1 ring-slate-100 grayscale-75">

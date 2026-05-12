@@ -269,7 +269,10 @@ const PolicyCenterPage = () => {
                                     exit={{ opacity: 0, scale: 0.9 }}
                                     transition={{ delay: i * 0.05 }}
                                 >
-                                    <Card className={`group border transition-all rounded-[3rem] overflow-hidden ${getCategoryStyles(policy.category).split(' ')[0]} ${getCategoryStyles(policy.category).split(' ')[2]} shadow-sm hover:shadow-xl`}>
+                                    <Card
+                                        onClick={() => { setSelectedPolicy(policy); setIsViewDialogOpen(true); }}
+                                        className={`group border transition-all rounded-[3rem] overflow-hidden ${getCategoryStyles(policy.category).split(' ')[0]} ${getCategoryStyles(policy.category).split(' ')[2]} shadow-sm hover:shadow-xl cursor-pointer`}
+                                    >
                                         <CardContent className="p-0">
                                             <div className="p-8 space-y-6">
                                                 <div className="flex justify-between items-start">
@@ -278,7 +281,7 @@ const PolicyCenterPage = () => {
                                                     </div>
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" className="h-8 w-8 p-0 text-slate-300 hover:text-slate-600 rounded-full">
+                                                            <Button variant="ghost" className="h-8 w-8 p-0 text-slate-300 hover:text-slate-600 rounded-full" onClick={(e) => e.stopPropagation()}>
                                                                 <MoreVertical size={16} />
                                                             </Button>
                                                         </DropdownMenuTrigger>
@@ -342,7 +345,7 @@ const PolicyCenterPage = () => {
                                                 </div>
                                             </div>
 
-                                            <div className="bg-slate-50/50 p-4 border-t border-slate-100 flex items-center justify-between">
+                                            <div className="bg-slate-50/50 p-4 border-t border-slate-100 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
                                                 <div className="flex items-center gap-2">
                                                     <FileText size={14} className="text-slate-400" />
                                                     <span className="text-[10px] font-bold text-slate-500">{policy.fileSize || "1.2 MB"} • PDF</span>

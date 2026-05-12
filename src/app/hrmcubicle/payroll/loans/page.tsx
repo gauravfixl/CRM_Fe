@@ -728,8 +728,12 @@ const LoansPage = () => {
                                                             const paidEmis = l.emis.filter((e) => e.status === "Paid").length
                                                             const completionPct = l.emis.length > 0 ? (paidEmis / l.emis.length) * 100 : 0
                                                             return (
-                                                                <TableRow key={l.id} className={cn("group border-slate-50", selectedIds.includes(l.id) ? "bg-[#8B5CF6]/5 hover:bg-[#8B5CF6]/10" : "hover:bg-slate-50/70")}>
-                                                                    <TableCell className="pl-6 py-3">
+                                                                <TableRow
+                                                                    key={l.id}
+                                                                    onClick={() => { setViewingLoan(l); setDetailOpen(true); }}
+                                                                    className={cn("group border-slate-50 cursor-pointer", selectedIds.includes(l.id) ? "bg-[#8B5CF6]/5 hover:bg-[#8B5CF6]/10" : "hover:bg-slate-50/70")}
+                                                                >
+                                                                    <TableCell className="pl-6 py-3" onClick={(e) => e.stopPropagation()}>
                                                                         <Checkbox
                                                                             checked={selectedIds.includes(l.id)}
                                                                             onCheckedChange={() => toggleSelect(l.id)}

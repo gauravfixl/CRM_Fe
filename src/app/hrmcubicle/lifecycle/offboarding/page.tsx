@@ -181,7 +181,11 @@ const ExitManagementPage = () => {
           ) : offboardingList.map((emp) => {
             const progress = clearanceProgress(emp)
             return (
-              <div key={emp.id} className={cn("flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 rounded-xl border transition-all hover:shadow-sm", emp.status === "Notice Period" ? "border-slate-200 bg-white" : "border-slate-100 bg-slate-50/50 opacity-90")}>
+              <div
+                key={emp.id}
+                onClick={() => setDetailEmp(emp)}
+                className={cn("flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 rounded-xl border transition-all hover:shadow-sm cursor-pointer", emp.status === "Notice Period" ? "border-slate-200 bg-white" : "border-slate-100 bg-slate-50/50 opacity-90")}
+              >
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10 rounded-xl">
                     <AvatarFallback className="bg-violet-100 text-violet-600 text-xs font-bold rounded-xl">{emp.avatar}</AvatarFallback>
