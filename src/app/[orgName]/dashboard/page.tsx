@@ -205,57 +205,65 @@ export default function DashboardPage() {
 
         <div className="flex-1 space-y-4 p-3 sm:p-4 md:p-8">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-              <SmallCardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-white text-xs opacity-80">Total Users</p>
-                    <p className="text-white text-xl font-semibold mt-1">{formatNumber(totalUsers)}</p>
-                    <p className="text-white text-[10px] opacity-80 mt-1">Across organisation</p>
+            <Link href={`/${params?.orgName ?? ""}/modules/users`} className="block">
+              <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer">
+                <SmallCardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-white text-xs opacity-80">Total Users</p>
+                      <p className="text-white text-xl font-semibold mt-1">{formatNumber(totalUsers)}</p>
+                      <p className="text-white text-[10px] opacity-80 mt-1">Across organisation</p>
+                    </div>
+                    <Users className="w-5 h-5 text-white" />
                   </div>
-                  <Users className="w-5 h-5 text-white" />
-                </div>
-              </SmallCardContent>
-            </SmallCard>
+                </SmallCardContent>
+              </SmallCard>
+            </Link>
 
-            <SmallCard className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-              <SmallCardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-zinc-600 dark:text-zinc-400 text-xs">Organization</p>
-                    <p className="text-xl font-semibold text-zinc-900 dark:text-white mt-1">{orgCount}</p>
-                    <p className="text-green-600 dark:text-green-400 text-[10px] mt-1">Your organization</p>
+            <Link href={`/${params?.orgName ?? ""}/modules/organization/overview`} className="block">
+              <SmallCard className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer">
+                <SmallCardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-zinc-600 dark:text-zinc-400 text-xs">Organization</p>
+                      <p className="text-xl font-semibold text-zinc-900 dark:text-white mt-1">{orgCount}</p>
+                      <p className="text-green-600 dark:text-green-400 text-[10px] mt-1">Your organization</p>
+                    </div>
+                    <Building2 className="w-5 h-5 text-primary" />
                   </div>
-                  <Building2 className="w-5 h-5 text-primary" />
-                </div>
-              </SmallCardContent>
-            </SmallCard>
+                </SmallCardContent>
+              </SmallCard>
+            </Link>
 
-            <SmallCard className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-              <SmallCardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-zinc-600 dark:text-zinc-400 text-xs">Active Sessions</p>
-                    <p className="text-xl font-semibold text-zinc-900 dark:text-white mt-1">{formatNumber(activeSessions)}</p>
-                    <p className="text-zinc-500 dark:text-zinc-400 text-[10px] mt-1">Currently signed in</p>
+            <Link href={`/${params?.orgName ?? ""}/activity-logs`} className="block">
+              <SmallCard className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer">
+                <SmallCardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-zinc-600 dark:text-zinc-400 text-xs">Active Sessions</p>
+                      <p className="text-xl font-semibold text-zinc-900 dark:text-white mt-1">{formatNumber(activeSessions)}</p>
+                      <p className="text-zinc-500 dark:text-zinc-400 text-[10px] mt-1">Currently signed in</p>
+                    </div>
+                    <Activity className="w-5 h-5 text-primary" />
                   </div>
-                  <Activity className="w-5 h-5 text-primary" />
-                </div>
-              </SmallCardContent>
-            </SmallCard>
+                </SmallCardContent>
+              </SmallCard>
+            </Link>
 
-            <SmallCard className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-              <SmallCardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-zinc-600 dark:text-zinc-400 text-xs">Total Roles</p>
-                    <p className="text-xl font-semibold text-zinc-900 dark:text-white mt-1">{formatNumber(totalRoles)}</p>
-                    <p className="text-zinc-500 dark:text-zinc-400 text-[10px] mt-1">Defined in this scope</p>
+            <Link href={`/${params?.orgName ?? ""}/modules/administration/roles`} className="block">
+              <SmallCard className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer">
+                <SmallCardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-zinc-600 dark:text-zinc-400 text-xs">Total Roles</p>
+                      <p className="text-xl font-semibold text-zinc-900 dark:text-white mt-1">{formatNumber(totalRoles)}</p>
+                      <p className="text-zinc-500 dark:text-zinc-400 text-[10px] mt-1">Defined in this scope</p>
+                    </div>
+                    <Shield className="w-5 h-5 text-primary" />
                   </div>
-                  <Shield className="w-5 h-5 text-primary" />
-                </div>
-              </SmallCardContent>
-            </SmallCard>
+                </SmallCardContent>
+              </SmallCard>
+            </Link>
           </div>
 
           <div className="bg-white dark:bg-zinc-900 rounded-none shadow-md border border-zinc-200 dark:border-zinc-800 p-4">

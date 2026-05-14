@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter, useParams } from "next/navigation";
 import {
     CheckCircle,
     Plus,
@@ -58,6 +59,10 @@ const defaultFormState = {
 };
 
 export default function ValidationRulesPage() {
+    const router = useRouter();
+    const params = useParams();
+    const orgName = (params?.orgName as string) || "";
+
     const [searchQuery, setSearchQuery] = useState("");
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
@@ -258,29 +263,45 @@ export default function ValidationRulesPage() {
 
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl">
+                <button
+                    type="button"
+                    onClick={() => setIsCreateOpen(true)}
+                    className="bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl text-left cursor-pointer"
+                >
                     <p className="text-xs font-semibold text-white">Active Rules</p>
                     <h2 className="text-xl font-semibold text-white">{validationRules.filter((r) => r.status === "Active").length}</h2>
                     <p className="text-[10px] mt-1 opacity-80">Currently enforced</p>
-                </div>
+                </button>
 
-                <div className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/errors-alerts`)}
+                    className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl text-left cursor-pointer"
+                >
                     <p className="text-xs text-gray-600">Total Violations</p>
                     <h3 className="text-xl font-semibold text-gray-900">{validationRules.reduce((sum, r) => sum + r.violations, 0)}</h3>
                     <p className="text-[10px] text-amber-600 mt-1">Needs attention</p>
-                </div>
+                </button>
 
-                <div className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/usage-analytics`)}
+                    className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl text-left cursor-pointer"
+                >
                     <p className="text-xs text-gray-600">Data Quality</p>
                     <h3 className="text-xl font-semibold text-gray-900">97.5%</h3>
                     <p className="text-[10px] text-green-600 mt-1">Excellent</p>
-                </div>
+                </button>
 
-                <div className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/audit-logs`)}
+                    className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl text-left cursor-pointer"
+                >
                     <p className="text-xs text-gray-600">Auto-Fixed</p>
                     <h3 className="text-xl font-semibold text-gray-900">1,204</h3>
                     <p className="text-[10px] text-blue-600 mt-1">Last 30 days</p>
-                </div>
+                </button>
             </div>
 
             {/* Rules List */}

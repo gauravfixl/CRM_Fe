@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useParams } from "next/navigation";
 import {
     Search,
     Download,
@@ -197,6 +198,10 @@ const statusToneMap: Record<Status, string> = {
 const ITEMS_PER_PAGE = 10;
 
 export default function AuditLogsPage() {
+    const router = useRouter();
+    const params = useParams();
+    const orgName = (params?.orgName as string) || "";
+
     const [allEvents, setAllEvents] = useState<AuditEvent[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [searchQuery, setSearchQuery] = useState("");
@@ -347,7 +352,10 @@ export default function AuditLogsPage() {
 
             {/* TOP STATS */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard
+                    onClick={() => handleCategoryChange("All")}
+                    className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                >
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
@@ -360,7 +368,10 @@ export default function AuditLogsPage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard
+                    onClick={() => router.push(`/${orgName}/activity-logs`)}
+                    className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                >
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
@@ -373,7 +384,10 @@ export default function AuditLogsPage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard
+                    onClick={() => router.push(`/${orgName}/usage-analytics`)}
+                    className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                >
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
@@ -386,7 +400,10 @@ export default function AuditLogsPage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard
+                    onClick={() => router.push(`/${orgName}/modules/settings/modules`)}
+                    className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                >
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>

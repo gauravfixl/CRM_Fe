@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/select"
 import SidePanel from "@/shared/components/projectmanagement/side-panel"
 import { useProjectStore } from "@/shared/data/projects-store"
-import { useWorkflowStore, type Column } from "@/shared/data/workflow-store"
+import { useWorkflowStore, type Column, type Transition } from "@/shared/data/workflow-store"
 
 const schema = z.object({
     name: z.string().trim().min(2, "Column name is required").max(40),
@@ -42,7 +42,7 @@ type FormValues = z.infer<typeof schema>
 export default function BoardConfigPage() {
     const [mounted, setMounted] = useState(false)
     const { projects } = useProjectStore()
-    const { getConfig, addColumn, updateColumn, deleteColumn, moveColumn } = useWorkflowStore()
+    const { getConfig, addColumn, updateColumn, deleteColumn, moveColumn, updateTransitions } = useWorkflowStore()
     const [selectedProjectId, setSelectedProjectId] = useState<string>("")
     const [isOpen, setIsOpen] = useState(false)
     const [editingColumn, setEditingColumn] = useState<Column | null>(null)
@@ -175,6 +175,79 @@ export default function BoardConfigPage() {
                     </div>
                 ))}
             </div>
+
+            {/* Transition matrix */}
+            {selectedProjectId && columns.length > 0 && (
+                <div className="border border-slate-200 bg-white shadow-sm rounded-none">
+                    <div className="px-4 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+                        <div>
+                            <h3 className="text-sm font-bold text-slate-800">Allowed Transitions</h3>
+                            <p className="text-[11px] text-slate-500 mt-0.5">Toggle which status changes are permitted. Empty matrix = all allowed.</p>
+                        </div>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => updateTransitions(selectedProjectId, [])}
+                            className="h-8 text-xs font-bold border-slate-200 rounded-none"
+                        >
+                            Reset (Allow All)
+                        </Button>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead className="bg-slate-50/60 border-b border-slate-200">
+                                <tr>
+                                    <th className="px-3 py-2 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">From \ To</th>
+                                    {columns.map(c => (
+                                        <th key={c.id} className="px-3 py-2 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">{c.name}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {columns.map(fromCol => (
+                                    <tr key={fromCol.id} className="hover:bg-slate-50">
+                                        <td className="px-3 py-2 text-[11px] font-bold text-slate-700">{fromCol.name}</td>
+                                        {columns.map(toCol => {
+                                            const transitions = config?.transitions || []
+                                            const isEmpty = transitions.length === 0
+                                            const isAllowed = isEmpty || transitions.some(t => t.from === fromCol.key && t.to === toCol.key)
+                                            const isSelf = fromCol.id === toCol.id
+                                            return (
+                                                <td key={toCol.id} className="px-3 py-2 text-center">
+                                                    {isSelf ? (
+                                                        <span className="text-slate-200">—</span>
+                                                    ) : (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                if (!selectedProjectId) return
+                                                                const next: Transition[] = isEmpty
+                                                                    // First time toggling: explicitly enumerate all currently-allowed transitions then flip this one off
+                                                                    ? columns.flatMap(f =>
+                                                                        columns
+                                                                            .filter(t => t.id !== f.id)
+                                                                            .map(t => ({ from: f.key, to: t.key }))
+                                                                    ).filter(t => !(t.from === fromCol.key && t.to === toCol.key))
+                                                                    : isAllowed
+                                                                        ? transitions.filter(t => !(t.from === fromCol.key && t.to === toCol.key))
+                                                                        : [...transitions, { from: fromCol.key, to: toCol.key }]
+                                                                updateTransitions(selectedProjectId, next)
+                                                            }}
+                                                            className={`h-6 w-6 inline-flex items-center justify-center transition-colors rounded-none ${isAllowed ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-slate-100 text-slate-400 hover:bg-slate-200"}`}
+                                                        >
+                                                            {isAllowed ? "✓" : "✕"}
+                                                        </button>
+                                                    )}
+                                                </td>
+                                            )
+                                        })}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
 
             {/* Columns list */}
             <div className="border border-slate-200 bg-white shadow-sm rounded-none">

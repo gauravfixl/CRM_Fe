@@ -137,7 +137,11 @@ export default function DeviceTrustPage() {
       {/* Stats cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total devices */}
-        <div className="bg-primary rounded-none p-5 text-white">
+        <button
+          type="button"
+          onClick={() => setStatusFilter("All")}
+          className={`bg-primary rounded-none p-5 text-white text-left cursor-pointer transition-all hover:shadow-lg ${statusFilter === "All" ? "ring-2 ring-primary/60 ring-offset-2" : ""}`}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-white/80">Total devices</p>
@@ -145,10 +149,14 @@ export default function DeviceTrustPage() {
             </div>
             <Monitor className="h-8 w-8 text-white/60" />
           </div>
-        </div>
+        </button>
 
         {/* Managed */}
-        <div className="bg-white border border-gray-200 rounded-none p-5">
+        <button
+          type="button"
+          onClick={() => setStatusFilter("Managed")}
+          className={`bg-white border border-gray-200 rounded-none p-5 text-left cursor-pointer transition-all hover:shadow-md ${statusFilter === "Managed" ? "ring-2 ring-green-500" : ""}`}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Managed</p>
@@ -158,10 +166,14 @@ export default function DeviceTrustPage() {
               <Laptop className="h-5 w-5 text-green-600" />
             </div>
           </div>
-        </div>
+        </button>
 
         {/* Unmanaged */}
-        <div className="bg-white border border-gray-200 rounded-none p-5">
+        <button
+          type="button"
+          onClick={() => setStatusFilter("Unmanaged")}
+          className={`bg-white border border-gray-200 rounded-none p-5 text-left cursor-pointer transition-all hover:shadow-md ${statusFilter === "Unmanaged" ? "ring-2 ring-amber-500" : ""}`}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Unmanaged</p>
@@ -171,7 +183,7 @@ export default function DeviceTrustPage() {
               <Smartphone className="h-5 w-5 text-amber-500" />
             </div>
           </div>
-        </div>
+        </button>
 
         {/* Avg health */}
         <div className="bg-white border border-gray-200 rounded-none p-5">

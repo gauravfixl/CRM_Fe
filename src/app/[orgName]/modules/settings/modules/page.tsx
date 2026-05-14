@@ -40,6 +40,7 @@ import { toast } from "sonner";
 
 export default function EnabledAppsPage() {
     const [searchQuery, setSearchQuery] = useState("");
+    const [statusFilter, setStatusFilter] = useState<"All" | "Active" | "Inactive" | "AutoUpdate">("All");
     const [apps, setApps] = useState([
         { id: "1", name: "Slack Integration", version: "2.4.1", status: "Active", lastUpdated: "2 days ago", autoUpdate: true },
         { id: "2", name: "QuickBooks Sync", version: "1.0.5", status: "Active", lastUpdated: "1 week ago", autoUpdate: true },
@@ -68,9 +69,13 @@ export default function EnabledAppsPage() {
         toast.success("Auto-update preference saved");
     };
 
-    const filteredApps = apps.filter((app) =>
-        app.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredApps = apps.filter((app) => {
+        const matchesSearch = app.name.toLowerCase().includes(searchQuery.toLowerCase());
+        if (!matchesSearch) return false;
+        if (statusFilter === "All") return true;
+        if (statusFilter === "AutoUpdate") return app.autoUpdate;
+        return app.status === statusFilter;
+    });
 
     return (
         <div className="relative min-h-screen bg-[#F8F9FC] dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-outfit p-6 space-y-6">
@@ -95,7 +100,10 @@ export default function EnabledAppsPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <SmallCard className="bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard
+                    onClick={() => setStatusFilter("All")}
+                    className={`bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer ${statusFilter === "All" ? "ring-2 ring-primary/60 ring-offset-2" : ""}`}
+                >
                     <SmallCardContent className="p-4 flex items-center justify-between">
                         <div>
                             <p className="text-xs text-white opacity-80">Total Enabled</p>
@@ -105,7 +113,10 @@ export default function EnabledAppsPage() {
                         <Package className="w-6 h-6 text-white/80" />
                     </SmallCardContent>
                 </SmallCard>
-                <SmallCard className="bg-white dark:bg-zinc-900 rounded-none shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border-0">
+                <SmallCard
+                    onClick={() => setStatusFilter("Active")}
+                    className={`bg-white dark:bg-zinc-900 rounded-none shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border-0 cursor-pointer ${statusFilter === "Active" ? "ring-2 ring-emerald-500" : ""}`}
+                >
                     <SmallCardContent className="p-4 flex items-center justify-between">
                         <div className="text-left">
                             <span className="text-[10px] font-medium text-zinc-400 block mb-1">Active</span>
@@ -119,7 +130,10 @@ export default function EnabledAppsPage() {
                         </div>
                     </SmallCardContent>
                 </SmallCard>
-                <SmallCard className="bg-white dark:bg-zinc-900 rounded-none shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border-0">
+                <SmallCard
+                    onClick={() => setStatusFilter("Inactive")}
+                    className={`bg-white dark:bg-zinc-900 rounded-none shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border-0 cursor-pointer ${statusFilter === "Inactive" ? "ring-2 ring-zinc-400" : ""}`}
+                >
                     <SmallCardContent className="p-4 flex items-center justify-between">
                         <div className="text-left">
                             <span className="text-[10px] font-medium text-zinc-400 block mb-1">Inactive</span>
@@ -133,7 +147,10 @@ export default function EnabledAppsPage() {
                         </div>
                     </SmallCardContent>
                 </SmallCard>
-                <SmallCard className="bg-white dark:bg-zinc-900 rounded-none shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border-0">
+                <SmallCard
+                    onClick={() => setStatusFilter("AutoUpdate")}
+                    className={`bg-white dark:bg-zinc-900 rounded-none shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border-0 cursor-pointer ${statusFilter === "AutoUpdate" ? "ring-2 ring-blue-500" : ""}`}
+                >
                     <SmallCardContent className="p-4 flex items-center justify-between">
                         <div className="text-left">
                             <span className="text-[10px] font-medium text-zinc-400 block mb-1">Auto-Update</span>

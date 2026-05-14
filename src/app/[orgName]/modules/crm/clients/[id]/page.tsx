@@ -140,7 +140,7 @@ useEffect(() => {
                 <Avatar className="h-16 w-16">
                   <AvatarImage src={`/placeholder.svg?height=64&width=64`} alt={client?.firstName} />
                   <AvatarFallback className="text-lg">
-                    {client?.firstName.split(' ').map(n => n[0]).join('')}
+                    {client?.firstName.split(' ').map((n: string) => n[0]).join('')}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
@@ -268,8 +268,8 @@ useEffect(() => {
               <div className="space-y-4">
                 {client?.activities && client?.activities.length > 0 ? (
                   client?.activities
-                    .sort((a, b) => new Date(b.performedAt).getTime() - new Date(a.performedAt).getTime())
-                    .map((activity) => (
+                    .sort((a: any, b: any) => new Date(b.performedAt).getTime() - new Date(a.performedAt).getTime())
+                    .map((activity: any) => (
                       <div key={activity.id} className="flex items-start space-x-3 p-3 border rounded-lg">
                         <div className="text-lg">{getActivityIcon(activity.type)}</div>
                         <div className="flex-1">

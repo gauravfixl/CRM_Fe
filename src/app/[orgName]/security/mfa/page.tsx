@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
 import {
   Smartphone,
   ShieldCheck,
@@ -26,6 +27,10 @@ import { Separator } from "@/shared/components/ui/separator";
 import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks";
 
 export default function MFAPage() {
+  const router = useRouter();
+  const params = useParams();
+  const orgName = (params?.orgName as string) || "";
+
   const [globalMFA, setGlobalMFA] = useState(true);
   const [savingMFA, setSavingMFA] = useState(false);
 
@@ -137,7 +142,10 @@ export default function MFAPage() {
       <div className="p-4 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <SmallCard className="border bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-none">
+          <SmallCard
+            onClick={() => router.push(`/${orgName}/usage-analytics`)}
+            className="border bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-none cursor-pointer"
+          >
             <SmallCardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
@@ -152,7 +160,10 @@ export default function MFAPage() {
             </SmallCardContent>
           </SmallCard>
 
-          <SmallCard className="border bg-white dark:bg-zinc-900 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-none overflow-hidden group">
+          <SmallCard
+            onClick={() => router.push(`/${orgName}/modules/users`)}
+            className="border bg-white dark:bg-zinc-900 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-none overflow-hidden group cursor-pointer"
+          >
             <SmallCardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
@@ -167,7 +178,10 @@ export default function MFAPage() {
             </SmallCardContent>
           </SmallCard>
 
-          <SmallCard className="border bg-white dark:bg-zinc-900 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-none overflow-hidden group">
+          <SmallCard
+            onClick={() => router.push(`/${orgName}/modules/settings/auth`)}
+            className="border bg-white dark:bg-zinc-900 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-none overflow-hidden group cursor-pointer"
+          >
             <SmallCardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
@@ -182,7 +196,10 @@ export default function MFAPage() {
             </SmallCardContent>
           </SmallCard>
 
-          <SmallCard className="border bg-white dark:bg-zinc-900 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-none overflow-hidden group">
+          <SmallCard
+            onClick={() => router.push(`/${orgName}/security/passwords`)}
+            className="border bg-white dark:bg-zinc-900 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-none overflow-hidden group cursor-pointer"
+          >
             <SmallCardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>

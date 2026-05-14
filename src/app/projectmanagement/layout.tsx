@@ -27,6 +27,8 @@ import { useAutomationStore } from "@/shared/data/automation-store"
 import { useNotificationStore } from "@/shared/data/notification-store"
 import { useRolePermissionStore } from "@/shared/data/role-permission-store"
 import { useWorkflowStore } from "@/shared/data/workflow-store"
+import { useIntegrationStore } from "@/shared/data/integration-store"
+import { useSavedFilterStore } from "@/shared/data/saved-filter-store"
 import { getMyWorkspaces } from "@/modules/project-management/workspace/hooks/workspaceHooks"
 import { getAllProjectsByWorkspace } from "@/modules/project-management/project/hooks/projectHooks"
 
@@ -55,6 +57,8 @@ export default function ProjectManagementLayout({ children }: { children: React.
         useNotificationStore.persist.rehydrate()
         useRolePermissionStore.persist.rehydrate()
         useWorkflowStore.persist.rehydrate()
+        useIntegrationStore.persist.rehydrate()
+        useSavedFilterStore.persist.rehydrate()
     }, [])
 
     // Backend-backed seed for sidebar + project listing

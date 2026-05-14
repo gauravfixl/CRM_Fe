@@ -103,7 +103,10 @@ export default function ClientGovernancePage() {
 
             {/* TOP METRICS */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <SmallCard className="bg-gradient-to-r from-primary/70 to-primary border-none rounded-xl shadow-sm text-white">
+                <SmallCard
+                    onClick={() => router.push(`/${params.orgName}/modules/crm/clients`)}
+                    className="bg-gradient-to-r from-primary/70 to-primary border-none rounded-xl shadow-sm text-white cursor-pointer hover:shadow-lg transition-all"
+                >
                     <SmallCardHeader className="pb-1 text-left px-4 pt-4 flex flex-row justify-between items-center">
                         <p className="text-[10px] font-medium text-blue-100">Global Clients</p>
                         <Globe className="w-4 h-4 text-blue-200" />
@@ -114,7 +117,10 @@ export default function ClientGovernancePage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-slate-200 rounded-xl shadow-sm">
+                <SmallCard
+                    onClick={() => router.push(`/${params.orgName}/modules/settings/entitlements/clients/retention`)}
+                    className="bg-white border-slate-200 rounded-xl shadow-sm cursor-pointer hover:shadow-md transition-all"
+                >
                     <SmallCardHeader className="pb-1 text-left px-4 pt-4 flex flex-row justify-between items-center">
                         <p className="text-[10px] font-medium text-slate-500">Retention Health</p>
                         <FileCheck className="w-4 h-4 text-blue-500" />
@@ -125,7 +131,10 @@ export default function ClientGovernancePage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-slate-200 rounded-xl shadow-sm">
+                <SmallCard
+                    onClick={() => router.push(`/${params.orgName}/modules/settings/entitlements/clients/archival`)}
+                    className="bg-white border-slate-200 rounded-xl shadow-sm cursor-pointer hover:shadow-md transition-all"
+                >
                     <SmallCardHeader className="pb-1 text-left px-4 pt-4 flex flex-row justify-between items-center">
                         <p className="text-[10px] font-medium text-slate-500">Sync Discrepancy</p>
                         <AlertCircle className="w-4 h-4 text-rose-500" />
@@ -136,7 +145,10 @@ export default function ClientGovernancePage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-slate-200 rounded-xl shadow-sm">
+                <SmallCard
+                    onClick={() => router.push(`/${params.orgName}/modules/settings/entitlements/clients/privacy`)}
+                    className="bg-white border-slate-200 rounded-xl shadow-sm cursor-pointer hover:shadow-md transition-all"
+                >
                     <SmallCardHeader className="pb-1 text-left px-4 pt-4 flex flex-row justify-between items-center">
                         <p className="text-[10px] font-medium text-slate-500">Security Lock</p>
                         <Lock className="w-4 h-4 text-blue-500" />

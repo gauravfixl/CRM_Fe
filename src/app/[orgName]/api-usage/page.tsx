@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { useRouter, useParams } from "next/navigation";
 import {
     BarChart3,
     Search,
@@ -64,6 +65,10 @@ function getLatencyClass(latency: string): string {
 }
 
 export default function APIUsage() {
+    const router = useRouter();
+    const params = useParams();
+    const orgName = (params?.orgName as string) || "";
+
     const [searchQuery, setSearchQuery] = useState("");
     const [methodFilter, setMethodFilter] = useState<MethodFilter>("All");
 
@@ -110,41 +115,57 @@ export default function APIUsage() {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
+                <button
+                    type="button"
+                    onClick={() => setMethodFilter("All")}
+                    className={`bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl cursor-pointer ${methodFilter === "All" ? "ring-2 ring-primary/60 ring-offset-2" : ""}`}
+                >
                     <div className="flex items-center justify-between">
                         <p className="text-white text-xs opacity-80">Total Requests 30d</p>
                         <Activity size={18} className="text-white opacity-60" />
                     </div>
                     <p className="text-white text-xl font-semibold mt-1">1.2M</p>
                     <p className="text-white text-[10px] mt-1">All endpoints combined</p>
-                </div>
+                </button>
 
-                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/usage-analytics`)}
+                    className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer"
+                >
                     <div className="flex items-center justify-between">
                         <p className="text-gray-600 text-xs">Success Rate</p>
                         <CheckCircle size={18} className="text-green-500" />
                     </div>
                     <p className="text-xl font-semibold text-gray-900 mt-1">99.4%</p>
                     <p className="text-green-600 text-[10px] mt-1">Across all endpoints</p>
-                </div>
+                </button>
 
-                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/system-health`)}
+                    className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer"
+                >
                     <div className="flex items-center justify-between">
                         <p className="text-gray-600 text-xs">Avg Response Time</p>
                         <Clock size={18} className="text-gray-400" />
                     </div>
                     <p className="text-xl font-semibold text-gray-900 mt-1">124ms</p>
                     <p className="text-gray-500 text-[10px] mt-1">Median latency</p>
-                </div>
+                </button>
 
-                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/modules/settings/api-keys`)}
+                    className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer"
+                >
                     <div className="flex items-center justify-between">
                         <p className="text-gray-600 text-xs">Active API Keys</p>
                         <Key size={18} className="text-gray-400" />
                     </div>
                     <p className="text-xl font-semibold text-gray-900 mt-1">4</p>
                     <p className="text-gray-500 text-[10px] mt-1">Currently valid</p>
-                </div>
+                </button>
             </div>
 
             {/* Table */}

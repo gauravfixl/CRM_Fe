@@ -394,7 +394,6 @@ export default function TemplateGallery({
                                     Mark as recommended template
                                 </Label>
                             </div>
-                        </div>
 
                     </div>
                 </SidePanel>

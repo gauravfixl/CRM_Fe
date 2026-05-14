@@ -3,7 +3,8 @@ import { persist } from 'zustand/middleware'
 import { axiosInstance as axios } from '@/lib/axios'
 
 export type IssueStatus = "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE" | "BACKLOG" | "TESTING" | "REPORTED" | "TRIAGE" | "REPRODUCED" | "FIXING" | "VERIFIED" | "IDEAS" | "BRIEFING" | "DRAFTING" | "REVIEW" | "PUBLISHED" | "PLANNING" | "BLOCKED" | "COMPLETED"
-export type IssuePriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT"
+// Jira-style 5-level priority
+export type IssuePriority = "LOWEST" | "LOW" | "MEDIUM" | "HIGH" | "HIGHEST" | "URGENT"
 export type IssueType = "TASK" | "BUG" | "STORY" | "EPIC" | "SUBTASK"
 
 export interface IssueHistory {
@@ -55,7 +56,9 @@ export interface Issue {
         name: string
         avatar: string
     }
+    watchers?: string[] // user IDs watching this issue
     reporterId: string
+    estimateHours?: number // Original estimate in hours (separate from logged time)
     createdAt: string
     updatedAt?: string
     sprintId?: string | null
@@ -125,6 +128,11 @@ interface IssueStore {
 
     // Cascade
     deleteIssuesByProject: (projectId: string) => number // returns count deleted
+
+    // Watchers
+    addWatcher: (issueId: string, userId: string) => void
+    removeWatcher: (issueId: string, userId: string) => void
+    isWatching: (issueId: string, userId: string) => boolean
 }
 
 const INITIAL_ISSUES: Issue[] = [
@@ -554,6 +562,29 @@ export const useIssueStore = create<IssueStore>()(
                 const toDelete = state.issues.filter(i => i.projectId === projectId)
                 set({ issues: state.issues.filter(i => i.projectId !== projectId) })
                 return toDelete.length
+            },
+
+            // Watchers
+            addWatcher: (issueId, userId) => set((state) => ({
+                issues: state.issues.map(i => {
+                    if (i.id !== issueId) return i
+                    const list = i.watchers || []
+                    if (list.includes(userId)) return i
+                    return { ...i, watchers: [...list, userId] }
+                })
+            })),
+
+            removeWatcher: (issueId, userId) => set((state) => ({
+                issues: state.issues.map(i =>
+                    i.id === issueId
+                        ? { ...i, watchers: (i.watchers || []).filter(w => w !== userId) }
+                        : i
+                )
+            })),
+
+            isWatching: (issueId, userId) => {
+                const issue = get().issues.find(i => i.id === issueId)
+                return Boolean(issue?.watchers?.includes(userId))
             },
         }),
         {

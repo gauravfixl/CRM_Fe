@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import SidePanel from "@/shared/components/projectmanagement/side-panel"
+import RouteGuard from "@/shared/components/projectmanagement/route-guard"
 import { useRolePermissionStore, type Role, type PermissionKey } from "@/shared/data/role-permission-store"
 
 const schema = z.object({
@@ -31,7 +32,7 @@ const schema = z.object({
 })
 type FormValues = z.infer<typeof schema>
 
-export default function PermissionsPage() {
+function PermissionsPageInner() {
     const [mounted, setMounted] = useState(false)
     const { roles, addRole, updateRole, deleteRole, togglePermission } = useRolePermissionStore()
     const [query, setQuery] = useState("")
@@ -116,9 +117,23 @@ export default function PermissionsPage() {
                         Role-based access control across the workspace.
                     </p>
                 </div>
-                <Button onClick={() => { setEditing(null); setIsOpen(true) }} className="h-9 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold gap-2 rounded-none">
-                    <Plus size={14} strokeWidth={3} /> New Role
-                </Button>
+                <div className="flex items-center gap-2">
+                    <select
+                        className="h-9 px-3 border border-slate-200 text-xs font-bold bg-white rounded-none cursor-pointer"
+                        value={typeof window !== "undefined" ? (localStorage.getItem("cubicle-current-role") || "Admin") : "Admin"}
+                        onChange={(e) => {
+                            localStorage.setItem("cubicle-current-role", e.target.value)
+                            window.dispatchEvent(new Event("storage"))
+                            window.location.reload()
+                        }}
+                        title="Switch your effective role to test route guards"
+                    >
+                        {roles.map(r => <option key={r.id} value={r.name}>Acting as: {r.name}</option>)}
+                    </select>
+                    <Button onClick={() => { setEditing(null); setIsOpen(true) }} className="h-9 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold gap-2 rounded-none">
+                        <Plus size={14} strokeWidth={3} /> New Role
+                    </Button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -246,5 +261,13 @@ export default function PermissionsPage() {
                 </form>
             </SidePanel>
         </div>
+    )
+}
+
+export default function PermissionsPage() {
+    return (
+        <RouteGuard required="admin" pageName="Permissions">
+            <PermissionsPageInner />
+        </RouteGuard>
     )
 }

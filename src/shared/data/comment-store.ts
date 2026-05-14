@@ -104,6 +104,7 @@ export const useCommentStore = create<CommentStore>()(
             comments: INITIAL_COMMENTS,
 
             createComment: (commentData) => {
+                const mentions = extractMentions(commentData.content)
                 const newComment: Comment = {
                     ...commentData,
                     id: `cmt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -111,12 +112,24 @@ export const useCommentStore = create<CommentStore>()(
                     isDeleted: false,
                     isEdited: false,
                     parentId: commentData.parentId || null,
+                    mentionedUsers: mentions,
                     replies: []
                 }
 
                 set((state) => ({
                     comments: [...state.comments, newComment]
                 }))
+
+                // Fire event bridge (audit log + notifications) — dynamic import to avoid circular
+                Promise.all([
+                    import('./event-bridges'),
+                    import('./issue-store')
+                ]).then(([eb, is]) => {
+                    const issue = is.useIssueStore.getState().getIssueById(commentData.taskId)
+                    if (issue) {
+                        eb.emitCommentAdded(issue, commentData.content, mentions)
+                    }
+                }).catch(() => {})
 
                 return newComment
             },
@@ -213,6 +226,7 @@ export const useCommentStore = create<CommentStore>()(
                 const parent = get().comments.find(c => c.id === parentId && !c.isDeleted)
                 if (!parent) return null
 
+                const mentions = extractMentions(replyData.content)
                 const reply: Comment = {
                     ...replyData,
                     id: `cmt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -220,12 +234,24 @@ export const useCommentStore = create<CommentStore>()(
                     createdAt: new Date().toISOString(),
                     isDeleted: false,
                     isEdited: false,
+                    mentionedUsers: mentions,
                     replies: []
                 }
 
                 set((state) => ({
                     comments: [...state.comments, reply]
                 }))
+
+                // Fire event bridge for reply
+                Promise.all([
+                    import('./event-bridges'),
+                    import('./issue-store')
+                ]).then(([eb, is]) => {
+                    const issue = is.useIssueStore.getState().getIssueById(replyData.taskId)
+                    if (issue) {
+                        eb.emitCommentAdded(issue, replyData.content, mentions)
+                    }
+                }).catch(() => {})
 
                 return reply
             },

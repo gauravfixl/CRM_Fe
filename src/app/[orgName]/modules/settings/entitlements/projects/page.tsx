@@ -64,7 +64,10 @@ export default function ProjectGovernancePage() {
 
             {/* Top Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard
+                    onClick={() => router.push(`/${params.orgName}/modules/project-management/projects`)}
+                    className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                >
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
@@ -77,7 +80,10 @@ export default function ProjectGovernancePage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard
+                    onClick={() => router.push(`/${params.orgName}/modules/settings/sla`)}
+                    className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                >
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
@@ -90,7 +96,10 @@ export default function ProjectGovernancePage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard
+                    onClick={() => router.push(`/${params.orgName}/modules/settings/entitlements/projects/workspaces`)}
+                    className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                >
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
@@ -103,7 +112,10 @@ export default function ProjectGovernancePage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard
+                    onClick={() => router.push(`/${params.orgName}/modules/settings/entitlements/projects/tasks`)}
+                    className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                >
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useRouter, useParams } from "next/navigation";
 import {
   ShieldCheck,
   Users,
@@ -14,6 +15,10 @@ import { Badge } from "@/components/ui/badge";
 import { showSuccess } from "@/utils/toast";
 
 export default function SecurityOverviewPage() {
+  const router = useRouter();
+  const params = useParams();
+  const orgName = (params?.orgName as string) || "";
+
   const securityAlerts = [
     {
       title: "Multiple failed logins",
@@ -51,7 +56,11 @@ export default function SecurityOverviewPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Security Score - Primary Gradient */}
-        <div className="bg-gradient-to-r from-primary/70 to-primary text-white p-4 rounded-none border shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+        <button
+          type="button"
+          onClick={() => router.push(`/${orgName}/system-health`)}
+          className="bg-gradient-to-r from-primary/70 to-primary text-white p-4 rounded-none border shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 text-left cursor-pointer"
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-white text-xs opacity-80">Security Score</p>
@@ -60,10 +69,14 @@ export default function SecurityOverviewPage() {
             </div>
             <ShieldCheck className="w-5 h-5 text-white" />
           </div>
-        </div>
+        </button>
 
         {/* Active Sessions */}
-        <div className="bg-white border p-4 rounded-none shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+        <button
+          type="button"
+          onClick={() => router.push(`/${orgName}/activity-logs`)}
+          className="bg-white border p-4 rounded-none shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 text-left cursor-pointer"
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-xs">Active Sessions</p>
@@ -72,10 +85,14 @@ export default function SecurityOverviewPage() {
             </div>
             <Users className="w-5 h-5 text-primary" />
           </div>
-        </div>
+        </button>
 
         {/* MFA Adoption */}
-        <div className="bg-white border p-4 rounded-none shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+        <button
+          type="button"
+          onClick={() => router.push(`/${orgName}/security/mfa`)}
+          className="bg-white border p-4 rounded-none shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 text-left cursor-pointer"
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-xs">MFA Adoption</p>
@@ -84,10 +101,14 @@ export default function SecurityOverviewPage() {
             </div>
             <Fingerprint className="w-5 h-5 text-primary" />
           </div>
-        </div>
+        </button>
 
         {/* Blocked IPs */}
-        <div className="bg-white border p-4 rounded-none shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+        <button
+          type="button"
+          onClick={() => router.push(`/${orgName}/security/ip-restrictions`)}
+          className="bg-white border p-4 rounded-none shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 text-left cursor-pointer"
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-xs">Blocked IPs</p>
@@ -96,7 +117,7 @@ export default function SecurityOverviewPage() {
             </div>
             <Globe className="w-5 h-5 text-primary" />
           </div>
-        </div>
+        </button>
       </div>
 
       {/* Recent Alerts */}

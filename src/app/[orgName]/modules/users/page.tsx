@@ -558,7 +558,11 @@ export default function AllUsersPage() {
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {/* Total Users - gradient primary */}
-          <div className="bg-gradient-to-br from-primary to-primary/80 rounded-none p-4 text-white">
+          <button
+            type="button"
+            onClick={() => setStatusFilter("All")}
+            className={`bg-gradient-to-br from-primary to-primary/80 rounded-none p-4 text-white text-left transition-all hover:shadow-lg ${statusFilter === "All" ? "ring-2 ring-primary/60 ring-offset-2" : ""}`}
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-white/80">Total users</p>
@@ -567,10 +571,14 @@ export default function AllUsersPage() {
               </div>
               <Users className="w-8 h-8 text-white/30" />
             </div>
-          </div>
+          </button>
 
           {/* Active */}
-          <div className="bg-white border border-gray-200 rounded-none p-4">
+          <button
+            type="button"
+            onClick={() => setStatusFilter("Active")}
+            className={`bg-white border border-gray-200 rounded-none p-4 text-left transition-all hover:shadow-md ${statusFilter === "Active" ? "ring-2 ring-green-500" : ""}`}
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500">Active</p>
@@ -579,10 +587,14 @@ export default function AllUsersPage() {
               </div>
               <UserCheck className="w-8 h-8 text-green-200" />
             </div>
-          </div>
+          </button>
 
           {/* Pending */}
-          <div className="bg-white border border-gray-200 rounded-none p-4">
+          <button
+            type="button"
+            onClick={() => setStatusFilter("Pending")}
+            className={`bg-white border border-gray-200 rounded-none p-4 text-left transition-all hover:shadow-md ${statusFilter === "Pending" ? "ring-2 ring-amber-500" : ""}`}
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500">Pending</p>
@@ -591,10 +603,14 @@ export default function AllUsersPage() {
               </div>
               <Clock className="w-8 h-8 text-amber-200" />
             </div>
-          </div>
+          </button>
 
           {/* Suspended */}
-          <div className="bg-white border border-gray-200 rounded-none p-4">
+          <button
+            type="button"
+            onClick={() => setStatusFilter("Suspended")}
+            className={`bg-white border border-gray-200 rounded-none p-4 text-left transition-all hover:shadow-md ${statusFilter === "Suspended" ? "ring-2 ring-red-500" : ""}`}
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500">Suspended</p>
@@ -603,7 +619,7 @@ export default function AllUsersPage() {
               </div>
               <Ban className="w-8 h-8 text-red-200" />
             </div>
-          </div>
+          </button>
         </div>
 
         {/* Search + Filter Bar */}

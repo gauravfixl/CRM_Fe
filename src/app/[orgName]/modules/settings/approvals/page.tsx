@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { useRouter, useParams } from "next/navigation";
 import {
     CheckCircle,
     Plus,
@@ -93,6 +94,10 @@ function buildApproverChain(first: string, second: string): string {
 }
 
 export default function ApprovalProcessesPage() {
+    const router = useRouter();
+    const params = useParams();
+    const orgName = (params?.orgName as string) || "";
+
     // Modal visibility
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
@@ -289,29 +294,45 @@ export default function ApprovalProcessesPage() {
 
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
+                <button
+                    type="button"
+                    onClick={() => setStatusFilter("All")}
+                    className={`bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl cursor-pointer ${statusFilter === "All" ? "ring-2 ring-primary/60 ring-offset-2" : ""}`}
+                >
                     <p className="text-white text-xs opacity-80">Total Processes</p>
                     <p className="text-white text-xl font-semibold mt-1">{approvalProcesses.length}</p>
                     <p className="text-white text-[10px] mt-1 opacity-80">Across all modules</p>
-                </div>
+                </button>
 
-                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                <button
+                    type="button"
+                    onClick={() => setStatusFilter("Paused")}
+                    className={`bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer ${statusFilter === "Paused" ? "ring-2 ring-amber-500" : ""}`}
+                >
                     <p className="text-gray-600 text-xs">Pending Approvals</p>
                     <p className="text-xl font-semibold text-gray-900 mt-1">{approvalProcesses.reduce((sum, ap) => sum + ap.pending, 0)}</p>
                     <p className="text-amber-600 text-[10px] mt-1">Awaiting action</p>
-                </div>
+                </button>
 
-                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                <button
+                    type="button"
+                    onClick={() => setStatusFilter("Active")}
+                    className={`bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer ${statusFilter === "Active" ? "ring-2 ring-green-500" : ""}`}
+                >
                     <p className="text-gray-600 text-xs">Active Processes</p>
                     <p className="text-xl font-semibold text-gray-900 mt-1">{approvalProcesses.filter((ap) => ap.status === "Active").length}</p>
                     <p className="text-green-600 text-[10px] mt-1">Currently running</p>
-                </div>
+                </button>
 
-                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/usage-analytics`)}
+                    className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer"
+                >
                     <p className="text-gray-600 text-xs">Avg. Approval Time</p>
                     <p className="text-xl font-semibold text-gray-900 mt-1">8.4 hrs</p>
                     <p className="text-primary text-[10px] mt-1">Across all processes</p>
-                </div>
+                </button>
             </div>
 
             {/* Processes List */}

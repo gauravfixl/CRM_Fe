@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo, useEffect } from "react"
+import React, { useState, useMemo, useEffect, Suspense } from "react"
 import {
     Plus,
     Search,
@@ -39,7 +39,7 @@ import CreateProjectModal from "@/shared/components/projectmanagement/create-pro
 
 type StatusFilter = "all" | "Active" | "Planned" | "On Hold" | "Completed" | "Archived"
 
-export default function ProjectsPage() {
+function ProjectsPageContent() {
     const [mounted, setMounted] = useState(false)
     const { getProjectsByWorkspace, toggleStar, deleteProject } = useProjectStore()
     const { activeWorkspaceId } = useWorkspaceStore()
@@ -317,5 +317,13 @@ export default function ProjectsPage() {
 
             <CreateProjectModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
         </div>
+    )
+}
+
+export default function ProjectsPage() {
+    return (
+        <Suspense fallback={null}>
+            <ProjectsPageContent />
+        </Suspense>
     )
 }

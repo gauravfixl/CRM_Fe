@@ -28,6 +28,7 @@ import { CustomButton } from "@/components/custom/CustomButton"
 import { CustomInput } from "@/components/custom/CustomInput"
 import SubHeader from "@/shared/components/custom/SubHeader"
 import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
     DropdownMenu,
     DropdownMenuContent,

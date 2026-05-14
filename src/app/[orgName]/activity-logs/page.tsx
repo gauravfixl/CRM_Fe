@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useMemo, useEffect, useCallback } from "react"
+import { useRouter, useParams } from "next/navigation"
 import { Activity, Users, Eye, Clock, Search, Download, Loader2 } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
@@ -89,6 +90,10 @@ const actionBadgeClasses: Record<string, string> = {
 }
 
 export default function ActivityLogsPage() {
+    const router = useRouter()
+    const params = useParams()
+    const orgName = (params?.orgName as string) || ""
+
     const [search, setSearch] = useState("")
     const [actionFilter, setActionFilter] = useState("All")
     const [activityData, setActivityData] = useState<ActivityLog[]>([])
@@ -205,7 +210,11 @@ export default function ActivityLogsPage() {
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* Active Users Today - gradient primary */}
-                    <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white">
+                    <button
+                        type="button"
+                        onClick={() => router.push(`/${orgName}/modules/users`)}
+                        className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white text-left cursor-pointer transition-all hover:shadow-2xl"
+                    >
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-white text-xs opacity-80">Active Users Today</p>
@@ -215,10 +224,14 @@ export default function ActivityLogsPage() {
                                 <Users className="w-5 h-5 text-white" />
                             </div>
                         </div>
-                    </div>
+                    </button>
 
                     {/* Total Actions */}
-                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                    <button
+                        type="button"
+                        onClick={() => setActionFilter("All")}
+                        className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left cursor-pointer transition-all hover:shadow-xl"
+                    >
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-gray-600 text-xs">Total Actions</p>
@@ -228,10 +241,14 @@ export default function ActivityLogsPage() {
                                 <Activity className="w-5 h-5 text-zinc-600" />
                             </div>
                         </div>
-                    </div>
+                    </button>
 
                     {/* Page Views */}
-                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                    <button
+                        type="button"
+                        onClick={() => router.push(`/${orgName}/usage-analytics`)}
+                        className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left cursor-pointer transition-all hover:shadow-xl"
+                    >
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-gray-600 text-xs">Page Views</p>
@@ -241,10 +258,14 @@ export default function ActivityLogsPage() {
                                 <Eye className="w-5 h-5 text-zinc-600" />
                             </div>
                         </div>
-                    </div>
+                    </button>
 
                     {/* Avg. Session Duration */}
-                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                    <button
+                        type="button"
+                        onClick={() => router.push(`/${orgName}/usage-analytics`)}
+                        className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left cursor-pointer transition-all hover:shadow-xl"
+                    >
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-gray-600 text-xs">Avg. Session Duration</p>
@@ -254,7 +275,7 @@ export default function ActivityLogsPage() {
                                 <Clock className="w-5 h-5 text-zinc-600" />
                             </div>
                         </div>
-                    </div>
+                    </button>
                 </div>
 
                 {/* Search and Filter */}

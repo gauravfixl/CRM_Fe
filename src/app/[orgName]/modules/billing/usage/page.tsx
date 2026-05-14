@@ -94,29 +94,45 @@ export default function UsageLimitsPage() {
             <div className="flex-1 p-6 space-y-6">
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white">
+                    <button
+                        type="button"
+                        onClick={() => router.push(`/${orgName}/usage-analytics`)}
+                        className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white text-left cursor-pointer transition-all hover:shadow-2xl"
+                    >
                         <p className="text-white text-xs opacity-80">Overall Usage</p>
                         <p className="text-white text-xl font-semibold mt-1">{overallUsage}%</p>
                         <p className="text-white text-[10px] mt-1 opacity-70">Average across all resources</p>
-                    </div>
+                    </button>
 
-                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                    <button
+                        type="button"
+                        onClick={() => router.push(`/${orgName}/modules/users`)}
+                        className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left cursor-pointer transition-all hover:shadow-xl"
+                    >
                         <p className="text-zinc-500 text-xs">Active Users</p>
                         <p className="text-xl font-semibold text-zinc-900 mt-1">{usageData[0].used} / {usageData[0].limit}</p>
                         <p className="text-primary text-[10px] mt-1">{Math.round((usageData[0].used / usageData[0].limit) * 100)}% utilized</p>
-                    </div>
+                    </button>
 
-                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                    <button
+                        type="button"
+                        onClick={() => router.push(`/${orgName}/modules/data/backup`)}
+                        className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left cursor-pointer transition-all hover:shadow-xl"
+                    >
                         <p className="text-zinc-500 text-xs">Storage Used</p>
                         <p className="text-xl font-semibold text-zinc-900 mt-1">{usageData[1].used} / {usageData[1].limit} GB</p>
                         <p className="text-indigo-600 text-[10px] mt-1">{Math.round((usageData[1].used / usageData[1].limit) * 100)}% utilized</p>
-                    </div>
+                    </button>
 
-                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                    <button
+                        type="button"
+                        onClick={() => router.push(`/${orgName}/api-usage`)}
+                        className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left cursor-pointer transition-all hover:shadow-xl"
+                    >
                         <p className="text-zinc-500 text-xs">API Calls</p>
                         <p className="text-xl font-semibold text-zinc-900 mt-1">{formatNumber(usageData[2].used)} / {formatNumber(usageData[2].limit)}</p>
                         <p className="text-amber-600 text-[10px] mt-1">{Math.round((usageData[2].used / usageData[2].limit) * 100)}% {Math.round((usageData[2].used / usageData[2].limit) * 100) >= 80 ? "— Near limit" : "utilized"}</p>
-                    </div>
+                    </button>
                 </div>
 
                 {/* Detailed Usage Bars */}

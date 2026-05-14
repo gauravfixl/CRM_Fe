@@ -216,10 +216,10 @@ export default function EmailTemplatesPage() {
             </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <Stat label="Total" value={summary.total} color="#2563eb" />
-                <Stat label="Active" value={summary.active} color="#10b981" />
-                <Stat label="Marketing" value={summary.marketing} color="#f59e0b" />
-                <Stat label="System" value={summary.system} color="#8b5cf6" />
+                <Stat label="Total" value={summary.total} color="#2563eb" onClick={() => setFilterCategory("all")} />
+                <Stat label="Active" value={summary.active} color="#10b981" onClick={() => setFilterCategory("all")} />
+                <Stat label="Marketing" value={summary.marketing} color="#f59e0b" onClick={() => setFilterCategory("Marketing")} />
+                <Stat label="System" value={summary.system} color="#8b5cf6" onClick={() => setFilterCategory("System")} />
             </div>
 
             <div className="bg-white border border-[#EEF1F6] shadow-sm p-4 flex flex-wrap items-center gap-3 rounded-none">
@@ -388,12 +388,17 @@ export default function EmailTemplatesPage() {
     )
 }
 
-function Stat({ label, value, color }: { label: string; value: number; color: string }) {
+function Stat({ label, value, color, onClick }: { label: string; value: number; color: string; onClick?: () => void }) {
     return (
-        <div className="border shadow-sm p-4 rounded-none" style={{ background: `linear-gradient(135deg, ${color}14 0%, ${color}06 45%, #ffffff 100%)`, borderColor: `${color}33` }}>
+        <button
+            type="button"
+            onClick={onClick}
+            className="border shadow-sm p-4 rounded-none text-left cursor-pointer transition-all hover:shadow-md"
+            style={{ background: `linear-gradient(135deg, ${color}14 0%, ${color}06 45%, #ffffff 100%)`, borderColor: `${color}33` }}
+        >
             <p className="text-[12px] font-medium text-[#64748B]">{label}</p>
             <p className="text-[22px] font-semibold mt-1 tabular-nums leading-tight" style={{ color }}>{value}</p>
-        </div>
+        </button>
     )
 }
 

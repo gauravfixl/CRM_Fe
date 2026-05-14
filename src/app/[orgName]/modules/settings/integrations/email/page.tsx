@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { useRouter, useParams } from "next/navigation";
 import {
     Mail,
     Plus,
@@ -69,6 +70,10 @@ const defaultFormState: AccountForm = {
 };
 
 export default function EmailIntegrationsPage() {
+    const router = useRouter();
+    const params = useParams();
+    const orgName = (params?.orgName as string) || "";
+
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
 
@@ -228,29 +233,45 @@ export default function EmailIntegrationsPage() {
 
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
+                <button
+                    type="button"
+                    onClick={() => setStatusFilter("All")}
+                    className={`bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl cursor-pointer ${statusFilter === "All" ? "ring-2 ring-primary/60 ring-offset-2" : ""}`}
+                >
                     <p className="text-white text-xs opacity-80">Connected Accounts</p>
                     <p className="text-white text-xl font-semibold mt-1">{accounts.length}</p>
                     <p className="text-white text-[10px] mt-1 opacity-80">Total integrations</p>
-                </div>
+                </button>
 
-                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/modules/settings/sync`)}
+                    className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer"
+                >
                     <p className="text-gray-600 text-xs">Synced Emails</p>
                     <p className="text-xl font-semibold text-gray-900 mt-1">12,847</p>
                     <p className="text-green-600 text-[10px] mt-1">+234 today</p>
-                </div>
+                </button>
 
-                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/modules/calendar`)}
+                    className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer"
+                >
                     <p className="text-gray-600 text-xs">Calendar Events</p>
                     <p className="text-xl font-semibold text-gray-900 mt-1">1,563</p>
                     <p className="text-green-600 text-[10px] mt-1">+18 this week</p>
-                </div>
+                </button>
 
-                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/modules/settings/sync`)}
+                    className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer"
+                >
                     <p className="text-gray-600 text-xs">Sync Success Rate</p>
                     <p className="text-xl font-semibold text-gray-900 mt-1">99.2%</p>
                     <p className="text-green-600 text-[10px] mt-1">Excellent reliability</p>
-                </div>
+                </button>
             </div>
 
             {/* Connected Accounts List */}

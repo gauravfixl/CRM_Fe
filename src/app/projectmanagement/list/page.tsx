@@ -19,6 +19,8 @@ import QuickCreateModal from "@/shared/components/projectmanagement/quick-create
 import { cn } from "@/lib/utils"
 import { useIssueStore } from "@/shared/data/issue-store"
 import { useProjectStore } from "@/shared/data/projects-store"
+import { useSavedFilterStore } from "@/shared/data/saved-filter-store"
+import { Bookmark, Pin, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -63,15 +65,54 @@ export default function GlobalListPage() {
     const [mounted, setMounted] = useState(false)
     const { issues, deleteIssue } = useIssueStore()
     const { projects } = useProjectStore()
+    const { filters, addFilter, deleteFilter, togglePin } = useSavedFilterStore()
     const [search, setSearch] = useState("")
     const [statusFilter, setStatusFilter] = useState<string>("all")
     const [priorityFilter, setPriorityFilter] = useState<string>("all")
     const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null)
     const [isCreateOpen, setIsCreateOpen] = useState(false)
+    const [showSaveDialog, setShowSaveDialog] = useState(false)
+    const [filterName, setFilterName] = useState("")
+    const [activeFilterId, setActiveFilterId] = useState<string | null>(null)
 
     useEffect(() => {
         setMounted(true)
+        useSavedFilterStore.persist.rehydrate()
     }, [])
+
+    const savedFilters = filters.filter(f => f.scope === "issues")
+
+    const applyFilter = (id: string) => {
+        const f = savedFilters.find(x => x.id === id)
+        if (!f) return
+        setSearch(f.query.search || "")
+        setStatusFilter(f.query.status || "all")
+        setPriorityFilter(f.query.priority || "all")
+        setActiveFilterId(id)
+    }
+
+    const handleSaveFilter = () => {
+        if (!filterName.trim()) return
+        addFilter({
+            name: filterName.trim(),
+            scope: "issues",
+            query: {
+                search: search || undefined,
+                status: statusFilter !== "all" ? statusFilter : undefined,
+                priority: priorityFilter !== "all" ? priorityFilter : undefined,
+            },
+            pinned: false,
+        })
+        setFilterName("")
+        setShowSaveDialog(false)
+    }
+
+    const clearFilters = () => {
+        setSearch("")
+        setStatusFilter("all")
+        setPriorityFilter("all")
+        setActiveFilterId(null)
+    }
 
     if (!mounted) return null
 
@@ -217,8 +258,65 @@ export default function GlobalListPage() {
                         </SelectContent>
                     </Select>
                 </div>
-                <div className="text-xs font-bold text-slate-500">
-                    {sortedIssues.length} tasks
+                <div className="flex items-center gap-2">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-9 text-xs font-bold border-slate-200 gap-2 rounded-none">
+                                <Bookmark size={12} /> {activeFilterId ? savedFilters.find(f => f.id === activeFilterId)?.name : "Saved Filters"}
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-64">
+                            <div className="px-2 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Saved Views</div>
+                            {savedFilters.length === 0 ? (
+                                <div className="px-2 py-3 text-[11px] text-slate-400">No saved filters yet.</div>
+                            ) : (
+                                savedFilters.sort((a, b) => Number(b.pinned) - Number(a.pinned)).map(f => (
+                                    <div key={f.id} className="flex items-center gap-1 px-2 py-1 hover:bg-slate-50">
+                                        <button onClick={() => applyFilter(f.id)} className="flex-1 text-left text-[12px] font-bold text-slate-700 truncate">
+                                            {f.pinned && <Pin size={10} className="inline mr-1 text-amber-500" />}
+                                            {f.name}
+                                        </button>
+                                        <button onClick={(e) => { e.stopPropagation(); togglePin(f.id) }} className="h-6 w-6 flex items-center justify-center text-slate-300 hover:text-amber-500 rounded-none">
+                                            <Pin size={11} className={f.pinned ? "text-amber-500" : ""} />
+                                        </button>
+                                        <button onClick={(e) => { e.stopPropagation(); deleteFilter(f.id) }} className="h-6 w-6 flex items-center justify-center text-slate-300 hover:text-rose-600 rounded-none">
+                                            <Trash2 size={11} />
+                                        </button>
+                                    </div>
+                                ))
+                            )}
+                            <div className="border-t border-slate-100 mt-1 pt-1">
+                                <button onClick={() => setShowSaveDialog(true)} className="w-full px-2 py-1.5 text-left text-[11px] font-bold text-indigo-600 hover:bg-indigo-50 rounded-none">
+                                    + Save current as view
+                                </button>
+                                {activeFilterId && (
+                                    <button onClick={clearFilters} className="w-full px-2 py-1.5 text-left text-[11px] font-bold text-slate-500 hover:bg-slate-50 rounded-none">
+                                        Clear filters
+                                    </button>
+                                )}
+                            </div>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    {showSaveDialog && (
+                        <div className="flex items-center gap-1">
+                            <Input
+                                autoFocus
+                                value={filterName}
+                                onChange={(e) => setFilterName(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") handleSaveFilter()
+                                    if (e.key === "Escape") setShowSaveDialog(false)
+                                }}
+                                placeholder="Filter name..."
+                                className="h-9 w-40 text-xs rounded-none"
+                            />
+                            <Button onClick={handleSaveFilter} disabled={!filterName.trim()} className="h-9 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-none">Save</Button>
+                            <Button variant="ghost" onClick={() => setShowSaveDialog(false)} className="h-9 text-xs rounded-none">×</Button>
+                        </div>
+                    )}
+                    <div className="text-xs font-bold text-slate-500">
+                        {sortedIssues.length} tasks
+                    </div>
                 </div>
             </div>
 

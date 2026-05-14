@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Key, Globe, Plus, Copy, Trash2, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { Key, Globe, Plus, Copy, Trash2, Eye, EyeOff, RefreshCw, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/components/ui/badge";

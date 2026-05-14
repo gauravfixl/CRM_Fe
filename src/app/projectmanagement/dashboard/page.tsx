@@ -18,6 +18,7 @@ import { Card } from "@/components/ui/card"
 import { useIssueStore } from "@/shared/data/issue-store"
 import { useProjectStore } from "@/shared/data/projects-store"
 import { useTeamStore } from "@/shared/data/team-store"
+import { useSprintStore } from "@/shared/data/sprint-store"
 
 interface Widget {
     id: string
@@ -35,16 +36,23 @@ export default function DashboardWidgetsPage() {
     const { issues } = useIssueStore()
     const { projects } = useProjectStore()
     const { members } = useTeamStore()
+    const { sprints } = useSprintStore()
     const [editMode, setEditMode] = useState(false)
 
     useEffect(() => { setMounted(true) }, [])
     if (!mounted) return null
 
+    // Real velocity: average completed points across last 3 completed sprints
+    const completedSprints = sprints.filter(s => s.status === "COMPLETED" && !s.isDeleted).slice(-3)
+    const velocity = completedSprints.length > 0
+        ? Math.round(completedSprints.reduce((s, sp) => s + (sp.completedPoints || 0), 0) / completedSprints.length)
+        : 0
+
     const widgets: Widget[] = [
         { id: "w1", title: "Active Projects", type: "stat", value: projects.filter(p => p.status === "Active").length, icon: <LayoutGrid size={18} />, color: "text-indigo-800", bg: "bg-indigo-100", href: "/projectmanagement/projects?status=Active" },
         { id: "w2", title: "Open Tasks", type: "stat", value: issues.filter(i => i.status !== "DONE").length, icon: <Activity size={18} />, color: "text-emerald-800", bg: "bg-emerald-100", href: "/projectmanagement/my-work" },
         { id: "w3", title: "Team Members", type: "stat", value: members.length, icon: <Users size={18} />, color: "text-amber-800", bg: "bg-amber-100", href: "/projectmanagement/people" },
-        { id: "w4", title: "Sprint Velocity", type: "stat", value: "27 pts", icon: <TrendingUp size={18} />, color: "text-rose-800", bg: "bg-rose-100", href: "/projectmanagement/reports/sprint" },
+        { id: "w4", title: "Sprint Velocity", type: "stat", value: `${velocity} pts`, icon: <TrendingUp size={18} />, color: "text-rose-800", bg: "bg-rose-100", href: "/projectmanagement/reports/sprint" },
     ]
 
     return (

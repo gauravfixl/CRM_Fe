@@ -52,16 +52,51 @@ export default function AnalyticsHubPage() {
         return Object.entries(counts).map(([name, value]) => ({ name, value }))
     }, [issues])
 
-    // 3. Mock Productivity Data
-    const productivityData = [
-        { day: "Mon", value: 12 },
-        { day: "Tue", value: 18 },
-        { day: "Wed", value: 15 },
-        { day: "Thu", value: 25 },
-        { day: "Fri", value: 22 },
-        { day: "Sat", value: 10 },
-        { day: "Sun", value: 8 }
-    ]
+    // 3. Real Productivity Data — last 7 days, count of issues marked DONE per day
+    const productivityData = useMemo(() => {
+        const now = new Date()
+        const startOfDay = (d: Date) => {
+            const x = new Date(d)
+            x.setHours(0, 0, 0, 0)
+            return x
+        }
+        const days: { day: string; value: number; date: Date }[] = []
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date(now)
+            d.setDate(d.getDate() - i)
+            days.push({
+                day: d.toLocaleDateString(undefined, { weekday: "short" }),
+                value: 0,
+                date: startOfDay(d),
+            })
+        }
+        issues.forEach(i => {
+            if (i.status !== "DONE" || !i.updatedAt) return
+            const when = startOfDay(new Date(i.updatedAt))
+            const slot = days.find(d => d.date.getTime() === when.getTime())
+            if (slot) slot.value += 1
+        })
+        return days.map(d => ({ day: d.day, value: d.value }))
+    }, [issues])
+
+    // 4. Real team workload by component / project
+    const workloadData = useMemo(() => {
+        const map: Record<string, number> = {}
+        issues.forEach(i => {
+            if (i.status === "DONE") return
+            const proj = projects.find(p => p.id === i.projectId)
+            const name = proj?.name.slice(0, 8) || "Other"
+            map[name] = (map[name] || 0) + (i.storyPoints || 1)
+        })
+        const entries = Object.entries(map).slice(0, 5)
+        const max = Math.max(1, ...entries.map(([, v]) => v))
+        return entries.map(([subject, value]) => ({ subject, A: value, fullMark: max }))
+    }, [issues, projects])
+
+    // 5. Real completion rate
+    const doneCount = issues.filter(i => i.status === "DONE").length
+    const completionPct = issues.length > 0 ? Math.round((doneCount / issues.length) * 100) : 0
+    const teamSize = new Set(issues.map(i => i.assigneeId).filter(Boolean)).size
 
     const COLORS = ["#94a3b8", "#6366f1", "#8b5cf6", "#10b981"]
 
@@ -85,8 +120,8 @@ export default function AnalyticsHubPage() {
                 {[
                     { label: "Active Issues", value: issues.length, icon: <AlertCircle size={18} />, color: "text-indigo-800", bg: "bg-indigo-100", href: "/projectmanagement/my-work?tab=all" },
                     { label: "Projects", value: projects.length, icon: <Layers size={18} />, color: "text-blue-800", bg: "bg-blue-100", href: "/projectmanagement/projects" },
-                    { label: "Completion", value: "78%", icon: <CheckCircle2 size={18} />, color: "text-emerald-800", bg: "bg-emerald-100", href: "/projectmanagement/reports/performance" },
-                    { label: "Team", value: 12, icon: <Users size={18} />, color: "text-amber-800", bg: "bg-amber-100", href: "/projectmanagement/people" },
+                    { label: "Completion", value: `${completionPct}%`, icon: <CheckCircle2 size={18} />, color: "text-emerald-800", bg: "bg-emerald-100", href: "/projectmanagement/reports/performance" },
+                    { label: "Team", value: teamSize, icon: <Users size={18} />, color: "text-amber-800", bg: "bg-amber-100", href: "/projectmanagement/people" },
                 ].map((stat, i) => (
                     <a
                         key={i}
@@ -199,26 +234,24 @@ export default function AnalyticsHubPage() {
                     </CardContent>
                 </Card>
 
-                {/* Workload */}
+                {/* Workload by Project */}
                 <Card className="rounded-none">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-bold text-slate-800">Team Workload</CardTitle>
+                        <CardTitle className="text-sm font-bold text-slate-800">Project Load (active pts)</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="h-[250px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
-                                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={[
-                                    { subject: 'Dev', A: 120, fullMark: 150 },
-                                    { subject: 'Design', A: 98, fullMark: 150 },
-                                    { subject: 'Ops', A: 86, fullMark: 150 },
-                                    { subject: 'Mkt', A: 99, fullMark: 150 },
-                                    { subject: 'Sales', A: 85, fullMark: 150 },
-                                ]}>
-                                    <PolarGrid stroke="#e2e8f0" />
-                                    <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: '#64748b' }} />
-                                    <Radar name="Workload" dataKey="A" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
-                                    <Tooltip />
-                                </RadarChart>
+                                {workloadData.length === 0 ? (
+                                    <div className="flex h-full items-center justify-center text-xs text-slate-400">No active work to chart.</div>
+                                ) : (
+                                    <RadarChart cx="50%" cy="50%" outerRadius="70%" data={workloadData}>
+                                        <PolarGrid stroke="#e2e8f0" />
+                                        <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: '#64748b' }} />
+                                        <Radar name="Workload" dataKey="A" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
+                                        <Tooltip />
+                                    </RadarChart>
+                                )}
                             </ResponsiveContainer>
                         </div>
                     </CardContent>
