@@ -19,6 +19,16 @@ import { useProjectTemplateStore } from "@/shared/data/project-template-store"
 import { useCommentStore } from "@/shared/data/comment-store"
 import { useAuditLogsStore } from "@/shared/data/audit-logs-store"
 import { useSprintStore } from "@/shared/data/sprint-store"
+import { useSprintEpicStore } from "@/shared/data/sprint-epic-store"
+import { useReleaseStore } from "@/shared/data/release-store"
+import { useComponentStore } from "@/shared/data/component-store"
+import { useCustomFieldStore } from "@/shared/data/custom-field-store"
+import { useAutomationStore } from "@/shared/data/automation-store"
+import { useNotificationStore } from "@/shared/data/notification-store"
+import { useRolePermissionStore } from "@/shared/data/role-permission-store"
+import { useWorkflowStore } from "@/shared/data/workflow-store"
+import { useIntegrationStore } from "@/shared/data/integration-store"
+import { useSavedFilterStore } from "@/shared/data/saved-filter-store"
 import { getMyWorkspaces } from "@/modules/project-management/workspace/hooks/workspaceHooks"
 import { getAllProjectsByWorkspace } from "@/modules/project-management/project/hooks/projectHooks"
 
@@ -39,6 +49,16 @@ export default function ProjectManagementLayout({ children }: { children: React.
         useCommentStore.persist.rehydrate()
         useAuditLogsStore.persist.rehydrate()
         useSprintStore.persist.rehydrate()
+        useSprintEpicStore.persist.rehydrate()
+        useReleaseStore.persist.rehydrate()
+        useComponentStore.persist.rehydrate()
+        useCustomFieldStore.persist.rehydrate()
+        useAutomationStore.persist.rehydrate()
+        useNotificationStore.persist.rehydrate()
+        useRolePermissionStore.persist.rehydrate()
+        useWorkflowStore.persist.rehydrate()
+        useIntegrationStore.persist.rehydrate()
+        useSavedFilterStore.persist.rehydrate()
     }, [])
 
     // Backend-backed seed for sidebar + project listing

@@ -1,406 +1,527 @@
 "use client"
 
 import * as React from "react"
-import { useState, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import {
-    History,
-    Search,
-    Filter,
-    MoreVertical,
-    Plus,
-    Trash2,
-    Eye,
-    Building2,
-    Mail,
-    Smartphone,
-    Bell,
-    CheckCircle2,
-    Clock,
-    AlertCircle,
-    Calendar,
-    Download,
-    ArrowUpRight,
-    ChevronRight,
-    MessageSquare,
-    Zap
+    History, Search, Filter, MoreVertical, Plus, Trash2, Eye, Mail, Smartphone, Bell,
+    CheckCircle2, Clock, AlertCircle, Calendar, Download, ArrowUpRight, MessageSquare, Zap,
 } from "lucide-react"
 
-import { Card, CardContent } from "@/shared/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter,
-    DialogTrigger,
-} from "@/shared/components/ui/dialog"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/shared/components/ui/select"
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/shared/components/ui/dropdown-menu"
-import { useToast } from "@/shared/components/ui/use-toast"
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/shared/components/ui/sheet"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu"
 import { Badge } from "@/shared/components/ui/badge"
+import { toast } from "@/shared/utils/toast"
 
-// Types
 interface HistoryEntry {
-    id: number;
-    account: string;
-    type: 'Email' | 'SMS' | 'Call' | 'In-App';
-    subject: string;
-    representative: string;
-    status: 'Completed' | 'Delivered' | 'Failed' | 'Opened';
-    timestamp: string;
-    sentiment: 'Positive' | 'Neutral' | 'Negative' | 'N/A';
+    id: number
+    account: string
+    type: 'Email' | 'SMS' | 'Call' | 'In-App'
+    subject: string
+    representative: string
+    status: 'Completed' | 'Delivered' | 'Failed' | 'Opened'
+    timestamp: string
+    date: string
+    sentiment: 'Positive' | 'Neutral' | 'Negative' | 'N/A'
+    summary: string
 }
 
 const initialHistory: HistoryEntry[] = [
-    { id: 1, account: "Global Dynamics", type: "Email", subject: "Q3 Strategy Alignment", representative: "Sarah J.", status: "Opened", timestamp: "Oct 15, 2024 • 10:45 AM", sentiment: "Positive" },
-    { id: 2, account: "DataScale Inc", type: "SMS", subject: "Critical: Support Ticket Alert", representative: "System", status: "Delivered", timestamp: "Oct 12, 2024 • 09:12 AM", sentiment: "N/A" },
-    { id: 3, account: "Innova Hub", type: "Call", subject: "Executive Review Call", representative: "Mike W.", status: "Completed", timestamp: "Oct 10, 2024 • 04:30 PM", sentiment: "Neutral" },
-    { id: 4, account: "Swift Apps", type: "Email", subject: "Onboarding Welcome!", representative: "Emily R.", status: "Opened", timestamp: "Oct 08, 2024 • 11:00 AM", sentiment: "Positive" },
-    { id: 5, account: "Horizon Media", type: "In-App", subject: "Service Maintenance Notification", representative: "System", status: "Failed", timestamp: "Oct 05, 2024 • 02:00 AM", sentiment: "Negative" },
+    { id: 1, account: "Global Dynamics", type: "Email", subject: "Q3 Strategy Alignment", representative: "Sarah J.", status: "Opened", timestamp: "Oct 15, 2024 • 10:45 AM", date: "2024-10-15", sentiment: "Positive", summary: "Discussed Q3 priorities and product roadmap alignment." },
+    { id: 2, account: "DataScale Inc", type: "SMS", subject: "Critical: Support Ticket Alert", representative: "System", status: "Delivered", timestamp: "Oct 12, 2024 • 09:12 AM", date: "2024-10-12", sentiment: "N/A", summary: "Automated alert for high-severity ticket #4502." },
+    { id: 3, account: "Innova Hub", type: "Call", subject: "Executive Review Call", representative: "Mike W.", status: "Completed", timestamp: "Oct 10, 2024 • 04:30 PM", date: "2024-10-10", sentiment: "Neutral", summary: "Hour-long executive review covering renewal terms." },
+    { id: 4, account: "Swift Apps", type: "Email", subject: "Onboarding Welcome!", representative: "Emily R.", status: "Opened", timestamp: "Oct 08, 2024 • 11:00 AM", date: "2024-10-08", sentiment: "Positive", summary: "Welcome email with onboarding checklist." },
+    { id: 5, account: "Horizon Media", type: "In-App", subject: "Service Maintenance Notification", representative: "System", status: "Failed", timestamp: "Oct 05, 2024 • 02:00 AM", date: "2024-10-05", sentiment: "Negative", summary: "Notification failed due to push token expiration." },
 ]
 
-const cn = (...classes: any[]) => classes.filter(Boolean).join(' ')
+const validators = {
+    required: (v: string) => !v || !v.toString().trim() ? "This field is required" : "",
+    minLen: (n: number) => (v: string) => v && v.trim().length < n ? `Must be at least ${n} characters` : "",
+}
 
-const MetricBox = ({ title, value, icon: Icon, color, subValue }: any) => {
-    const colorClasses: any = {
-        blue: "from-blue-50 to-blue-100/50 border-blue-200/50 text-blue-600",
-        indigo: "from-indigo-50 to-indigo-100/50 border-indigo-200/50 text-indigo-600",
-        emerald: "from-emerald-50 to-emerald-100/50 border-emerald-200/50 text-emerald-600",
-        rose: "from-rose-50 to-rose-100/50 border-rose-200/50 text-rose-600",
+const getTypeIcon = (type: string) => {
+    switch (type) {
+        case 'Email': return Mail
+        case 'SMS': return Smartphone
+        case 'Call': return MessageSquare
+        case 'In-App': return Bell
+        default: return Zap
     }
-    const currentClasses = colorClasses[color] || colorClasses.blue
-    return (
-        <Card className={cn("bg-gradient-to-br border shadow-none transition-all hover:shadow-md", currentClasses.split(' ').slice(0, 3).join(' '))}>
-            <CardContent className="p-5">
-                <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                        <p className="text-xs font-semibold text-slate-500 tracking-wide font-outfit mb-2">{title}</p>
-                        <h3 className="text-2xl font-bold text-slate-900 font-outfit tracking-tight leading-none">{value}</h3>
-                        <p className="mt-2 text-xs font-medium text-slate-400 font-outfit">{subValue}</p>
-                    </div>
-                    <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center bg-white/60 shadow-sm border border-white/50", currentClasses.split(' ').pop())}>
-                        <Icon className="h-5 w-5" />
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-    )
+}
+
+const getStatusColor = (status: string) => {
+    switch (status) {
+        case 'Opened': return 'bg-emerald-50 text-emerald-600 border-emerald-100'
+        case 'Completed': return 'bg-blue-50 text-blue-600 border-blue-100'
+        case 'Delivered': return 'bg-indigo-50 text-indigo-600 border-indigo-100'
+        case 'Failed': return 'bg-rose-50 text-rose-600 border-rose-100'
+        default: return 'bg-slate-50 text-slate-600 border-slate-100'
+    }
 }
 
 export default function CommunicationHistoryPage() {
-    const [history, setHistory] = useState<HistoryEntry[]>(initialHistory)
-    const [search, setSearch] = useState("")
-    const [isDialogOpen, setIsDialogOpen] = useState(false)
-    const { toast } = useToast()
+    const router = useRouter()
+    const [history, setHistory] = React.useState<HistoryEntry[]>(initialHistory)
+    const [search, setSearch] = React.useState("")
+    const [typeFilter, setTypeFilter] = React.useState("all")
+    const [clientFilter, setClientFilter] = React.useState("all")
+    const [dateFilter, setDateFilter] = React.useState("")
 
-    const metrics = useMemo(() => {
+    const [isFormOpen, setIsFormOpen] = React.useState(false)
+    const [isDetailOpen, setIsDetailOpen] = React.useState(false)
+    const [isFilterOpen, setIsFilterOpen] = React.useState(false)
+    const [selected, setSelected] = React.useState<HistoryEntry | null>(null)
+
+    const [form, setForm] = React.useState({
+        account: "", type: "Call" as HistoryEntry['type'],
+        subject: "", representative: "Current User",
+        sentiment: "Neutral" as HistoryEntry['sentiment'],
+        summary: "",
+    })
+    const [errors, setErrors] = React.useState<Record<string, string>>({})
+
+    const clients = React.useMemo(() => Array.from(new Set(history.map(h => h.account))), [history])
+
+    const metrics = React.useMemo(() => {
         const total = history.length
         const totalLastWeek = "842"
         const avgSentiment = "Positive"
-        const topChannel = "Email (62%)"
-
+        const topChannel = "Email"
         return { total, totalLastWeek, avgSentiment, topChannel }
     }, [history])
 
-    const filteredHistory = useMemo(() => {
+    const filtered = React.useMemo(() => {
         return history.filter(h =>
-            h.account.toLowerCase().includes(search.toLowerCase()) ||
-            h.subject.toLowerCase().includes(search.toLowerCase())
+            (typeFilter === "all" || h.type === typeFilter) &&
+            (clientFilter === "all" || h.account === clientFilter) &&
+            (!dateFilter || h.date === dateFilter) &&
+            (h.account.toLowerCase().includes(search.toLowerCase()) ||
+                h.subject.toLowerCase().includes(search.toLowerCase()) ||
+                h.representative.toLowerCase().includes(search.toLowerCase()))
         )
-    }, [history, search])
+    }, [history, search, typeFilter, clientFilter, dateFilter])
 
-    const handleDelete = (id: number) => {
-        setHistory(prev => prev.filter(h => h.id !== id))
-        toast({ title: "Audit Log Removed", description: "Record has been deleted from history repository." })
+    const setField = (field: string, value: any) => {
+        setForm(prev => ({ ...prev, [field]: value }))
+        if (errors[field]) setErrors(prev => { const c = { ...prev }; delete c[field]; return c })
     }
 
-    const getTypeIcon = (type: string) => {
-        switch (type) {
-            case 'Email': return <Mail className="h-4 w-4" />
-            case 'SMS': return <Smartphone className="h-4 w-4" />
-            case 'Call': return <MessageSquare className="h-4 w-4" />
-            case 'In-App': return <Bell className="h-4 w-4" />
-            default: return <Zap className="h-4 w-4" />
+    const validate = (): boolean => {
+        const errs: Record<string, string> = {}
+        errs.account = validators.required(form.account)
+        errs.subject = validators.required(form.subject) || validators.minLen(3)(form.subject)
+        errs.representative = validators.required(form.representative)
+        errs.summary = validators.required(form.summary) || validators.minLen(5)(form.summary)
+        Object.keys(errs).forEach(k => { if (!errs[k]) delete errs[k] })
+        setErrors(errs)
+        return Object.keys(errs).length === 0
+    }
+
+    const openCreate = () => {
+        setForm({ account: "", type: "Call", subject: "", representative: "Current User", sentiment: "Neutral", summary: "" })
+        setErrors({})
+        setIsFormOpen(true)
+    }
+
+    const handleSave = () => {
+        if (!validate()) { toast.error("Please correct the highlighted fields"); return }
+        const today = new Date()
+        const dateStr = today.toISOString().split('T')[0]
+        const entry: HistoryEntry = {
+            id: Date.now(),
+            account: form.account.trim(),
+            type: form.type,
+            subject: form.subject.trim(),
+            representative: form.representative.trim(),
+            status: "Completed",
+            timestamp: today.toLocaleString(),
+            date: dateStr,
+            sentiment: form.sentiment,
+            summary: form.summary.trim(),
         }
+        setHistory([entry, ...history])
+        toast.success("Audit entry logged")
+        setIsFormOpen(false)
+    }
+
+    const handleDelete = (id: number) => {
+        setHistory(history.filter(h => h.id !== id))
+        toast.success("Entry deleted")
+    }
+
+    const openDetail = (h: HistoryEntry) => { setSelected(h); setIsDetailOpen(true) }
+
+    const kpiCards = [
+        { title: "Total Interactions", value: metrics.totalLastWeek, subtitle: "Past 7 Days", icon: History, color: "blue", trend: "+12%", path: "/client-management/analytics/overview" },
+        { title: "Open Rate", value: "68.4%", subtitle: "Network Average", icon: ArrowUpRight, color: "indigo", trend: "+3%", path: "/client-management/communication/email" },
+        { title: "Client Sentiment", value: metrics.avgSentiment, subtitle: "Aggregate Pulse", icon: CheckCircle2, color: "emerald", trend: "", path: "/client-management/customers" },
+        { title: "Top Channel", value: metrics.topChannel, subtitle: "62% of volume", icon: Calendar, color: "rose", trend: "", path: "/client-management/communication/email" },
+    ]
+    const colorMap: Record<string, { bg: string; border: string; text: string; iconBg: string }> = {
+        blue: { bg: "bg-gradient-to-br from-blue-50 to-blue-100/50", border: "border-blue-200/50", text: "text-blue-600", iconBg: "bg-blue-100" },
+        indigo: { bg: "bg-gradient-to-br from-indigo-50 to-indigo-100/50", border: "border-indigo-200/50", text: "text-indigo-600", iconBg: "bg-indigo-100" },
+        emerald: { bg: "bg-gradient-to-br from-emerald-50 to-emerald-100/50", border: "border-emerald-200/50", text: "text-emerald-600", iconBg: "bg-emerald-100" },
+        rose: { bg: "bg-gradient-to-br from-rose-50 to-rose-100/50", border: "border-rose-200/50", text: "text-rose-600", iconBg: "bg-rose-100" },
     }
 
     return (
-        <div className="px-8 py-8 space-y-8 bg-slate-50 min-h-screen font-outfit text-sm">
+        <div className="px-8 py-6 space-y-6 bg-slate-50 min-h-screen">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
                 <div className="flex flex-col gap-1">
-                    <h1 className="text-2xl font-bold text-slate-900 font-outfit tracking-tight">
+                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
                         Communication <span className="text-indigo-600">Audit Trail</span>
                     </h1>
-                    <p className="text-[15px] font-medium text-slate-500 font-outfit">
-                        Historical repository of all client interactions across integrated channels.
-                    </p>
+                    <p className="text-[14px] font-medium text-slate-500">Historical repository of all client interactions across channels.</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <Button variant="outline" className="rounded-xl py-6 px-6 font-bold font-outfit border-slate-200 text-slate-600 gap-2">
-                        <Download className="h-5 w-5" /> Export Audit Log
+                <div className="flex gap-3">
+                    <Button variant="outline" className="rounded-none h-10" onClick={() => setIsFilterOpen(true)}>
+                        <Filter className="h-4 w-4 mr-2" />Filter
                     </Button>
-                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl py-6 px-6 font-bold font-outfit shadow-lg shadow-indigo-600/20 gap-2">
-                                <Plus className="h-5 w-5" /> Log External Entry
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[600px] font-outfit rounded-2xl">
-                            <DialogHeader>
-                                <DialogTitle className="text-xl font-bold">Manual Audit Logging</DialogTitle>
-                            </DialogHeader>
-                            <div className="grid gap-6 py-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label className="font-bold text-slate-700">Account Involved</Label>
-                                        <Input placeholder="Search client..." />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="font-bold text-slate-700">Interaction Type</Label>
-                                        <Select>
-                                            <SelectTrigger><SelectValue placeholder="Protocol" /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="Call">Phone Call</SelectItem>
-                                                <SelectItem value="InPerson">In-Person Meeting</SelectItem>
-                                                <SelectItem value="Workshop">Strategy Workshop</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="font-bold text-slate-700">Audit Summary</Label>
-                                    <Input placeholder="e.g. Discussed new API endpoints" />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label className="font-bold text-slate-700">Rep Accountable</Label>
-                                        <Input defaultValue="Current User" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="font-bold text-slate-700">Sentiment Score</Label>
-                                        <Select>
-                                            <SelectTrigger><SelectValue placeholder="Client Mood" /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="Pos">Highly Positive</SelectItem>
-                                                <SelectItem value="Neu">Neutral / Informative</SelectItem>
-                                                <SelectItem value="Neg">Risk / Dissatisfaction</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-                            </div>
-                            <DialogFooter className="gap-2">
-                                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Halt Process</Button>
-                                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={() => { setIsDialogOpen(false); toast({ title: "Audit Logged", description: "The manual entry has been added to history." }) }}>
-                                    <CheckCircle2 className="h-4 w-4 mr-2" /> Commit to Ledger
-                                </Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
+                    <Button variant="outline" className="rounded-none h-10" onClick={() => toast.success("Audit log export started")}>
+                        <Download className="h-4 w-4 mr-2" />Export
+                    </Button>
+                    <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-none h-10 px-5" onClick={openCreate}>
+                        <Plus className="h-4 w-4 mr-2" />Log Entry
+                    </Button>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <MetricBox title="Total Interactions" value={metrics.totalLastWeek} subValue="Past 7 Business Days" icon={History} color="blue" />
-                <MetricBox title="Open/Response Rate" value="68.4%" subValue="Global Network Avg" icon={ArrowUpRight} color="indigo" />
-                <MetricBox title="Client Health Pulse" value={metrics.avgSentiment} subValue="Sentiment Aggregate" icon={CheckCircle2} color="emerald" />
-                <MetricBox title="Primary Protocol" value={metrics.topChannel} subValue="Channel Dominance" icon={Calendar} color="rose" />
+                {kpiCards.map((kpi, i) => {
+                    const cc = colorMap[kpi.color]
+                    const Icon = kpi.icon
+                    return (
+                        <Card key={i} className={`rounded-none cursor-pointer hover:shadow-md transition ${cc.bg} ${cc.border} border`} onClick={() => router.push(kpi.path)}>
+                            <CardContent className="p-5">
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <p className="text-xs font-semibold text-slate-500 tracking-wide mb-1">{kpi.title}</p>
+                                        <div className="flex items-baseline gap-2">
+                                            <h3 className="text-2xl font-bold text-slate-900">{kpi.value}</h3>
+                                            {kpi.trend && <span className="text-xs font-bold text-emerald-600">{kpi.trend}</span>}
+                                        </div>
+                                        <p className="mt-2 text-xs text-slate-400">{kpi.subtitle}</p>
+                                    </div>
+                                    <div className={`h-10 w-10 rounded-none flex items-center justify-center ${cc.iconBg}`}>
+                                        <Icon className={`h-5 w-5 ${cc.text}`} />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )
+                })}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
-                    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden font-outfit">
-                        <div className="px-6 py-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white">
+                    <Card className="rounded-none">
+                        <CardHeader className="border-b border-slate-100 flex flex-row items-center justify-between gap-3">
                             <div className="flex items-center gap-3">
-                                <h2 className="text-base font-bold text-slate-900 tracking-tight font-outfit">Communication Ledger</h2>
-                                <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-0 font-bold ml-1">{filteredHistory.length} audit entries</Badge>
+                                <CardTitle className="text-base font-semibold">Communication Ledger</CardTitle>
+                                <Badge className="rounded-none bg-indigo-50 text-indigo-700 border-0">{filtered.length} entries</Badge>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                    <Input
-                                        placeholder="Search audit trail..."
-                                        value={search}
-                                        onChange={e => setSearch(e.target.value)}
-                                        className="pl-10 pr-4 py-2 bg-slate-50/50 border border-slate-200 rounded-xl text-[13px] font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/10 w-full md:w-64 font-outfit"
-                                    />
-                                </div>
-                                <Button variant="outline" className="rounded-xl border-slate-200 text-slate-500 h-10 px-4 group hover:bg-indigo-50 transition-colors">
-                                    <Filter className="h-4 w-4 mr-2 group-hover:text-indigo-600" />
-                                    <span className="text-[11px] font-bold">Filters</span>
-                                </Button>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                <Input placeholder="Search audit trail..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10 rounded-none w-64 h-9" />
                             </div>
-                        </div>
-
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left">
-                                <thead>
-                                    <tr className="text-[12px] font-bold text-slate-400 tracking-wider border-b border-slate-50 bg-slate-50/30">
-                                        <th className="px-6 py-4">Protocol & Account</th>
-                                        <th className="px-6 py-4">Interaction Summary</th>
-                                        <th className="px-6 py-4">Acc. Representative</th>
-                                        <th className="px-6 py-4">Audit Status</th>
-                                        <th className="px-6 py-4"></th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-50">
-                                    {filteredHistory.map((h) => (
-                                        <tr key={h.id} className="group hover:bg-slate-50/80 transition-all border-b border-slate-50/50">
-                                            <td className="px-6 py-5">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="h-9 w-9 rounded-xl bg-indigo-50 flex items-center justify-center border border-indigo-100 shadow-sm text-indigo-600">
-                                                        {getTypeIcon(h.type)}
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-bold text-slate-800 font-outfit">{h.account}</p>
-                                                        <p className="text-[10px] font-medium text-slate-400 font-outfit mt-0.5 whitespace-nowrap">{h.type} Sync</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5">
-                                                <div className="space-y-1">
-                                                    <p className="text-[12px] font-bold text-slate-800 font-outfit truncate max-w-[200px]">{h.subject}</p>
-                                                    <p className="text-[10px] font-medium text-slate-400 font-outfit flex items-center gap-1.5 grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all line-clamp-1">
-                                                        <Clock className="h-3 w-3" />
-                                                        {h.timestamp}
-                                                    </p>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200">
-                                                        <span className="text-[9px] font-bold text-slate-600">{h.representative.split(' ').map(n => n[0]).join('')}</span>
-                                                    </div>
-                                                    <span className="text-[11px] font-bold text-slate-600 font-outfit">{h.representative}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5">
-                                                <div className="flex flex-col gap-1.5">
-                                                    <span className={cn(
-                                                        "inline-flex items-center w-fit px-2 py-0.5 rounded-full text-[9px] font-bold font-outfit border shadow-sm",
-                                                        h.status === 'Opened' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
-                                                            h.status === 'Completed' ? "bg-blue-50 text-blue-600 border-blue-100" :
-                                                                h.status === 'Failed' ? "bg-rose-50 text-rose-600 border-rose-100" :
-                                                                    "bg-slate-50 text-slate-600 border-slate-100"
-                                                    )}>
-                                                        {h.status}
-                                                    </span>
-                                                    {h.sentiment !== 'N/A' && (
-                                                        <span className={cn("text-[9px] font-bold ml-1",
-                                                            h.sentiment === 'Positive' ? "text-emerald-500" :
-                                                                h.sentiment === 'Negative' ? "text-rose-500" : "text-amber-500"
-                                                        )}>
-                                                            {h.sentiment} Sentiment
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5 text-right">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="text-slate-300 hover:text-indigo-600 transition-colors">
-                                                            <MoreVertical className="h-5 w-5" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end" className="w-44 font-outfit rounded-xl">
-                                                        <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
-                                                            <Eye className="h-4 w-4" /> Expand Details
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
-                                                            <History className="h-4 w-4" /> Timeline View
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem className="flex items-center gap-2 text-rose-500 cursor-pointer border-t mt-1" onClick={() => handleDelete(h.id)}>
-                                                            <Trash2 className="h-4 w-4" /> Purge Entry
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </td>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="text-[11px] font-bold text-slate-400 tracking-wider border-b border-slate-50 bg-slate-50/30">
+                                            <th className="px-6 py-3">Channel & Account</th>
+                                            <th className="px-6 py-3">Summary</th>
+                                            <th className="px-6 py-3">Rep</th>
+                                            <th className="px-6 py-3">Status</th>
+                                            <th className="px-6 py-3"></th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50">
+                                        {filtered.length > 0 ? filtered.map(h => {
+                                            const TIcon = getTypeIcon(h.type)
+                                            return (
+                                                <tr key={h.id} className="group hover:bg-slate-50/80 transition cursor-pointer" onClick={() => openDetail(h)}>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="h-9 w-9 rounded-none bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                                                                <TIcon className="h-4 w-4" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-sm font-bold text-slate-800">{h.account}</p>
+                                                                <p className="text-[10px] text-slate-400 mt-0.5">{h.type}</p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <p className="text-[12px] font-bold text-slate-800 max-w-[220px] truncate">{h.subject}</p>
+                                                        <p className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
+                                                            <Clock className="h-3 w-3" />{h.timestamp}
+                                                        </p>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="h-6 w-6 rounded-none bg-slate-100 flex items-center justify-center text-[9px] font-bold text-slate-600 border border-slate-200">{h.representative.split(' ').map(n => n[0]).join('')}</div>
+                                                            <span className="text-[11px] font-bold text-slate-600">{h.representative}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex flex-col gap-1">
+                                                            <span className={`px-2 py-0.5 rounded-none text-[10px] font-bold border w-fit ${getStatusColor(h.status)}`}>{h.status}</span>
+                                                            {h.sentiment !== 'N/A' && (
+                                                                <span className={`text-[9px] font-bold ${h.sentiment === 'Positive' ? "text-emerald-500" : h.sentiment === 'Negative' ? "text-rose-500" : "text-amber-500"}`}>
+                                                                    {h.sentiment}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right" onClick={e => e.stopPropagation()}>
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button variant="ghost" size="icon" className="rounded-none"><MoreVertical className="h-4 w-4" /></Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end" className="rounded-none w-40">
+                                                                <DropdownMenuItem onClick={() => openDetail(h)}><Eye className="h-4 w-4 mr-2" />View</DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => toast.success("Timeline expanded")}><History className="h-4 w-4 mr-2" />Timeline</DropdownMenuItem>
+                                                                <DropdownMenuItem className="text-rose-500 border-t mt-1" onClick={() => handleDelete(h.id)}>
+                                                                    <Trash2 className="h-4 w-4 mr-2" />Delete
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </td>
+                                                </tr>
+                                            )
+                                        }) : (
+                                            <tr><td colSpan={5} className="px-6 py-12 text-center text-sm text-slate-500">No entries match your filters.</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
 
                 <div className="space-y-6">
-                    <Card className="rounded-2xl border-slate-200 bg-white p-6 shadow-sm overflow-hidden relative group">
-                        <div className="absolute top-0 right-0 h-16 w-16 bg-slate-50 rounded-bl-full -z-0 opacity-40 group-hover:scale-150 transition-transform" />
-                        <h3 className="text-xs font-bold text-slate-400 tracking-wider font-outfit mb-6 relative z-10">Protocol Split</h3>
-                        <div className="space-y-6 relative z-10">
+                    <Card className="rounded-none">
+                        <CardHeader>
+                            <CardTitle className="text-xs font-bold text-slate-400 tracking-widest uppercase">Protocol Split</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
                             {[
-                                { name: 'Email Broadcasts', pct: 62, color: 'bg-blue-500' },
-                                { name: 'Support Calls', pct: 18, color: 'bg-indigo-500' },
-                                { name: 'SMS Notifications', pct: 12, color: 'bg-violet-500' },
-                                { name: 'In-Person Syncs', pct: 8, color: 'bg-emerald-500' },
+                                { name: 'Email', pct: 62, color: 'bg-blue-500' },
+                                { name: 'Calls', pct: 18, color: 'bg-indigo-500' },
+                                { name: 'SMS', pct: 12, color: 'bg-violet-500' },
+                                { name: 'In-Person', pct: 8, color: 'bg-emerald-500' },
                             ].map((p, i) => (
-                                <div key={i} className="space-y-2">
-                                    <div className="flex justify-between items-center text-[10px] font-bold font-outfit">
+                                <div key={i} className="space-y-1.5">
+                                    <div className="flex justify-between text-[11px] font-bold">
                                         <span className="text-slate-600">{p.name}</span>
                                         <span className="text-slate-900">{p.pct}%</span>
                                     </div>
-                                    <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
-                                        <div className={cn("h-full rounded-full opacity-80", p.color)} style={{ width: `${p.pct}%` }} />
+                                    <div className="h-1.5 w-full bg-slate-50 rounded-none">
+                                        <div className={`h-full ${p.color}`} style={{ width: `${p.pct}%` }} />
                                     </div>
                                 </div>
                             ))}
-                        </div>
+                        </CardContent>
                     </Card>
 
-                    <Card className="rounded-2xl border-indigo-100 bg-indigo-50/10 p-6 shadow-sm overflow-hidden group">
-                        <div className="flex items-center gap-2 mb-6 text-indigo-600">
-                            <AlertCircle className="h-4 w-4" />
-                            <h3 className="text-xs font-bold tracking-wider font-outfit">Audit Insights</h3>
-                        </div>
-                        <div className="p-4 bg-white border border-indigo-100 rounded-xl relative overflow-hidden group-hover:shadow-md transition-all">
-                            <div className="absolute top-0 right-0 h-8 w-8 bg-indigo-50 rounded-bl-full" />
-                            <p className="text-[11px] font-bold text-slate-400 tracking-widest mb-2 font-outfit">Critical Alert</p>
-                            <p className="text-[13px] font-bold text-slate-900 font-outfit leading-tight mb-4">
-                                12 interactions missed audit commitment in the last 24h.
-                            </p>
-                            <Button className="w-full py-4 bg-slate-900 text-white rounded-xl text-[10px] font-bold group-hover:bg-indigo-600 transition-colors">
+                    <Card className="rounded-none border-indigo-100 bg-indigo-50/10">
+                        <CardHeader>
+                            <CardTitle className="text-xs font-bold text-indigo-600 tracking-widest uppercase flex items-center gap-2">
+                                <AlertCircle className="h-4 w-4" /> Audit Insights
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            <div className="p-3 bg-white border border-indigo-100 rounded-none">
+                                <p className="text-[10px] font-bold text-slate-400 tracking-widest mb-1">Critical Alert</p>
+                                <p className="text-[12px] font-bold text-slate-900">12 interactions missed audit commitment in last 24h.</p>
+                            </div>
+                            <Button className="w-full rounded-none bg-slate-900 hover:bg-slate-800 text-white" onClick={() => router.push('/client-management/customers')}>
                                 Review Missed Tags
                             </Button>
-                        </div>
+                        </CardContent>
                     </Card>
 
-                    <Card className="rounded-2xl border-slate-200 bg-white p-6 shadow-sm">
-                        <h3 className="text-xs font-bold text-slate-400 tracking-wider font-outfit mb-6">Sync Schedule</h3>
-                        <div className="space-y-4">
+                    <Card className="rounded-none">
+                        <CardHeader>
+                            <CardTitle className="text-xs font-bold text-slate-400 tracking-widest uppercase">Sync Schedule</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
                             {[
-                                { name: 'G-Suite Audit', status: 'Syncing', time: '12m ago', color: 'emerald' },
-                                { name: 'Salesforce Connect', status: 'Idle', time: '2h ago', color: 'slate' },
-                                { name: 'Phone Hub', status: 'Error', time: '5m ago', color: 'rose' },
+                                { name: 'G-Suite Audit', status: 'Syncing', time: '12m ago', color: 'bg-emerald-500' },
+                                { name: 'Salesforce Connect', status: 'Idle', time: '2h ago', color: 'bg-slate-400' },
+                                { name: 'Phone Hub', status: 'Error', time: '5m ago', color: 'bg-rose-500' },
                             ].map((s, i) => (
-                                <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-transparent hover:border-slate-100 transition-all">
-                                    <div className="flex items-center gap-3">
-                                        <div className={cn("h-2 w-2 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.1)]", `bg-${s.color}-500`)} />
-                                        <span className="text-[11px] font-bold text-slate-700 font-outfit">{s.name}</span>
+                                <div key={i} className="flex items-center justify-between p-2 bg-slate-50 border border-slate-100 rounded-none">
+                                    <div className="flex items-center gap-2">
+                                        <div className={`h-2 w-2 ${s.color}`} />
+                                        <span className="text-[11px] font-bold text-slate-700">{s.name}</span>
                                     </div>
                                     <div className="flex flex-col items-end">
-                                        <span className="text-[9px] font-bold text-slate-400 tracking-wider font-outfit">{s.status}</span>
-                                        <span className="text-[9px] font-medium text-slate-300 font-outfit">{s.time}</span>
+                                        <span className="text-[9px] font-bold text-slate-400">{s.status}</span>
+                                        <span className="text-[9px] text-slate-300">{s.time}</span>
                                     </div>
                                 </div>
                             ))}
-                        </div>
+                        </CardContent>
                     </Card>
                 </div>
             </div>
+
+            {/* Manual Log Sheet */}
+            <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <SheetContent side="right" className="sm:max-w-md w-full p-0 rounded-none flex flex-col">
+                    <SheetHeader className="p-6 border-b bg-gradient-to-br from-indigo-50 to-blue-50">
+                        <SheetTitle className="text-[18px] font-semibold text-slate-900">Log Manual Entry</SheetTitle>
+                        <p className="text-[12px] text-slate-500">Capture an external interaction for the audit trail.</p>
+                    </SheetHeader>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Account <span className="text-rose-500">*</span></Label>
+                            <Input value={form.account} onChange={e => setField("account", e.target.value)} placeholder="Search client..." className={`h-10 rounded-none ${errors.account ? "border-rose-500" : ""}`} />
+                            {errors.account && <p className="text-[11px] text-rose-500">{errors.account}</p>}
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-[12px] font-semibold">Type</Label>
+                                <Select value={form.type} onValueChange={(v: any) => setField("type", v)}>
+                                    <SelectTrigger className="h-10 rounded-none"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-none">
+                                        <SelectItem value="Call">Phone Call</SelectItem>
+                                        <SelectItem value="Email">Email</SelectItem>
+                                        <SelectItem value="SMS">SMS</SelectItem>
+                                        <SelectItem value="In-App">In-App</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[12px] font-semibold">Sentiment</Label>
+                                <Select value={form.sentiment} onValueChange={(v: any) => setField("sentiment", v)}>
+                                    <SelectTrigger className="h-10 rounded-none"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-none">
+                                        <SelectItem value="Positive">Positive</SelectItem>
+                                        <SelectItem value="Neutral">Neutral</SelectItem>
+                                        <SelectItem value="Negative">Negative</SelectItem>
+                                        <SelectItem value="N/A">Not Applicable</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Subject <span className="text-rose-500">*</span></Label>
+                            <Input value={form.subject} onChange={e => setField("subject", e.target.value)} placeholder="e.g. Quarterly review call" className={`h-10 rounded-none ${errors.subject ? "border-rose-500" : ""}`} />
+                            {errors.subject && <p className="text-[11px] text-rose-500">{errors.subject}</p>}
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Representative <span className="text-rose-500">*</span></Label>
+                            <Input value={form.representative} onChange={e => setField("representative", e.target.value)} className={`h-10 rounded-none ${errors.representative ? "border-rose-500" : ""}`} />
+                            {errors.representative && <p className="text-[11px] text-rose-500">{errors.representative}</p>}
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Summary <span className="text-rose-500">*</span></Label>
+                            <Input value={form.summary} onChange={e => setField("summary", e.target.value)} placeholder="Discussed new API endpoints" className={`h-10 rounded-none ${errors.summary ? "border-rose-500" : ""}`} />
+                            {errors.summary && <p className="text-[11px] text-rose-500">{errors.summary}</p>}
+                        </div>
+                    </div>
+                    <div className="p-5 border-t flex gap-3 bg-white">
+                        <Button variant="outline" className="flex-1 h-10 rounded-none" onClick={() => setIsFormOpen(false)}>Cancel</Button>
+                        <Button className="flex-1 h-10 bg-indigo-600 hover:bg-indigo-700 text-white rounded-none" onClick={handleSave}>
+                            <CheckCircle2 className="h-4 w-4 mr-2" />Commit Entry
+                        </Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* Filter Sheet */}
+            <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <SheetContent side="right" className="sm:max-w-md w-full p-0 rounded-none flex flex-col">
+                    <SheetHeader className="p-6 border-b bg-gradient-to-br from-slate-50 to-indigo-50">
+                        <SheetTitle className="text-[18px] font-semibold">Filter History</SheetTitle>
+                    </SheetHeader>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Type</Label>
+                            <Select value={typeFilter} onValueChange={setTypeFilter}>
+                                <SelectTrigger className="h-10 rounded-none"><SelectValue /></SelectTrigger>
+                                <SelectContent className="rounded-none">
+                                    <SelectItem value="all">All Types</SelectItem>
+                                    <SelectItem value="Email">Email</SelectItem>
+                                    <SelectItem value="SMS">SMS</SelectItem>
+                                    <SelectItem value="Call">Call</SelectItem>
+                                    <SelectItem value="In-App">In-App</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Client</Label>
+                            <Select value={clientFilter} onValueChange={setClientFilter}>
+                                <SelectTrigger className="h-10 rounded-none"><SelectValue /></SelectTrigger>
+                                <SelectContent className="rounded-none">
+                                    <SelectItem value="all">All Clients</SelectItem>
+                                    {clients.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Date</Label>
+                            <Input type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)} className="h-10 rounded-none" />
+                        </div>
+                    </div>
+                    <div className="p-5 border-t flex gap-3 bg-white">
+                        <Button variant="outline" className="flex-1 h-10 rounded-none" onClick={() => { setTypeFilter("all"); setClientFilter("all"); setDateFilter(""); toast.success("Filters reset") }}>Reset</Button>
+                        <Button className="flex-1 h-10 bg-indigo-600 hover:bg-indigo-700 rounded-none" onClick={() => { setIsFilterOpen(false); toast.success("Filters applied") }}>Apply</Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* Detail Sheet */}
+            <Sheet open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+                <SheetContent side="right" className="sm:max-w-md w-full p-0 rounded-none flex flex-col">
+                    <SheetHeader className="p-6 border-b bg-gradient-to-br from-slate-50 to-indigo-50">
+                        <SheetTitle className="text-[18px] font-semibold">Audit Detail</SheetTitle>
+                    </SheetHeader>
+                    {selected && (
+                        <>
+                            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                                <div>
+                                    <p className="text-[11px] text-slate-400 uppercase tracking-wider">Account</p>
+                                    <p className="text-lg font-semibold text-slate-900">{selected.account}</p>
+                                </div>
+                                <div className="border-t pt-3">
+                                    <p className="text-[11px] text-slate-400 uppercase tracking-wider mb-1">Subject</p>
+                                    <p className="font-semibold text-slate-900">{selected.subject}</p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 pt-3 border-t">
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Type</p><p className="font-semibold text-slate-900">{selected.type}</p></div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Status</p>
+                                        <span className={`px-2 py-0.5 rounded-none text-[11px] font-semibold border ${getStatusColor(selected.status)}`}>{selected.status}</span>
+                                    </div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Rep</p><p className="font-semibold text-slate-900">{selected.representative}</p></div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Sentiment</p><Badge className="rounded-none">{selected.sentiment}</Badge></div>
+                                    <div className="col-span-2"><p className="text-[11px] text-slate-400 uppercase">Timestamp</p><p className="font-semibold text-slate-900 text-sm">{selected.timestamp}</p></div>
+                                </div>
+                                <div className="border-t pt-3">
+                                    <p className="text-[11px] text-slate-400 uppercase tracking-wider mb-2">Summary</p>
+                                    <p className="text-[13px] text-slate-700">{selected.summary}</p>
+                                </div>
+                            </div>
+                            <div className="p-5 border-t flex gap-3 bg-white">
+                                <Button variant="outline" className="flex-1 h-10 rounded-none" onClick={() => { setIsDetailOpen(false); toast.success("Opening timeline") }}>
+                                    <History className="h-4 w-4 mr-2" />Timeline
+                                </Button>
+                                <Button variant="outline" className="flex-1 h-10 rounded-none text-rose-500 border-rose-200 hover:bg-rose-50" onClick={() => { handleDelete(selected.id); setIsDetailOpen(false) }}>
+                                    <Trash2 className="h-4 w-4 mr-2" />Delete
+                                </Button>
+                            </div>
+                        </>
+                    )}
+                </SheetContent>
+            </Sheet>
         </div>
     )
 }

@@ -133,40 +133,56 @@ export default function SystemHealthPage() {
             {/* Stats Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Overall Uptime - gradient primary */}
-                <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white">
+                <button
+                    type="button"
+                    onClick={() => setStatusFilter("All")}
+                    className={`bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white text-left cursor-pointer transition-all hover:shadow-2xl ${statusFilter === "All" ? "ring-2 ring-primary/60 ring-offset-2" : ""}`}
+                >
                     <div className="flex items-center gap-2">
                         <Activity className="h-4 w-4 opacity-80" />
                         <span className="text-white text-xs opacity-80">Overall Uptime</span>
                     </div>
                     <p className="text-white text-xl font-semibold mt-1">99.97%</p>
-                </div>
+                </button>
 
                 {/* Services Operational */}
-                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                <button
+                    type="button"
+                    onClick={() => setStatusFilter("Operational")}
+                    className={`bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left cursor-pointer transition-all hover:shadow-xl ${statusFilter === "Operational" ? "ring-2 ring-green-500" : ""}`}
+                >
                     <div className="flex items-center gap-2">
                         <CheckCircle2 className="h-4 w-4 text-green-500" />
                         <span className="text-gray-600 text-xs">Services Operational</span>
                     </div>
                     <p className="text-xl font-semibold text-gray-900 mt-1">{operationalCount}</p>
-                </div>
+                </button>
 
                 {/* Degraded */}
-                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                <button
+                    type="button"
+                    onClick={() => setStatusFilter("Degraded")}
+                    className={`bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left cursor-pointer transition-all hover:shadow-xl ${statusFilter === "Degraded" ? "ring-2 ring-amber-500" : ""}`}
+                >
                     <div className="flex items-center gap-2">
                         <AlertTriangle className="h-4 w-4 text-amber-500" />
                         <span className="text-gray-600 text-xs">Degraded</span>
                     </div>
                     <p className="text-xl font-semibold text-gray-900 mt-1">{degradedCount}</p>
-                </div>
+                </button>
 
                 {/* Down */}
-                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                <button
+                    type="button"
+                    onClick={() => setStatusFilter("Down")}
+                    className={`bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left cursor-pointer transition-all hover:shadow-xl ${statusFilter === "Down" ? "ring-2 ring-red-500" : ""}`}
+                >
                     <div className="flex items-center gap-2">
                         <XCircle className="h-4 w-4 text-red-500" />
                         <span className="text-gray-600 text-xs">Down</span>
                     </div>
                     <p className="text-xl font-semibold text-gray-900 mt-1">{downCount}</p>
-                </div>
+                </button>
             </div>
 
             {/* Search + Filter */}

@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useMemo, useEffect } from "react"
+import { useRouter, useParams } from "next/navigation"
 import {
     Search,
     Download,
@@ -87,6 +88,10 @@ const typeFilters = ["All", "Payment", "Refund", "Credit"] as const
 type TypeFilter = (typeof typeFilters)[number]
 
 export default function BillingHistoryPage() {
+    const router = useRouter()
+    const params = useParams()
+    const orgName = (params?.orgName as string) || ""
+
     const [searchQuery, setSearchQuery] = useState("")
     const [typeFilter, setTypeFilter] = useState<TypeFilter>("All")
     const [billingTransactions, setBillingTransactions] = useState<Transaction[]>([])
@@ -172,29 +177,45 @@ export default function BillingHistoryPage() {
             <div className="flex-1 p-6 space-y-6">
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white">
+                    <button
+                        type="button"
+                        onClick={() => setTypeFilter("Payment")}
+                        className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white text-left cursor-pointer transition-all hover:shadow-2xl"
+                    >
                         <p className="text-white text-xs opacity-80">Total Paid</p>
                         <p className="text-white text-xl font-semibold mt-1">${totalPayments.toLocaleString()}</p>
                         <p className="text-white text-[10px] mt-1 opacity-70">All time payments</p>
-                    </div>
+                    </button>
 
-                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                    <button
+                        type="button"
+                        onClick={() => setTypeFilter("All")}
+                        className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left cursor-pointer transition-all hover:shadow-xl"
+                    >
                         <p className="text-zinc-500 text-xs">Transactions</p>
                         <p className="text-xl font-semibold text-zinc-900 mt-1">{billingTransactions.length}</p>
                         <p className="text-primary text-[10px] mt-1">Total records</p>
-                    </div>
+                    </button>
 
-                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                    <button
+                        type="button"
+                        onClick={() => setTypeFilter("Refund")}
+                        className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left cursor-pointer transition-all hover:shadow-xl"
+                    >
                         <p className="text-zinc-500 text-xs">Refunds</p>
                         <p className="text-xl font-semibold text-zinc-900 mt-1">${totalRefunds.toFixed(2)}</p>
                         <p className="text-emerald-600 text-[10px] mt-1">Credits returned</p>
-                    </div>
+                    </button>
 
-                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                    <button
+                        type="button"
+                        onClick={() => router.push(`/${orgName}/modules/billing/payments`)}
+                        className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left cursor-pointer transition-all hover:shadow-xl"
+                    >
                         <p className="text-zinc-500 text-xs">Payment Method</p>
                         <p className="text-xl font-semibold text-zinc-900 mt-1">Visa 4242</p>
                         <p className="text-zinc-400 text-[10px] mt-1">Primary method</p>
-                    </div>
+                    </button>
                 </div>
 
                 {/* Type Tabs */}

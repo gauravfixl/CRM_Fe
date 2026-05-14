@@ -448,7 +448,10 @@ const EmployeesPage = () => {
                                     exit={{ opacity: 0, scale: 0.9 }}
                                     transition={{ delay: i * 0.05 }}
                                 >
-                                    <Card className="group border-none shadow-sm hover:shadow-xl transition-all rounded-[2.5rem] bg-white overflow-hidden ring-1 ring-slate-100">
+                                    <Card
+                                        onClick={() => { setSelectedEmployee(employee); setIsDetailDialogOpen(true); }}
+                                        className="group border-none shadow-sm hover:shadow-xl transition-all rounded-[2.5rem] bg-white overflow-hidden ring-1 ring-slate-100 cursor-pointer"
+                                    >
                                         <CardContent className="p-6 space-y-6">
                                             <div className="flex items-start justify-between">
                                                 <div className="flex items-center gap-4">
@@ -469,7 +472,7 @@ const EmployeesPage = () => {
 
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" className="h-8 w-8 p-0 text-slate-300 hover:text-slate-600">
+                                                        <Button variant="ghost" className="h-8 w-8 p-0 text-slate-300 hover:text-slate-600" onClick={(e) => e.stopPropagation()}>
                                                             <MoreVertical size={16} />
                                                         </Button>
                                                     </DropdownMenuTrigger>
@@ -528,7 +531,7 @@ const EmployeesPage = () => {
                                                 </div>
                                             </div>
 
-                                            <div className="pt-4 border-t border-slate-50 flex items-center gap-2">
+                                            <div className="pt-4 border-t border-slate-50 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"

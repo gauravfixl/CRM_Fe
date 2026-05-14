@@ -354,10 +354,15 @@ const ExpenseApprovalsPage = () => {
                                 {pendingClaims.map((claim) => {
                                     const violations = checkPolicyViolation(claim);
                                     return (
-                                        <div key={claim.id} className={cn("flex items-center gap-4 p-4 rounded-xl border transition-colors", violations.length > 0 ? "border-orange-200 bg-orange-50/50" : "border-slate-100 hover:bg-slate-50")}>
+                                        <div
+                                            key={claim.id}
+                                            onClick={() => openReview(claim)}
+                                            className={cn("flex items-center gap-4 p-4 rounded-xl border transition-colors cursor-pointer", violations.length > 0 ? "border-orange-200 bg-orange-50/50" : "border-slate-100 hover:bg-slate-50")}
+                                        >
                                             <Checkbox
                                                 checked={selectedIds.includes(claim.id)}
                                                 onCheckedChange={() => toggleSelect(claim.id)}
+                                                onClick={(e) => e.stopPropagation()}
                                             />
                                             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 flex-shrink-0">
                                                 <Receipt className="h-4 w-4 text-blue-600" />
@@ -385,7 +390,7 @@ const ExpenseApprovalsPage = () => {
                                                 </div>
                                             </div>
                                             <span className="text-base font-bold text-slate-900 whitespace-nowrap">₹{claim.amount.toLocaleString()}</span>
-                                            <div className="flex items-center gap-1">
+                                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                                                 <Button size="sm" variant="outline" className="h-8 text-xs gap-1 text-green-600 border-green-200 hover:bg-green-50" onClick={() => handleApprove(claim)}>
                                                     <Check className="h-3 w-3" /> Approve
                                                 </Button>

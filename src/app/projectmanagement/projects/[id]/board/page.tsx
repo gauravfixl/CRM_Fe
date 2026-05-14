@@ -81,6 +81,7 @@ export default function ProjectBoard() {
     const { getProjectById } = useProjectStore()
     const { getSprintsByProject, getEpicsByProject, getActiveSprint } = useSprintEpicStore()
     const [selectedSprintId, setSelectedSprintId] = useState<string | null>(null)
+    const [swimlane, setSwimlane] = useState<"NONE" | "ASSIGNEE" | "EPIC" | "PRIORITY">("NONE")
 
     const project = getProjectById(projectId)
     const issues = getIssuesByProject(projectId)
@@ -301,10 +302,20 @@ export default function ProjectBoard() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" className="bg-[#f4f5f7] border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-100 h-10 px-4 rounded-sm">
-                            Group
-                            <ChevronDown size={14} className="ml-2" />
-                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="bg-[#f4f5f7] border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-100 h-10 px-4 rounded-sm">
+                                    {swimlane === "NONE" ? "Group" : `Group: ${swimlane.toLowerCase()}`}
+                                    <ChevronDown size={14} className="ml-2" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44">
+                                <DropdownMenuItem onClick={() => setSwimlane("NONE")} className={swimlane === "NONE" ? "bg-blue-50 font-semibold" : ""}>None</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setSwimlane("ASSIGNEE")} className={swimlane === "ASSIGNEE" ? "bg-blue-50 font-semibold" : ""}>Assignee</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setSwimlane("EPIC")} className={swimlane === "EPIC" ? "bg-blue-50 font-semibold" : ""}>Epic</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setSwimlane("PRIORITY")} className={swimlane === "PRIORITY" ? "bg-blue-50 font-semibold" : ""}>Priority</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                         <Button variant="ghost" size="sm" className="bg-[#f4f5f7] border border-gray-200 h-10 w-10 p-0 rounded-sm text-gray-600">
                             <BarChart2 size={18} />
                         </Button>
@@ -326,6 +337,40 @@ export default function ProjectBoard() {
                         const columnIssues = filteredIssues.filter(i => i.status === status)
                         const isAdding = addingToColumn === col.key
                         const limitExceeded = col.limit && columnIssues.length > col.limit
+
+                        // Swimlane grouping within this column
+                        type Group = { key: string; label: string; issues: typeof columnIssues }
+                        const groups: Group[] = (() => {
+                            if (swimlane === "NONE") return [{ key: "all", label: "", issues: columnIssues }]
+                            const map: Record<string, Group> = {}
+                            const epics = projectId ? getEpicsByProject(projectId) : []
+                            columnIssues.forEach(i => {
+                                let gkey = "unassigned"
+                                let glabel = "Unassigned"
+                                if (swimlane === "ASSIGNEE") {
+                                    gkey = i.assigneeId || "unassigned"
+                                    glabel = i.assignee?.name || (i.assigneeId ? i.assigneeId : "Unassigned")
+                                } else if (swimlane === "EPIC") {
+                                    gkey = i.epicId || "noepic"
+                                    const ep = epics.find(e => e.id === i.epicId)
+                                    glabel = ep ? ep.name : "No Epic"
+                                } else if (swimlane === "PRIORITY") {
+                                    gkey = i.priority
+                                    glabel = i.priority
+                                }
+                                if (!map[gkey]) map[gkey] = { key: gkey, label: glabel, issues: [] }
+                                map[gkey].issues.push(i)
+                            })
+                            // Stable order: priority order, otherwise alphabetical
+                            const arr = Object.values(map)
+                            if (swimlane === "PRIORITY") {
+                                const order = { URGENT: 0, HIGH: 1, MEDIUM: 2, LOW: 3 } as Record<string, number>
+                                arr.sort((a, b) => (order[a.key] ?? 99) - (order[b.key] ?? 99))
+                            } else {
+                                arr.sort((a, b) => a.label.localeCompare(b.label))
+                            }
+                            return arr
+                        })()
 
                         const isFirst = index === 0
                         const isLast = index === boardConfig.columns.length - 1
@@ -399,7 +444,14 @@ export default function ProjectBoard() {
 
                                 {/* List Area */}
                                 <div className="flex-1 space-y-2 overflow-y-auto custom-scrollbar px-0.5 pb-2 min-h-[10px]">
-                                    {columnIssues.map(issue => (
+                                    {groups.map(group => (
+                                        <div key={group.key} className="space-y-2">
+                                            {swimlane !== "NONE" && (
+                                                <div className="px-2 py-1 text-[10px] font-bold text-slate-600 uppercase tracking-wide bg-slate-200/50 border-l-2 border-indigo-500">
+                                                    {group.label} <span className="text-slate-400 ml-1">({group.issues.length})</span>
+                                                </div>
+                                            )}
+                                            {group.issues.map(issue => (
                                         <Card
                                             key={issue.id}
                                             draggable
@@ -538,6 +590,8 @@ export default function ProjectBoard() {
                                                 </div>
                                             </CardContent>
                                         </Card>
+                                            ))}
+                                        </div>
                                     ))}
 
                                     {isAdding && (

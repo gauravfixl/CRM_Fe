@@ -236,7 +236,11 @@ const ReportTemplatesPage = () => {
           const meta = categoryMeta[tmpl.category] || { icon: FileText, color: "bg-slate-100 text-slate-600" }
           const Icon = meta.icon
           return (
-            <Card key={tmpl.id} className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5 hover:shadow-md transition-all">
+            <Card
+              key={tmpl.id}
+              onClick={() => handlePreview(tmpl)}
+              className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5 hover:shadow-md transition-all cursor-pointer"
+            >
               <div className="flex items-start justify-between mb-3">
                 <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", meta.color)}>
                   <Icon className="h-5 w-5" />
@@ -262,7 +266,7 @@ const ReportTemplatesPage = () => {
                 )}
               </div>
 
-              <div className="flex items-center gap-2 mt-4">
+              <div className="flex items-center gap-2 mt-4" onClick={(e) => e.stopPropagation()}>
                 <Button
                   size="sm"
                   className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-lg text-xs font-bold flex-1"

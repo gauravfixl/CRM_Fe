@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { useRouter, useParams } from "next/navigation";
 import {
     Copy,
     Play,
@@ -47,6 +48,10 @@ const initialDuplicateGroups: DuplicateGroup[] = [
 ];
 
 export default function DeduplicationPage() {
+    const router = useRouter();
+    const params = useParams();
+    const orgName = (params?.orgName as string) || "";
+
     const [showScanModal, setShowScanModal] = useState(false);
     const [scanning, setScanning] = useState(false);
     const [scanProgress, setScanProgress] = useState(0);
@@ -131,29 +136,45 @@ export default function DeduplicationPage() {
 
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl">
+                <button
+                    type="button"
+                    onClick={() => setShowScanModal(true)}
+                    className="bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl text-left cursor-pointer"
+                >
                     <p className="text-xs font-semibold text-white">Total Duplicates</p>
                     <h2 className="text-xl font-semibold text-white">{totalDuplicates}</h2>
                     <p className="text-[10px] mt-1 opacity-80">Across all modules</p>
-                </div>
+                </button>
 
-                <div className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/audit-logs`)}
+                    className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl text-left cursor-pointer"
+                >
                     <p className="text-xs text-gray-600">Records Merged</p>
                     <h3 className="text-xl font-semibold text-gray-900">145</h3>
                     <p className="text-[10px] text-green-600 mt-1">Last 30 days</p>
-                </div>
+                </button>
 
-                <div className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/usage-analytics`)}
+                    className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl text-left cursor-pointer"
+                >
                     <p className="text-xs text-gray-600">Data Quality</p>
                     <h3 className="text-xl font-semibold text-gray-900">96.8%</h3>
                     <p className="text-[10px] text-blue-600 mt-1">Improved by 4.2%</p>
-                </div>
+                </button>
 
-                <div className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/audit-logs`)}
+                    className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl text-left cursor-pointer"
+                >
                     <p className="text-xs text-gray-600">Last Scan</p>
                     <h3 className="text-xl font-semibold text-gray-900">2 hours ago</h3>
                     <p className="text-[10px] text-gray-600 mt-1">Automated daily</p>
-                </div>
+                </button>
             </div>
 
             {/* Duplicate Groups */}

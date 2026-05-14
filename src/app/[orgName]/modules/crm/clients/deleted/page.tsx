@@ -36,9 +36,9 @@ export default function DeletedClientsPage() {
 
   const filteredClients = deletedClients.filter(
     (client) =>
-      client.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.contactPerson.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.email.toLowerCase().includes(searchTerm.toLowerCase()),
+      (client.firstName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (client.contactPerson?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (client.email || "").toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   const handleRestore = () => {
@@ -145,7 +145,7 @@ export default function DeletedClientsPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
                             onClick={() => {
-                              setSelectedClientId(client.id)
+                              setSelectedClientId(client.id ?? null)
                               setRestoreDialogOpen(true)
                             }}
                           >

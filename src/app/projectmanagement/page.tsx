@@ -15,9 +15,8 @@ import {
     LayoutGrid,
     MoreHorizontal
 } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useWorkspaceStore } from "@/shared/data/workspace-store"
 import { useProjectStore } from "@/shared/data/projects-store"
@@ -39,6 +38,7 @@ export default function ProjectDashboard() {
     const { members } = useTeamStore()
     const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false)
     const [mounted, setMounted] = useState(false)
+    const [searchQuery, setSearchQuery] = useState("")
 
     useEffect(() => {
         setMounted(true)
@@ -46,7 +46,14 @@ export default function ProjectDashboard() {
 
     const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId) || workspaces[0]
     const projects = activeWorkspaceId ? getProjectsByWorkspace(activeWorkspaceId) : []
-    const starredProjects = projects.filter(p => p.starred)
+    const filteredProjects = searchQuery.trim()
+        ? projects.filter(p =>
+            p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            p.key.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        : projects
+    // When searching, show ALL matches; otherwise show only starred (Priority Projects)
+    const displayProjects = searchQuery.trim() ? filteredProjects : projects.filter(p => p.starred)
 
     // Dynamic stats
     const activeProjectsCount = projects.filter(p => p.status === "Active").length
@@ -100,7 +107,9 @@ export default function ProjectDashboard() {
                         <input
                             type="text"
                             placeholder="Type / to search..."
-                            className="h-8 w-[220px] pl-9 pr-3 bg-white border border-slate-200 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500/20 focus:border-indigo-500/30 transition-all placeholder:text-slate-300"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="h-8 w-[220px] pl-9 pr-3 bg-white border border-slate-200 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500/20 focus:border-indigo-500/30 transition-all placeholder:text-slate-300 rounded-none"
                         />
                     </div>
                     <Button
@@ -127,31 +136,39 @@ export default function ProjectDashboard() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {[
-                            { label: "UP NEXT", value: mounted ? (issues.find(i => i.status !== "DONE")?.title || "No pending tasks") : "Loading...", color: "text-indigo-300" },
-                            { label: "RECENT ACTIVITY", value: "No recent updates", color: "text-slate-300" },
-                            { label: "TIME LOGGED", value: `${Math.floor(Math.random() * 8)}h ${Math.floor(Math.random() * 60)}m logged today`, color: "text-amber-300" }
+                            { label: "UP NEXT", value: mounted ? (issues.find(i => i.status !== "DONE")?.title || "No pending tasks") : "Loading...", color: "text-indigo-300", href: "/projectmanagement/my-work?tab=assigned" },
+                            { label: "RECENT ACTIVITY", value: "No recent updates", color: "text-slate-300", href: "/projectmanagement/recent" },
+                            { label: "TIME LOGGED", value: `${Math.floor(Math.random() * 8)}h ${Math.floor(Math.random() * 60)}m logged today`, color: "text-amber-300", href: "/projectmanagement/reports/workload" }
                         ].map((item, i) => (
-                            <div key={i} className="p-4 bg-white/5 border border-white/5 backdrop-blur-sm">
+                            <Link
+                                key={i}
+                                href={item.href}
+                                className="p-4 bg-white/5 border border-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors rounded-none cursor-pointer"
+                            >
                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wide mb-2">{item.label}</p>
                                 <p className={`text-xs font-bold italic leading-tight ${item.color}`}>{item.value}</p>
-                            </div>
+                            </Link>
                         ))}
                     </div>
                 </div>
             </div>
 
-            {/* Metrics Row - Darker colors, no border-radius */}
+            {/* Metrics Row - Clickable KPI cards, no border-radius */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 {[
-                    { label: "Active projects", value: activeProjectsCount.toString(), icon: <LayoutGrid size={18} />, color: "text-indigo-800", bg: "bg-indigo-100" },
-                    { label: "Completed", value: completedProjectsCount.toString(), icon: <CheckCircle2 size={18} />, color: "text-emerald-800", bg: "bg-emerald-100" },
-                    { label: "Tasks due", value: tasksDueCount.toString().padStart(2, '0'), icon: <Clock size={18} />, color: "text-amber-800", bg: "bg-amber-100" },
-                    { label: "Issues", value: issuesCount.toString().padStart(2, '0'), icon: <AlertCircle size={18} />, color: "text-rose-800", bg: "bg-rose-100" }
+                    { label: "Active projects", value: activeProjectsCount.toString(), icon: <LayoutGrid size={18} />, color: "text-indigo-800", bg: "bg-indigo-100", href: "/projectmanagement/projects?status=Active" },
+                    { label: "Completed", value: completedProjectsCount.toString(), icon: <CheckCircle2 size={18} />, color: "text-emerald-800", bg: "bg-emerald-100", href: "/projectmanagement/projects?status=Completed" },
+                    { label: "Tasks due", value: tasksDueCount.toString().padStart(2, '0'), icon: <Clock size={18} />, color: "text-amber-800", bg: "bg-amber-100", href: "/projectmanagement/my-work?tab=assigned" },
+                    { label: "Issues", value: issuesCount.toString().padStart(2, '0'), icon: <AlertCircle size={18} />, color: "text-rose-800", bg: "bg-rose-100", href: "/projectmanagement/my-work?tab=all&type=BUG" }
                 ].map((stat, i) => (
-                    <Card key={i} className={`border shadow-sm overflow-hidden hover:shadow-md transition-all h-[75px] flex items-center ${stat.bg}`}>
-                        <CardContent className="p-4 flex items-center justify-between w-full">
+                    <Link
+                        key={i}
+                        href={stat.href}
+                        className={`block border shadow-sm overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all h-[75px] rounded-none cursor-pointer ${stat.bg}`}
+                    >
+                        <div className="p-4 flex items-center justify-between w-full h-full">
                             <div className="flex items-center gap-4">
-                                <div className={`h-10 w-10 bg-white ${stat.color} flex items-center justify-center shrink-0`}>
+                                <div className={`h-10 w-10 bg-white ${stat.color} flex items-center justify-center shrink-0 rounded-none`}>
                                     {stat.icon}
                                 </div>
                                 <div className="flex flex-col">
@@ -159,8 +176,9 @@ export default function ProjectDashboard() {
                                     <span className="text-xl font-black text-slate-900 leading-none mt-1.5">{stat.value}</span>
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
+                            <ChevronRight size={16} className="text-slate-500/60 group-hover:text-slate-800 transition-colors" />
+                        </div>
+                    </Link>
                 ))}
             </div>
 
@@ -173,7 +191,7 @@ export default function ProjectDashboard() {
                         <h3 className="text-xs font-bold text-slate-800 uppercase tracking-tight">WORKLOAD DISTRIBUTION</h3>
                         <TrendingUp size={14} className="text-indigo-500" />
                     </div>
-                    <Card className="border shadow-sm p-5 space-y-6 h-full bg-slate-50 flex flex-col justify-center">
+                    <Card className="border shadow-sm p-5 space-y-6 h-full bg-slate-50 flex flex-col justify-center rounded-none">
                         {[
                             { name: "Frontend Core", val: 55, color: "bg-indigo-500", cap: "2%" },
                             { name: "Design Systems", val: 32, color: "bg-emerald-500", cap: "1%" },
@@ -198,7 +216,7 @@ export default function ProjectDashboard() {
                         <h3 className="text-xs font-bold text-slate-800 uppercase tracking-tight">TOP CONTRIBUTORS</h3>
                         <MoreHorizontal size={14} className="text-slate-400" />
                     </div>
-                    <Card className="border shadow-sm overflow-hidden h-full bg-white">
+                    <Card className="border shadow-sm overflow-hidden h-full bg-white rounded-none">
                         <div className="divide-y divide-slate-100 h-full flex flex-col justify-between">
                             {members.slice(0, 4).map((member, i) => (
                                 <div key={i} className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors cursor-pointer group flex-1">
@@ -226,26 +244,32 @@ export default function ProjectDashboard() {
                 <div className="lg:col-span-4 grid grid-cols-1 gap-5">
                     <div className="space-y-3">
                         <h3 className="text-xs font-bold text-slate-800 uppercase tracking-tight px-1">SYSTEM UPDATES</h3>
-                        <Card className="border shadow-sm p-4 h-[120px] flex flex-col justify-center bg-white">
+                        <Card className="border shadow-sm p-4 h-[120px] flex flex-col justify-center bg-white rounded-none">
                             <div className="text-center space-y-2">
                                 <p className="text-[11px] font-medium text-slate-400">No recent mutations detected.</p>
-                                <Button variant="link" className="text-[10px] font-bold text-indigo-600 uppercase tracking-wide h-auto p-0 hover:no-underline">
+                                <Link
+                                    href="/projectmanagement/recent"
+                                    className="inline-block text-[10px] font-bold text-indigo-600 uppercase tracking-wide hover:text-indigo-700"
+                                >
                                     Audit Feed
-                                </Button>
+                                </Link>
                             </div>
                         </Card>
                     </div>
 
-                    <Card className="border shadow-lg shadow-indigo-100/30 bg-indigo-50 p-5 text-indigo-900 relative overflow-hidden group h-[120px]">
+                    <Card className="border shadow-lg shadow-indigo-100/30 bg-indigo-50 p-5 text-indigo-900 relative overflow-hidden group h-[120px] rounded-none">
                         <Zap size={40} className="absolute -top-1 -right-1 text-indigo-200 opacity-60 transform group-hover:scale-110 transition-transform" />
                         <div className="relative z-10 space-y-2">
                             <h4 className="text-[11px] font-bold uppercase tracking-tight italic">Productivity Tip</h4>
                             <p className="text-indigo-800/80 text-[10px] font-medium leading-tight italic line-clamp-2">
                                 "Sprints move 30% faster. Use targets for better results."
                             </p>
-                            <Button className="w-full h-7 bg-indigo-600 text-white font-bold text-[9px] uppercase tracking-wide hover:bg-indigo-700 shadow-md transition-all active:scale-95">
+                            <Link
+                                href="/projectmanagement/help"
+                                className="inline-flex w-full h-7 items-center justify-center bg-indigo-600 text-white font-bold text-[9px] uppercase tracking-wide hover:bg-indigo-700 shadow-md transition-all active:scale-95"
+                            >
                                 Learn More
-                            </Button>
+                            </Link>
                         </div>
                     </Card>
                 </div>
@@ -256,15 +280,21 @@ export default function ProjectDashboard() {
                 <div className="flex items-center justify-between px-1">
                     <div className="flex items-center gap-2">
                         <Star size={14} className="text-amber-400 fill-amber-400" />
-                        <h3 className="text-xs font-bold text-slate-800 uppercase tracking-tight italic">Priority Projects</h3>
+                        <h3 className="text-xs font-bold text-slate-800 uppercase tracking-tight italic">
+                            {searchQuery.trim() ? `Search Results (${displayProjects.length})` : "Priority Projects"}
+                        </h3>
                     </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {starredProjects.map((project) => (
-                        <Card key={project.id} className="border shadow-sm p-4 hover:shadow-md transition-all group cursor-pointer bg-white">
+                    {displayProjects.map((project) => (
+                        <Link
+                            key={project.id}
+                            href={`/projectmanagement/projects/${project.id}/board`}
+                            className="block border shadow-sm p-4 hover:shadow-md transition-all group cursor-pointer bg-white rounded-none"
+                        >
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="h-9 w-9 bg-slate-50 flex items-center justify-center text-lg group-hover:bg-indigo-50 transition-colors border border-slate-100">
+                                    <div className="h-9 w-9 bg-slate-50 flex items-center justify-center text-lg group-hover:bg-indigo-50 transition-colors border border-slate-100 rounded-none">
                                         {project.icon || "🚀"}
                                     </div>
                                     <div className="flex flex-col">
@@ -274,11 +304,13 @@ export default function ProjectDashboard() {
                                 </div>
                                 <ChevronRight size={14} className="text-slate-300 group-hover:text-indigo-500 transition-all transform group-hover:translate-x-0.5" />
                             </div>
-                        </Card>
+                        </Link>
                     ))}
-                    {starredProjects.length === 0 && (
-                        <div className="col-span-full py-6 text-center bg-slate-50/50 border border-dashed border-slate-200">
-                            <p className="text-slate-400 font-medium text-[10px]">No priority flags set.</p>
+                    {displayProjects.length === 0 && (
+                        <div className="col-span-full py-6 text-center bg-slate-50/50 border border-dashed border-slate-200 rounded-none">
+                            <p className="text-slate-400 font-medium text-[10px]">
+                                {searchQuery.trim() ? `No projects matching "${searchQuery}".` : "No priority flags set."}
+                            </p>
                         </div>
                     )}
                 </div>

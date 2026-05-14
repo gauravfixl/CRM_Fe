@@ -89,11 +89,13 @@ export default function SprintPage() {
     }
 
     const getPriorityColor = (priority: IssuePriority) => {
-        const colors = {
+        const colors: Record<IssuePriority, string> = {
+            HIGHEST: "bg-rose-200 text-rose-800 border-rose-300",
             URGENT: "bg-red-100 text-red-700 border-red-200",
             HIGH: "bg-orange-100 text-orange-700 border-orange-200",
             MEDIUM: "bg-yellow-100 text-yellow-700 border-yellow-200",
-            LOW: "bg-blue-100 text-blue-700 border-blue-200"
+            LOW: "bg-blue-100 text-blue-700 border-blue-200",
+            LOWEST: "bg-slate-100 text-slate-600 border-slate-200",
         }
         return colors[priority]
     }

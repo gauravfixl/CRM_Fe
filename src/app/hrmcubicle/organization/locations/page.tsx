@@ -320,7 +320,10 @@ const LocationsPage = () => {
                                     exit={{ opacity: 0, scale: 0.9 }}
                                     transition={{ delay: i * 0.05 }}
                                 >
-                                    <Card className="group border-none shadow-sm hover:shadow-xl transition-all rounded-3xl bg-white overflow-hidden ring-1 ring-slate-100">
+                                    <Card
+                                        onClick={() => openViewMembers(location)}
+                                        className="group border-none shadow-sm hover:shadow-xl transition-all rounded-3xl bg-white overflow-hidden ring-1 ring-slate-100 cursor-pointer"
+                                    >
                                         <CardContent className="p-5 space-y-4">
                                             <div className="flex items-start justify-between">
                                                 <div className="flex items-center gap-3">
@@ -339,7 +342,7 @@ const LocationsPage = () => {
 
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" className="h-7 w-7 p-0 text-slate-300 hover:text-slate-600">
+                                                        <Button variant="ghost" className="h-7 w-7 p-0 text-slate-300 hover:text-slate-600" onClick={(e) => e.stopPropagation()}>
                                                             <MoreVertical size={14} />
                                                         </Button>
                                                     </DropdownMenuTrigger>

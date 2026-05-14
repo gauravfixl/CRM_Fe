@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { useRouter, useParams } from "next/navigation";
 import {
   Shield,
   ShieldCheck,
@@ -109,6 +110,10 @@ const emptyForm = {
 };
 
 export default function DataAccessControlPage() {
+  const router = useRouter();
+  const params = useParams();
+  const orgName = (params?.orgName as string) || "";
+
   const [rules, setRules] = useState<AccessRule[]>(initialRules);
   const [search, setSearch] = useState("");
   const [filterAccess, setFilterAccess] = useState("All");
@@ -271,7 +276,11 @@ export default function DataAccessControlPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Rules */}
-        <div className="bg-gradient-to-br from-primary to-primary/80 rounded-none p-5 text-white">
+        <button
+          type="button"
+          onClick={() => setFilterAccess("All")}
+          className={`bg-gradient-to-br from-primary to-primary/80 rounded-none p-5 text-white text-left cursor-pointer transition-all hover:shadow-lg ${filterAccess === "All" ? "ring-2 ring-primary/60 ring-offset-2" : ""}`}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-white/80">Total rules</p>
@@ -281,10 +290,14 @@ export default function DataAccessControlPage() {
               <Layers size={20} />
             </div>
           </div>
-        </div>
+        </button>
 
         {/* Active Rules */}
-        <div className="bg-white border border-gray-200 rounded-none p-5">
+        <button
+          type="button"
+          onClick={() => setFilterAccess("Read-Write")}
+          className="bg-white border border-gray-200 rounded-none p-5 text-left cursor-pointer transition-all hover:shadow-md"
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">Active rules</p>
@@ -296,10 +309,14 @@ export default function DataAccessControlPage() {
               <ShieldCheck size={20} className="text-green-600" />
             </div>
           </div>
-        </div>
+        </button>
 
         {/* Modules Protected */}
-        <div className="bg-white border border-gray-200 rounded-none p-5">
+        <button
+          type="button"
+          onClick={() => router.push(`/${orgName}/modules/settings/modules`)}
+          className="bg-white border border-gray-200 rounded-none p-5 text-left cursor-pointer transition-all hover:shadow-md"
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">Modules protected</p>
@@ -309,10 +326,14 @@ export default function DataAccessControlPage() {
               <Shield size={20} className="text-gray-600" />
             </div>
           </div>
-        </div>
+        </button>
 
         {/* DLP Policies */}
-        <div className="bg-white border border-gray-200 rounded-none p-5">
+        <button
+          type="button"
+          onClick={() => router.push(`/${orgName}/modules/settings/data-policies`)}
+          className="bg-white border border-gray-200 rounded-none p-5 text-left cursor-pointer transition-all hover:shadow-md"
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">Dlp policies</p>
@@ -324,7 +345,7 @@ export default function DataAccessControlPage() {
               <Lock size={20} className="text-green-600" />
             </div>
           </div>
-        </div>
+        </button>
       </div>
 
       {/* Search + Filter Bar */}

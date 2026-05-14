@@ -22,6 +22,13 @@ import {
 } from "@/shared/components/ui/dialog";
 import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetDescription,
+} from "@/shared/components/ui/sheet";
+import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
@@ -47,6 +54,7 @@ const TeamPerformancePage = () => {
     const [isViewGoalsOpen, setIsViewGoalsOpen] = useState(false);
     const [isViewReviewsOpen, setIsViewReviewsOpen] = useState(false);
     const [activeMember, setActiveMember] = useState<any>(null);
+    const [detailPerf, setDetailPerf] = useState<any | null>(null);
     const [backendAvailable, setBackendAvailable] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [reviewErrors, setReviewErrors] = useState<ValidationErrors>({});
@@ -271,7 +279,10 @@ const TeamPerformancePage = () => {
                         <div className="text-center py-12 text-xs font-bold text-slate-400">No team members to evaluate yet.</div>
                     ) : performanceData.map((perf: any, i: number) => (
                         <motion.div key={perf.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                            <Card className="p-3 bg-white rounded-2xl hover:shadow-xl hover:translate-y-[-4px] transition-all duration-300 group border border-white/50 relative overflow-hidden mb-4 last:mb-0">
+                            <Card
+                                onClick={() => setDetailPerf(perf)}
+                                className="p-3 bg-white rounded-2xl hover:shadow-xl hover:translate-y-[-4px] transition-all duration-300 group border border-white/50 relative overflow-hidden mb-4 last:mb-0 cursor-pointer"
+                            >
                                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-transparent group-hover:bg-indigo-500 transition-all" />
                                 <div className="flex flex-col xl:flex-row items-center justify-between gap-4 relative z-10">
                                     <div className="flex items-center gap-4 w-full xl:w-1/3 text-start">
@@ -319,7 +330,7 @@ const TeamPerformancePage = () => {
                                             <p className="text-[9px] font-bold text-slate-400 text-right">{perf.goalsCompleted} of {perf.totalGoals} goals</p>
                                         </div>
 
-                                        <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button className="bg-slate-900 text-white rounded-xl h-9 px-5 font-bold shadow-sm hover:bg-slate-800 transition-colors text-xs border-none">
@@ -526,6 +537,90 @@ const TeamPerformancePage = () => {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* 🪟 Slide-in: Member Performance Details */}
+            <Sheet open={!!detailPerf} onOpenChange={(open) => !open && setDetailPerf(null)}>
+                <SheetContent side="right" className="w-full sm:max-w-md bg-white rounded-none border-l border-slate-200 p-0 flex flex-col">
+                    {detailPerf && (
+                        <>
+                            <SheetHeader className="p-6 border-b border-slate-100 bg-slate-50/50">
+                                <div className="flex items-center gap-3">
+                                    <Avatar className="h-14 w-14 ring-2 ring-white shadow">
+                                        <AvatarFallback className="bg-indigo-100 text-indigo-700 font-bold">{detailPerf.avatar}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="text-start min-w-0">
+                                        <SheetTitle className="text-base font-bold text-slate-900 tracking-tight truncate">{detailPerf.name}</SheetTitle>
+                                        <SheetDescription className="text-xs font-medium text-slate-500">{detailPerf.designation}</SheetDescription>
+                                    </div>
+                                </div>
+                            </SheetHeader>
+                            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                                <div className="p-5 bg-amber-50 border border-amber-100 rounded-none flex items-center justify-between">
+                                    <div>
+                                        <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wide">Rating</p>
+                                        <div className="flex items-baseline gap-1 mt-1">
+                                            <Star className="text-amber-500 fill-amber-500" size={16} />
+                                            <p className="text-2xl font-bold text-amber-900">{detailPerf.rating}</p>
+                                            <span className="text-sm font-bold text-amber-600">/ 5</span>
+                                        </div>
+                                    </div>
+                                    {parseFloat(detailPerf.rating) >= 4.5 && (
+                                        <Badge className="bg-amber-200 text-amber-900 border-none text-[10px] font-bold">
+                                            <Crown size={10} className="fill-amber-700 mr-1" /> Star Performer
+                                        </Badge>
+                                    )}
+                                </div>
+                                <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-none">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <p className="text-[10px] font-bold text-indigo-700 uppercase tracking-wide">Goals Progress</p>
+                                        <p className="text-sm font-bold text-indigo-900">
+                                            {detailPerf.goalsCompleted}/{detailPerf.totalGoals}
+                                        </p>
+                                    </div>
+                                    <div className="h-2 w-full bg-white rounded-full overflow-hidden border border-indigo-100">
+                                        <div
+                                            className="h-full bg-indigo-500"
+                                            style={{ width: `${detailPerf.totalGoals > 0 ? (detailPerf.goalsCompleted / detailPerf.totalGoals) * 100 : 0}%` }}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="p-3 bg-white border border-slate-100 rounded-none">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Total Goals</p>
+                                        <p className="text-lg font-bold text-slate-800 mt-1">{detailPerf.totalGoals}</p>
+                                    </div>
+                                    <div className="p-3 bg-white border border-slate-100 rounded-none">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Reviews</p>
+                                        <p className="text-lg font-bold text-slate-800 mt-1">{detailPerf.reviews.length}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex flex-wrap gap-2">
+                                <Button
+                                    variant="outline"
+                                    className="flex-1 h-10 rounded-none border-slate-200 text-slate-700 font-bold text-xs"
+                                    onClick={() => { handleViewGoals(detailPerf); setDetailPerf(null); }}
+                                >
+                                    <ListChecks size={14} className="mr-1.5" /> Goals
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    className="flex-1 h-10 rounded-none border-amber-200 text-amber-700 hover:bg-amber-50 font-bold text-xs"
+                                    onClick={() => { handleViewReviews(detailPerf); setDetailPerf(null); }}
+                                >
+                                    <Award size={14} className="mr-1.5" /> Reviews
+                                </Button>
+                                <Button
+                                    className="w-full h-10 rounded-none bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs"
+                                    onClick={() => { handleOpenReview(detailPerf); setDetailPerf(null); }}
+                                >
+                                    <FileText size={14} className="mr-1.5" /> Write Appraisal
+                                </Button>
+                            </div>
+                        </>
+                    )}
+                </SheetContent>
+            </Sheet>
         </div>
     );
 };

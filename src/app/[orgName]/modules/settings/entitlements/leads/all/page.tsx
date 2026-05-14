@@ -434,7 +434,10 @@ export default function MasterLeadViewPage() {
             {/* STATS CARDS */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 {/* PRIMARY BLUE CARD */}
-                <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard
+                    onClick={() => router.push(`/${orgName}/modules/crm/leads`)}
+                    className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                >
                     <SmallCardContent className="p-4">
                         <div className="flex flex-row items-start justify-between">
                             <div>
@@ -448,7 +451,10 @@ export default function MasterLeadViewPage() {
                 </SmallCard>
 
                 {/* WHITE CARD */}
-                <SmallCard className="border bg-card shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard
+                    onClick={() => router.push(`/${orgName}/modules/crm/leads?filter=qualified`)}
+                    className="border bg-card shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                >
                     <SmallCardContent className="p-4">
                         <div className="flex flex-row items-start justify-between">
                             <div>
@@ -462,7 +468,10 @@ export default function MasterLeadViewPage() {
                 </SmallCard>
 
                 {/* WHITE CARD */}
-                <SmallCard className="border bg-card shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard
+                    onClick={() => router.push(`/${orgName}/modules/crm/leads/kanban`)}
+                    className="border bg-card shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                >
                     <SmallCardContent className="p-4">
                         <div className="flex flex-row items-start justify-between">
                             <div>
@@ -476,7 +485,10 @@ export default function MasterLeadViewPage() {
                 </SmallCard>
 
                 {/* WHITE CARD */}
-                <SmallCard className="border bg-card shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard
+                    onClick={() => router.push(`/${orgName}/modules/crm/leads?filter=converted`)}
+                    className="border bg-card shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                >
                     <SmallCardContent className="p-4">
                         <div className="flex flex-row items-start justify-between">
                             <div>

@@ -1393,9 +1393,10 @@ const JobOpeningsPage = () => {
                                         {filteredJobs.map((job) => (
                                             <TableRow
                                                 key={job.id}
-                                                className="group border-slate-100 transition hover:bg-violet-50/30"
+                                                onClick={() => openDetail(job)}
+                                                className="group border-slate-100 transition hover:bg-violet-50/30 cursor-pointer"
                                             >
-                                                <TableCell className="pl-4">
+                                                <TableCell className="pl-4" onClick={(e) => e.stopPropagation()}>
                                                     <Checkbox
                                                         checked={selectedIds.includes(job.id)}
                                                         onCheckedChange={() => toggleSelect(job.id)}
@@ -1440,7 +1441,7 @@ const JobOpeningsPage = () => {
                                                 <TableCell className="text-[11px] font-medium tabular-nums text-slate-600">
                                                     {job.postedDate}
                                                 </TableCell>
-                                                <TableCell className="pr-4 text-right">
+                                                <TableCell className="pr-4 text-right" onClick={(e) => e.stopPropagation()}>
                                                     <RowActions
                                                         job={job}
                                                         onView={openDetail}

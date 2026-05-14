@@ -30,12 +30,20 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/shared/components/ui/select";
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetDescription,
+} from "@/shared/components/ui/sheet";
 
 const OrgChartPage = () => {
     const { employees, departments, designations } = useOrganisationStore();
     const [selectedDepartment, setSelectedDepartment] = useState<string>("All");
     const [zoomLevel, setZoomLevel] = useState(100);
     const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+    const [detailEmp, setDetailEmp] = useState<any | null>(null);
 
     // Build hierarchy tree
     const buildHierarchy = () => {
@@ -91,11 +99,14 @@ const OrgChartPage = () => {
                     transition={{ delay: level * 0.1 }}
                     className="mb-4"
                 >
-                    <Card className={`group border-none shadow-sm hover:shadow-xl transition-all rounded-[2rem] overflow-hidden ring-1 ring-slate-100 max-w-sm ${level === 0 ? 'bg-indigo-50 border border-indigo-100' :
+                    <Card
+                        onClick={() => setDetailEmp({ ...employee, designation, department })}
+                        className={`group border-none shadow-sm hover:shadow-xl transition-all rounded-[2rem] overflow-hidden ring-1 ring-slate-100 max-w-sm cursor-pointer ${level === 0 ? 'bg-indigo-50 border border-indigo-100' :
                         level === 1 ? 'bg-emerald-50 border border-emerald-100' :
                             level === 2 ? 'bg-amber-50 border border-amber-100' :
                                 'bg-slate-50 border border-slate-100'
-                        }`}>
+                        }`}
+                    >
                         <CardContent className="p-4">
                             <div className="flex items-start gap-4">
                                 <div className="relative">
@@ -154,14 +165,14 @@ const OrgChartPage = () => {
                                         variant="ghost"
                                         size="sm"
                                         className="h-8 w-8 p-0 rounded-xl"
-                                        onClick={() => toggleNode(employee.id)}
+                                        onClick={(e) => { e.stopPropagation(); toggleNode(employee.id); }}
                                     >
                                         {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                                     </Button>
                                 )}
                             </div>
 
-                            <div className="mt-4 pt-3 border-t border-slate-200/50 flex items-center gap-2">
+                            <div className="mt-4 pt-3 border-t border-slate-200/50 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                 <Button
                                     variant="ghost"
                                     size="sm"
@@ -384,6 +395,68 @@ const OrgChartPage = () => {
                     </div>
                 </Card>
             </main>
+
+            {/* 🪟 Slide-in: Employee Details */}
+            <Sheet open={!!detailEmp} onOpenChange={(open) => !open && setDetailEmp(null)}>
+                <SheetContent side="right" className="w-full sm:max-w-md bg-white rounded-none border-l border-slate-200 p-0 flex flex-col">
+                    {detailEmp && (
+                        <>
+                            <SheetHeader className="p-6 border-b border-slate-100 bg-slate-50/50">
+                                <div className="flex items-center gap-3">
+                                    <Avatar className="h-14 w-14 ring-2 ring-white shadow">
+                                        <AvatarFallback className="bg-indigo-600 text-white font-bold">{detailEmp.profileImage}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="text-start min-w-0">
+                                        <SheetTitle className="text-base font-bold text-slate-900 tracking-tight truncate">
+                                            {detailEmp.firstName} {detailEmp.lastName}
+                                        </SheetTitle>
+                                        <SheetDescription className="text-xs font-medium text-slate-500">{detailEmp.employeeCode}</SheetDescription>
+                                    </div>
+                                </div>
+                            </SheetHeader>
+                            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                                <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-none flex items-center justify-between">
+                                    <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wide">Status</p>
+                                    <Badge className={`${detailEmp.status === 'Active' ? 'bg-emerald-200 text-emerald-800' : 'bg-slate-200 text-slate-600'} border-none text-[10px] font-bold`}>{detailEmp.status}</Badge>
+                                </div>
+                                <div className="grid grid-cols-1 gap-3">
+                                    <div className="p-3 bg-white border border-slate-100 rounded-none">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Designation</p>
+                                        <p className="text-xs font-bold text-slate-800 mt-1">{detailEmp.designation?.title || 'N/A'}</p>
+                                    </div>
+                                    <div className="p-3 bg-white border border-slate-100 rounded-none">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Department</p>
+                                        <p className="text-xs font-bold text-slate-800 mt-1">{detailEmp.department?.name || 'N/A'}</p>
+                                    </div>
+                                    <div className="p-3 bg-white border border-slate-100 rounded-none">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Email</p>
+                                        <p className="text-xs font-bold text-slate-800 mt-1 break-all">{detailEmp.email}</p>
+                                    </div>
+                                    <div className="p-3 bg-white border border-slate-100 rounded-none">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Phone</p>
+                                        <p className="text-xs font-bold text-slate-800 mt-1">{detailEmp.phone || '—'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    className="flex-1 h-10 rounded-none border-slate-200 text-slate-700 font-bold text-xs"
+                                    onClick={() => window.location.href = `mailto:${detailEmp.email}`}
+                                >
+                                    <Mail size={14} className="mr-1.5" /> Email
+                                </Button>
+                                <Button
+                                    className="flex-1 h-10 rounded-none bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs"
+                                    onClick={() => window.location.href = `tel:${detailEmp.phone}`}
+                                >
+                                    <Phone size={14} className="mr-1.5" /> Call
+                                </Button>
+                            </div>
+                        </>
+                    )}
+                </SheetContent>
+            </Sheet>
         </div>
     );
 };

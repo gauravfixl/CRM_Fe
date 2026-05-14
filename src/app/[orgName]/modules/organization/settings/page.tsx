@@ -259,7 +259,10 @@ export default function OrgSettingsProfilePage() {
 
             {/* QUICK STATS */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 px-6 mt-6">
-                <Card className="border bg-white shadow-md rounded-none">
+                <Card
+                    onClick={() => router.push(`/${orgName}/modules/organization/users`)}
+                    className="border bg-white shadow-md rounded-none cursor-pointer hover:shadow-lg transition-all"
+                >
                     <CardContent className="p-4 flex items-center gap-3">
                         <div className="h-10 w-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
                             <Users className="w-5 h-5" />
@@ -270,7 +273,10 @@ export default function OrgSettingsProfilePage() {
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="border bg-white shadow-md rounded-none">
+                <Card
+                    onClick={() => router.push(`/${orgName}/modules/firm-management/firms`)}
+                    className="border bg-white shadow-md rounded-none cursor-pointer hover:shadow-lg transition-all"
+                >
                     <CardContent className="p-4 flex items-center gap-3">
                         <div className="h-10 w-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
                             <Briefcase className="w-5 h-5" />
@@ -281,7 +287,10 @@ export default function OrgSettingsProfilePage() {
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="border bg-white shadow-md rounded-none">
+                <Card
+                    onClick={() => router.push(`/${orgName}/modules/settings/modules`)}
+                    className="border bg-white shadow-md rounded-none cursor-pointer hover:shadow-lg transition-all"
+                >
                     <CardContent className="p-4 flex items-center gap-3">
                         <div className="h-10 w-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
                             <Package className="w-5 h-5" />
@@ -292,7 +301,10 @@ export default function OrgSettingsProfilePage() {
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="border bg-white shadow-md rounded-none">
+                <Card
+                    onClick={() => router.push(`/${orgName}/modules/settings/localization`)}
+                    className="border bg-white shadow-md rounded-none cursor-pointer hover:shadow-lg transition-all"
+                >
                     <CardContent className="p-4 flex items-center gap-3">
                         <div className="h-10 w-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
                             <Clock className="w-5 h-5" />

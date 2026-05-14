@@ -406,8 +406,12 @@ const ExpenseClaimsPage = () => {
                                 </TableRow>
                             ) : (
                                 filteredClaims.map((claim) => (
-                                    <TableRow key={claim.id} className="hover:bg-slate-50/50">
-                                        <TableCell className="pl-4">
+                                    <TableRow
+                                        key={claim.id}
+                                        onClick={() => { setSelectedClaim(claim); setIsViewOpen(true); }}
+                                        className="hover:bg-slate-50/50 cursor-pointer"
+                                    >
+                                        <TableCell className="pl-4" onClick={(e) => e.stopPropagation()}>
                                             <Checkbox
                                                 checked={selectedIds.includes(claim.id)}
                                                 onCheckedChange={() => toggleSelect(claim.id)}
@@ -442,7 +446,7 @@ const ExpenseClaimsPage = () => {
                                                 <span className="text-xs text-slate-400">None</span>
                                             )}
                                         </TableCell>
-                                        <TableCell className="text-right pr-4">
+                                        <TableCell className="text-right pr-4" onClick={(e) => e.stopPropagation()}>
                                             <div className="flex items-center justify-end gap-1">
                                                 <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-slate-600" title="View" onClick={() => { setSelectedClaim(claim); setIsViewOpen(true); }}>
                                                     <Eye className="h-3.5 w-3.5" />

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { useRouter, useParams } from "next/navigation";
 import {
     CreditCard,
     Plus,
@@ -57,6 +58,10 @@ function formatExpiry(value: string): string {
 }
 
 export default function PaymentsPage() {
+    const router = useRouter();
+    const params = useParams();
+    const orgName = (params?.orgName as string) || "";
+
     const [showAddCardModal, setShowAddCardModal] = useState(false);
     const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>(initialMethods);
     const [submitting, setSubmitting] = useState(false);
@@ -216,29 +221,45 @@ export default function PaymentsPage() {
             <div className="flex-1 p-6 space-y-6">
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white">
+                    <button
+                        type="button"
+                        onClick={() => setShowAddCardModal(true)}
+                        className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white text-left cursor-pointer transition-all hover:shadow-2xl"
+                    >
                         <p className="text-white text-xs opacity-80">Saved Methods</p>
                         <p className="text-white text-xl font-semibold mt-1">{paymentMethods.length}</p>
                         <p className="text-white text-[10px] mt-1 opacity-70">Payment methods on file</p>
-                    </div>
+                    </button>
 
-                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                    <button
+                        type="button"
+                        onClick={() => router.push(`/${orgName}/modules/billing/settings`)}
+                        className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left cursor-pointer transition-all hover:shadow-xl"
+                    >
                         <p className="text-zinc-500 text-xs">Primary Method</p>
                         <p className="text-xl font-semibold text-zinc-900 mt-1">{primaryMethod ? `${primaryMethod.type} ${primaryMethod.last4}` : "None"}</p>
                         <p className="text-primary text-[10px] mt-1">Default for billing</p>
-                    </div>
+                    </button>
 
-                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                    <button
+                        type="button"
+                        onClick={() => router.push(`/${orgName}/modules/billing/invoices`)}
+                        className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left cursor-pointer transition-all hover:shadow-xl"
+                    >
                         <p className="text-zinc-500 text-xs">Next Charge</p>
                         <p className="text-xl font-semibold text-zinc-900 mt-1">$499.00</p>
                         <p className="text-zinc-400 text-[10px] mt-1">May 01, 2026</p>
-                    </div>
+                    </button>
 
-                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                    <button
+                        type="button"
+                        onClick={() => router.push(`/${orgName}/security`)}
+                        className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left cursor-pointer transition-all hover:shadow-xl"
+                    >
                         <p className="text-zinc-500 text-xs">Security</p>
                         <p className="text-xl font-semibold text-zinc-900 mt-1">PCI-DSS</p>
                         <p className="text-emerald-600 text-[10px] mt-1">Fully compliant</p>
-                    </div>
+                    </button>
                 </div>
 
                 {/* Payment cards list */}

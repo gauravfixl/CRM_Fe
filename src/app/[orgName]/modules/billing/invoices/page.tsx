@@ -472,15 +472,23 @@ export default function InvoicesPage() {
       <div className="flex-1 p-6 space-y-6">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white">
+          <button
+            type="button"
+            onClick={() => setStatusFilter("Paid")}
+            className={`bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white text-left cursor-pointer transition-all hover:shadow-2xl ${statusFilter === "Paid" ? "ring-2 ring-primary/60 ring-offset-2" : ""}`}
+          >
             <p className="text-white text-xs opacity-80">Total Billed (Paid)</p>
             <p className="text-white text-xl font-semibold mt-1">
               ${totalBilled.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
             <p className="text-white text-[10px] mt-1 opacity-70">Across all paid invoices</p>
-          </div>
+          </button>
 
-          <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+          <button
+            type="button"
+            onClick={() => setStatusFilter("Pending")}
+            className={`bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left cursor-pointer transition-all hover:shadow-xl ${statusFilter === "Pending" ? "ring-2 ring-primary" : ""}`}
+          >
             <p className="text-zinc-500 text-xs">Next Invoice</p>
             <p className="text-xl font-semibold text-zinc-900 mt-1">
               {nextUpcoming?.amount || "$0.00"}
@@ -488,15 +496,23 @@ export default function InvoicesPage() {
             <p className="text-primary text-[10px] mt-1">
               {nextUpcoming?.dueDate ? `Due ${nextUpcoming.dueDate}` : "No upcoming invoices"}
             </p>
-          </div>
+          </button>
 
-          <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+          <button
+            type="button"
+            onClick={() => setStatusFilter("Paid")}
+            className={`bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left cursor-pointer transition-all hover:shadow-xl ${statusFilter === "Paid" ? "ring-2 ring-emerald-500" : ""}`}
+          >
             <p className="text-zinc-500 text-xs">Paid Invoices</p>
             <p className="text-xl font-semibold text-zinc-900 mt-1">{paidCount}</p>
             <p className="text-emerald-600 text-[10px] mt-1">All payments up to date</p>
-          </div>
+          </button>
 
-          <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+          <button
+            type="button"
+            onClick={() => setStatusFilter("Overdue")}
+            className={`bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left cursor-pointer transition-all hover:shadow-xl ${statusFilter === "Overdue" ? "ring-2 ring-amber-500" : ""}`}
+          >
             <p className="text-zinc-500 text-xs">Outstanding</p>
             <p className="text-xl font-semibold text-zinc-900 mt-1">
               ${outstanding.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -504,7 +520,7 @@ export default function InvoicesPage() {
             <p className="text-amber-600 text-[10px] mt-1">
               {outstanding > 0 ? "Pending collection" : "No overdue invoices"}
             </p>
-          </div>
+          </button>
         </div>
 
         {/* Table Section */}

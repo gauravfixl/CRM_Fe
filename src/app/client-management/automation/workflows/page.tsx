@@ -1,27 +1,43 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import * as React from "react"
+import { useRouter } from "next/navigation"
 import {
-    Pause, Plus, Search, RefreshCw, Download,
-    CheckCircle2, Clock, Zap, Activity,
-    ArrowUpRight, ArrowDownRight, Trash2, Edit,
-    Filter, GitBranch, Loader2, X, Save
+    GitBranch,
+    Zap,
+    Activity,
+    CheckCircle2,
+    Pause,
+    Plus,
+    Search,
+    Filter,
+    RefreshCw,
+    Download,
+    MoreVertical,
+    Trash2,
+    PencilLine,
+    Eye,
+    Clock,
+    Loader2,
+    Sparkles,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { Button } from "@/shared/components/ui/button"
 import { Badge } from "@/shared/components/ui/badge"
 import { Input } from "@/shared/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/shared/components/ui/dialog"
 import { Label } from "@/shared/components/ui/label"
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/shared/components/ui/sheet"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu"
 import { Switch } from "@/shared/components/ui/switch"
+import { Progress } from "@/shared/components/ui/progress"
 import { toast } from "@/shared/utils/toast"
 
-type Workflow = {
+interface Workflow {
     id: string
     name: string
     trigger: string
-    status: string
+    status: "Active" | "Paused"
     runs: number
     successRate: number
     lastRun: string
@@ -37,6 +53,8 @@ const INITIAL_WORKFLOWS: Workflow[] = [
     { id: "WF-006", name: "NPS follow-up survey", trigger: "Contract renewal completed", status: "Paused", runs: 77, successRate: 88.3, lastRun: "3 days ago", category: "Engagement" },
 ]
 
+const CATEGORIES = ["Onboarding", "Retention", "Risk", "Finance", "Support", "Engagement"]
+
 const CATEGORY_COLORS: Record<string, string> = {
     Onboarding: "bg-indigo-50 text-indigo-600 border-indigo-100",
     Retention: "bg-emerald-50 text-emerald-600 border-emerald-100",
@@ -46,28 +64,31 @@ const CATEGORY_COLORS: Record<string, string> = {
     Engagement: "bg-cyan-50 text-cyan-600 border-cyan-100",
 }
 
+const validators = {
+    required: (v: string) => !v || !v.toString().trim() ? "This field is required" : "",
+    minLen: (n: number) => (v: string) => v && v.trim().length < n ? `Must be at least ${n} characters` : "",
+}
+
 export default function WorkflowsPage() {
-    const [workflows, setWorkflows] = useState<Workflow[]>(INITIAL_WORKFLOWS)
-    const [searchQuery, setSearchQuery] = useState("")
-    const [filterStatus, setFilterStatus] = useState("all")
-    const [filterCategory, setFilterCategory] = useState("all")
+    const router = useRouter()
+    const [workflows, setWorkflows] = React.useState<Workflow[]>(INITIAL_WORKFLOWS)
+    const [search, setSearch] = React.useState("")
+    const [filterStatus, setFilterStatus] = React.useState("all")
+    const [filterCategory, setFilterCategory] = React.useState("all")
 
-    // Create dialog
-    const [isCreateOpen, setIsCreateOpen] = useState(false)
-    const [newWorkflow, setNewWorkflow] = useState({ name: "", trigger: "", category: "Onboarding" })
+    const [isFormOpen, setIsFormOpen] = React.useState(false)
+    const [isDetailOpen, setIsDetailOpen] = React.useState(false)
+    const [isFilterOpen, setIsFilterOpen] = React.useState(false)
+    const [editingId, setEditingId] = React.useState<string | null>(null)
+    const [selected, setSelected] = React.useState<Workflow | null>(null)
+    const [isSyncing, setIsSyncing] = React.useState(false)
 
-    // Edit dialog
-    const [editTarget, setEditTarget] = useState<Workflow | null>(null)
-    const [isEditOpen, setIsEditOpen] = useState(false)
+    const [form, setForm] = React.useState({
+        name: "", trigger: "", category: "Onboarding", status: "Active" as Workflow["status"],
+    })
+    const [errors, setErrors] = React.useState<Record<string, string>>({})
 
-    // Delete confirm dialog
-    const [deleteTarget, setDeleteTarget] = useState<Workflow | null>(null)
-    const [isDeleteOpen, setIsDeleteOpen] = useState(false)
-
-    const [isSyncing, setIsSyncing] = useState(false)
-
-    // ── Computed Stats (fully dynamic from workflows state) ──────────────
-    const stats = useMemo(() => {
+    const stats = React.useMemo(() => {
         const active = workflows.filter(w => w.status === "Active").length
         const paused = workflows.filter(w => w.status === "Paused").length
         const totalRuns = workflows.reduce((a, w) => a + w.runs, 0)
@@ -77,86 +98,92 @@ export default function WorkflowsPage() {
         return { active, paused, totalRuns, avgSuccess }
     }, [workflows])
 
-    // ── Filtered list (reactive to search + status + category) ───────────
-    const filtered = useMemo(() => {
+    const filtered = React.useMemo(() => {
         return workflows.filter(wf => {
-            const matchSearch =
-                wf.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                wf.trigger.toLowerCase().includes(searchQuery.toLowerCase())
+            const matchSearch = !search ||
+                wf.name.toLowerCase().includes(search.toLowerCase()) ||
+                wf.trigger.toLowerCase().includes(search.toLowerCase())
             const matchStatus = filterStatus === "all" || wf.status.toLowerCase() === filterStatus
             const matchCategory = filterCategory === "all" || wf.category === filterCategory
             return matchSearch && matchStatus && matchCategory
         })
-    }, [workflows, searchQuery, filterStatus, filterCategory])
+    }, [workflows, search, filterStatus, filterCategory])
 
-    // ── CRUD handlers ────────────────────────────────────────────────────
+    const setField = (field: string, value: any) => {
+        setForm(prev => ({ ...prev, [field]: value }))
+        if (errors[field]) setErrors(prev => { const c = { ...prev }; delete c[field]; return c })
+    }
 
-    const handleCreate = () => {
-        if (!newWorkflow.name.trim() || !newWorkflow.trigger.trim()) {
-            toast.error("Workflow name and trigger condition are required")
-            return
+    const validate = (): boolean => {
+        const errs: Record<string, string> = {}
+        errs.name = validators.required(form.name) || validators.minLen(2)(form.name)
+        errs.trigger = validators.required(form.trigger) || validators.minLen(3)(form.trigger)
+        Object.keys(errs).forEach(k => { if (!errs[k]) delete errs[k] })
+        setErrors(errs)
+        return Object.keys(errs).length === 0
+    }
+
+    const openCreate = () => {
+        setEditingId(null)
+        setForm({ name: "", trigger: "", category: "Onboarding", status: "Active" })
+        setErrors({})
+        setIsFormOpen(true)
+    }
+
+    const openEdit = (wf: Workflow) => {
+        setEditingId(wf.id)
+        setForm({ name: wf.name, trigger: wf.trigger, category: wf.category, status: wf.status })
+        setErrors({})
+        setIsFormOpen(true)
+    }
+
+    const handleSave = () => {
+        if (!validate()) { toast.error("Please correct the highlighted fields"); return }
+        if (editingId) {
+            setWorkflows(prev => prev.map(w => w.id === editingId ? {
+                ...w,
+                name: form.name.trim(),
+                trigger: form.trigger.trim(),
+                category: form.category,
+                status: form.status,
+            } : w))
+            toast.success("Workflow updated")
+        } else {
+            const wf: Workflow = {
+                id: `WF-${String(workflows.length + 1).padStart(3, "0")}`,
+                name: form.name.trim(),
+                trigger: form.trigger.trim(),
+                status: form.status,
+                runs: 0,
+                successRate: 100,
+                lastRun: "Never",
+                category: form.category,
+            }
+            setWorkflows(prev => [wf, ...prev])
+            toast.success("Workflow created")
         }
-        const wf: Workflow = {
-            id: `WF-${String(workflows.length + 1).padStart(3, "0")}`,
-            name: newWorkflow.name.trim(),
-            trigger: newWorkflow.trigger.trim(),
-            status: "Active",
-            runs: 0,
-            successRate: 100,
-            lastRun: "Never",
-            category: newWorkflow.category,
-        }
-        setWorkflows(prev => [wf, ...prev])
-        setNewWorkflow({ name: "", trigger: "", category: "Onboarding" })
-        setIsCreateOpen(false)
-        toast.success(`Workflow "${wf.name}" created successfully`)
+        setIsFormOpen(false)
     }
 
-    const handleEditOpen = (wf: Workflow) => {
-        setEditTarget({ ...wf })
-        setIsEditOpen(true)
+    const handleDelete = (id: string) => {
+        setWorkflows(prev => prev.filter(w => w.id !== id))
+        toast.success("Workflow removed")
     }
 
-    const handleEditSave = () => {
-        if (!editTarget) return
-        if (!editTarget.name.trim() || !editTarget.trigger.trim()) {
-            toast.error("Name and trigger are required")
-            return
-        }
-        setWorkflows(prev => prev.map(w => w.id === editTarget.id ? { ...editTarget } : w))
-        setIsEditOpen(false)
-        setEditTarget(null)
-        toast.success("Workflow updated successfully")
-    }
-
-    const handleDeleteOpen = (wf: Workflow) => {
-        setDeleteTarget(wf)
-        setIsDeleteOpen(true)
-    }
-
-    const handleDeleteConfirm = () => {
-        if (!deleteTarget) return
-        setWorkflows(prev => prev.filter(w => w.id !== deleteTarget.id))
-        setIsDeleteOpen(false)
-        setDeleteTarget(null)
-        toast.success("Workflow deleted successfully")
-    }
-
-    const handleToggle = (id: string, currentStatus: string) => {
-        setWorkflows(prev =>
-            prev.map(w => w.id === id ? { ...w, status: currentStatus === "Active" ? "Paused" : "Active" } : w)
-        )
-        toast.success(currentStatus === "Active" ? "Workflow paused" : "Workflow activated")
+    const handleToggle = (id: string) => {
+        setWorkflows(prev => prev.map(w => w.id === id ? { ...w, status: w.status === "Active" ? "Paused" : "Active" } : w))
+        const wf = workflows.find(w => w.id === id)
+        toast.success(wf?.status === "Active" ? "Workflow paused" : "Workflow activated")
     }
 
     const handleSync = () => {
         setIsSyncing(true)
-        toast.promise(new Promise(r => setTimeout(r, 1500)), {
+        toast.promise(new Promise(r => setTimeout(r, 1200)), {
             loading: "Syncing workflow engine...",
             success: "All workflows synchronized",
             error: "Sync failed",
         })
-        setTimeout(() => setIsSyncing(false), 1500)
+        setTimeout(() => setIsSyncing(false), 1200)
     }
 
     const handleExport = () => {
@@ -171,239 +198,397 @@ export default function WorkflowsPage() {
         a.download = "workflows.csv"
         a.click()
         URL.revokeObjectURL(url)
-        toast.success("Workflows exported as CSV")
+        toast.success("Workflows exported")
+    }
+
+    const openDetail = (wf: Workflow) => {
+        setSelected(wf)
+        setIsDetailOpen(true)
+    }
+
+    const kpiCards = [
+        { title: "Active Workflows", value: String(stats.active), subtitle: `${workflows.length} total configured`, icon: Zap, color: "indigo", trend: `+${stats.active}`, path: "/client-management/automation/triggers" },
+        { title: "Total Runs", value: stats.totalRuns.toLocaleString(), subtitle: "All-time executions", icon: Activity, color: "emerald", trend: "+12%", path: "/client-management/automation/logs" },
+        { title: "Avg Success Rate", value: `${stats.avgSuccess}%`, subtitle: "Across all flows", icon: CheckCircle2, color: "violet", trend: "+1.4%", path: "/client-management/analytics/overview" },
+        { title: "Paused Workflows", value: String(stats.paused), subtitle: "Awaiting activation", icon: Pause, color: "amber", trend: `${stats.paused}`, path: "/client-management/automation/playbooks" },
+    ]
+
+    const colorMap: Record<string, { bg: string; border: string; text: string; iconBg: string }> = {
+        indigo: { bg: "bg-gradient-to-br from-indigo-50 to-indigo-100/50", border: "border-indigo-200/50", text: "text-indigo-600", iconBg: "bg-indigo-100" },
+        emerald: { bg: "bg-gradient-to-br from-emerald-50 to-emerald-100/50", border: "border-emerald-200/50", text: "text-emerald-600", iconBg: "bg-emerald-100" },
+        violet: { bg: "bg-gradient-to-br from-violet-50 to-violet-100/50", border: "border-violet-200/50", text: "text-violet-600", iconBg: "bg-violet-100" },
+        amber: { bg: "bg-gradient-to-br from-amber-50 to-amber-100/50", border: "border-amber-200/50", text: "text-amber-600", iconBg: "bg-amber-100" },
     }
 
     return (
-        <div className="px-8 py-8 space-y-8 bg-slate-50/50 min-h-screen font-outfit">
-
-            {/* ── Header ── */}
-            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-                <div>
-                    <h1 className="text-[28px] font-semibold text-slate-900 tracking-tight">
-                        Workflow <span className="text-indigo-600">automation</span>
+        <div className="px-8 py-6 space-y-6 bg-slate-50 min-h-screen">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+                <div className="flex flex-col gap-1">
+                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+                        Workflow <span className="text-indigo-600">Automation</span>
                     </h1>
-                    <p className="text-[15px] font-medium text-slate-500 mt-1">
-                        Design, manage, and monitor automated client workflows
-                    </p>
+                    <p className="text-[14px] font-medium text-slate-500">Design, manage, and monitor automated client workflows across the lifecycle.</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <Button variant="outline" className="h-11 px-5 rounded-xl border-slate-200 bg-white font-semibold shadow-sm gap-2 text-slate-700 hover:bg-slate-50" onClick={handleSync}>
-                        {isSyncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4 text-slate-400" />}
+                <div className="flex gap-3">
+                    <Button variant="outline" className="rounded-none h-10" onClick={handleSync}>
+                        {isSyncing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
                         {isSyncing ? "Syncing" : "Sync"}
                     </Button>
-                    <Button variant="outline" className="h-11 px-5 rounded-xl border-slate-200 bg-white font-semibold shadow-sm gap-2 text-slate-700 hover:bg-slate-50" onClick={handleExport}>
-                        <Download className="w-4 h-4 text-slate-400" /> Export
+                    <Button variant="outline" className="rounded-none h-10" onClick={handleExport}>
+                        <Download className="h-4 w-4 mr-2" /> Export
                     </Button>
-                    <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                        <DialogTrigger asChild>
-                            <Button className="h-11 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-sm gap-2">
-                                <Plus className="w-4 h-4" /> New workflow
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[440px] rounded-3xl border-slate-100 bg-white shadow-2xl p-8 font-outfit">
-                            <DialogHeader>
-                                <DialogTitle className="text-2xl font-semibold text-slate-900 tracking-tight">
-                                    Create <span className="text-indigo-600">workflow</span>
-                                </DialogTitle>
-                            </DialogHeader>
-                            <div className="grid gap-5 py-6">
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-semibold text-slate-700">Workflow name *</Label>
-                                    <Input value={newWorkflow.name} onChange={(e) => setNewWorkflow({ ...newWorkflow, name: e.target.value })} placeholder="e.g. Client onboarding sequence" className="h-11 rounded-xl bg-slate-50 border-slate-100 font-medium text-slate-900" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-semibold text-slate-700">Trigger condition *</Label>
-                                    <Input value={newWorkflow.trigger} onChange={(e) => setNewWorkflow({ ...newWorkflow, trigger: e.target.value })} placeholder="e.g. New client added" className="h-11 rounded-xl bg-slate-50 border-slate-100 font-medium text-slate-900" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-semibold text-slate-700">Category</Label>
-                                    <Select value={newWorkflow.category} onValueChange={(v) => setNewWorkflow({ ...newWorkflow, category: v })}>
-                                        <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100 font-semibold text-slate-900 shadow-none"><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-xl">
-                                            {Object.keys(CATEGORY_COLORS).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                            <DialogFooter className="gap-2">
-                                <Button variant="ghost" className="rounded-xl font-semibold" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-                                <Button className="rounded-xl bg-indigo-600 hover:bg-indigo-700 font-semibold px-8 text-white" onClick={handleCreate}>Create</Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
+                    <Button variant="outline" className="rounded-none h-10" onClick={() => setIsFilterOpen(true)}>
+                        <Filter className="h-4 w-4 mr-2" /> Filter
+                    </Button>
+                    <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-none h-10 px-5" onClick={openCreate}>
+                        <Plus className="h-4 w-4 mr-2" /> New Workflow
+                    </Button>
                 </div>
             </div>
 
-            {/* ── Stats Cards (dynamic) ── */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                {[
-                    { label: "Active workflows", value: stats.active, icon: Zap, bg: "bg-gradient-to-br from-indigo-50 to-indigo-100/50", iconBg: "bg-indigo-100", iconColor: "text-indigo-600", border: "border-indigo-100/50" },
-                    { label: "Total runs (all time)", value: stats.totalRuns, icon: Activity, bg: "bg-gradient-to-br from-emerald-50 to-emerald-100/50", iconBg: "bg-emerald-100", iconColor: "text-emerald-600", border: "border-emerald-100/50" },
-                    { label: "Avg success rate", value: `${stats.avgSuccess}%`, icon: CheckCircle2, bg: "bg-gradient-to-br from-violet-50 to-violet-100/50", iconBg: "bg-violet-100", iconColor: "text-violet-600", border: "border-violet-100/50" },
-                    { label: "Paused workflows", value: stats.paused, icon: Pause, bg: "bg-gradient-to-br from-amber-50 to-amber-100/50", iconBg: "bg-amber-100", iconColor: "text-amber-600", border: "border-amber-100/50" },
-                ].map((stat, i) => (
-                    <Card key={i} className={`${stat.bg} ${stat.border} border shadow-sm hover:shadow-md transition-all rounded-3xl overflow-hidden`}>
-                        <CardContent className="p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <div className={`h-11 w-11 rounded-2xl flex items-center justify-center ${stat.iconBg}`}>
-                                    <stat.icon className={`w-5 h-5 ${stat.iconColor}`} />
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {kpiCards.map((kpi, i) => {
+                    const cc = colorMap[kpi.color]
+                    const Icon = kpi.icon
+                    return (
+                        <Card key={i} className={`rounded-none cursor-pointer hover:shadow-md transition ${cc.bg} ${cc.border} border`} onClick={() => router.push(kpi.path)}>
+                            <CardContent className="p-5">
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <p className="text-xs font-semibold text-slate-500 tracking-wide mb-1">{kpi.title}</p>
+                                        <div className="flex items-baseline gap-2">
+                                            <h3 className="text-2xl font-bold text-slate-900">{kpi.value}</h3>
+                                            <span className="text-xs font-bold text-emerald-600">{kpi.trend}</span>
+                                        </div>
+                                        <p className="mt-2 text-xs text-slate-400">{kpi.subtitle}</p>
+                                    </div>
+                                    <div className={`h-10 w-10 rounded-none flex items-center justify-center ${cc.iconBg}`}>
+                                        <Icon className={`h-5 w-5 ${cc.text}`} />
+                                    </div>
                                 </div>
-                                <span className="text-[11px] font-semibold text-slate-400 bg-white/70 px-2 py-1 rounded-full border border-slate-100">{workflows.length} total</span>
+                            </CardContent>
+                        </Card>
+                    )
+                })}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-6">
+                    <Card className="rounded-none">
+                        <CardHeader className="border-b border-slate-100 flex flex-row items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                                <CardTitle className="text-base font-semibold">All Workflows</CardTitle>
+                                <Badge className="rounded-none bg-slate-100 text-slate-600">{filtered.length} Results</Badge>
                             </div>
-                            <p className="text-sm font-medium text-slate-500 mb-1">{stat.label}</p>
-                            <h3 className="text-2xl font-semibold text-slate-900 tracking-tight">{stat.value}</h3>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                <Input placeholder="Search workflows..." value={search} onChange={e => setSearch(e.target.value)}
+                                    className="pl-10 rounded-none w-64 h-9" />
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="text-[11px] font-bold text-slate-400 tracking-wider border-b border-slate-50 bg-slate-50/30">
+                                            <th className="px-6 py-3">Workflow</th>
+                                            <th className="px-6 py-3">Trigger</th>
+                                            <th className="px-6 py-3">Runs</th>
+                                            <th className="px-6 py-3">Success</th>
+                                            <th className="px-6 py-3">Status</th>
+                                            <th className="px-6 py-3"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50">
+                                        {filtered.length > 0 ? filtered.map((wf) => (
+                                            <tr key={wf.id} className="group hover:bg-slate-50/80 transition cursor-pointer" onClick={() => openDetail(wf)}>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="h-9 w-9 rounded-none bg-white border border-slate-100 flex items-center justify-center group-hover:bg-indigo-50">
+                                                            <GitBranch className="h-4 w-4 text-indigo-600" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-slate-800">{wf.name}</p>
+                                                            <div className="flex items-center gap-2 mt-0.5">
+                                                                <span className={`px-1.5 py-0.5 rounded-none text-[10px] font-semibold border ${CATEGORY_COLORS[wf.category] || "bg-slate-50 text-slate-500 border-slate-100"}`}>{wf.category}</span>
+                                                                <span className="text-[11px] text-slate-400">{wf.id}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-xs text-slate-600 max-w-[200px] truncate">{wf.trigger}</td>
+                                                <td className="px-6 py-4 text-sm font-bold text-slate-900">{wf.runs}</td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <Progress value={wf.successRate} className="w-20 h-1.5" />
+                                                        <span className="text-xs font-bold text-slate-900">{wf.successRate}%</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                                                    <div className="flex items-center gap-2">
+                                                        <Switch checked={wf.status === "Active"} onCheckedChange={() => handleToggle(wf.id)} />
+                                                        <span className="text-[11px] font-semibold text-slate-500">{wf.status}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="rounded-none">
+                                                                <MoreVertical className="h-4 w-4" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end" className="w-44 rounded-none">
+                                                            <DropdownMenuItem className="flex items-center gap-2" onClick={() => openEdit(wf)}>
+                                                                <PencilLine className="h-4 w-4" /> Edit
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem className="flex items-center gap-2" onClick={() => openDetail(wf)}>
+                                                                <Eye className="h-4 w-4" /> View Details
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem className="flex items-center gap-2 text-rose-500 border-t mt-1" onClick={() => handleDelete(wf.id)}>
+                                                                <Trash2 className="h-4 w-4" /> Remove
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </td>
+                                            </tr>
+                                        )) : (
+                                            <tr><td colSpan={6} className="px-6 py-12 text-center text-sm text-slate-500">No workflows match your filters.</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
                         </CardContent>
                     </Card>
-                ))}
-            </div>
 
-            {/* ── Filters ── */}
-            <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative flex-1 group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 group-focus-within:text-indigo-600 transition-colors" />
-                    <Input placeholder="Search workflows or triggers..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-12 h-11 bg-white border-slate-200 rounded-xl text-sm font-medium" />
+                    <Card className="rounded-none">
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle className="text-base font-semibold">Category Distribution</CardTitle>
+                                <p className="text-sm text-slate-500 mt-1">Workflows grouped by lifecycle stage</p>
+                            </div>
+                            <Activity className="h-5 w-5 text-slate-400" />
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {CATEGORIES.map((cat) => {
+                                const list = workflows.filter(w => w.category === cat)
+                                const progress = workflows.length ? (list.length / workflows.length) * 100 : 0
+                                return (
+                                    <div key={cat} className="space-y-2 cursor-pointer hover:bg-slate-50 p-2 -m-2 transition" onClick={() => setFilterCategory(cat)}>
+                                        <div className="flex justify-between items-center text-[11px] font-bold">
+                                            <span className="text-slate-700">{cat} <span className="text-slate-400 font-medium ml-2">{list.length} workflows</span></span>
+                                            <span className="text-slate-900">{Math.round(progress)}%</span>
+                                        </div>
+                                        <Progress value={progress} className="h-1.5 bg-slate-50" />
+                                    </div>
+                                )
+                            })}
+                        </CardContent>
+                    </Card>
                 </div>
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger className="w-44 h-11 rounded-xl border-slate-200 bg-white font-semibold text-slate-700 shadow-sm">
-                        <Filter className="w-4 h-4 mr-2 text-slate-400" /><SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                        <SelectItem value="all">All statuses</SelectItem>
-                        <SelectItem value="active">Active only</SelectItem>
-                        <SelectItem value="paused">Paused only</SelectItem>
-                    </SelectContent>
-                </Select>
-                <Select value={filterCategory} onValueChange={setFilterCategory}>
-                    <SelectTrigger className="w-44 h-11 rounded-xl border-slate-200 bg-white font-semibold text-slate-700 shadow-sm">
-                        <SelectValue placeholder="All categories" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                        <SelectItem value="all">All categories</SelectItem>
-                        {Object.keys(CATEGORY_COLORS).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                </Select>
+
+                <div className="space-y-6">
+                    <Card className="rounded-none">
+                        <CardHeader>
+                            <CardTitle className="text-xs font-bold text-slate-400 tracking-wider uppercase">Top Performing Flows</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            {[...workflows].sort((a, b) => b.successRate - a.successRate).slice(0, 4).map((wf, idx) => (
+                                <div key={idx} className="flex items-center justify-between cursor-pointer hover:bg-slate-50 -mx-2 px-2 py-2 rounded-none transition" onClick={() => openDetail(wf)}>
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-9 w-9 rounded-none bg-indigo-50 flex items-center justify-center text-[10px] font-bold text-indigo-600 border border-indigo-100">
+                                            {wf.name.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-800 leading-none">{wf.name}</p>
+                                            <p className="text-[10px] text-slate-400 mt-1">{wf.runs} runs</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-xs font-bold text-slate-900">{wf.successRate}%</p>
+                                        <div className="flex items-center gap-1 justify-end mt-1">
+                                            <CheckCircle2 className="h-2.5 w-2.5 text-emerald-500" />
+                                            <span className="text-[9px] font-bold text-emerald-600">{wf.status}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            <Button variant="ghost" className="w-full text-xs font-bold text-indigo-600 hover:text-indigo-700 rounded-none mt-3" onClick={() => router.push('/client-management/automation/logs')}>
+                                View Execution Logs
+                            </Button>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="rounded-none border-indigo-100 bg-indigo-50/10">
+                        <CardHeader>
+                            <CardTitle className="text-xs font-bold text-indigo-600 tracking-wider flex items-center gap-2 uppercase">
+                                <Sparkles className="h-4 w-4" /> Automation Insights
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            <div className="p-3 bg-white border border-indigo-100 rounded-none">
+                                <p className="text-[11px] text-slate-600">
+                                    Your <span className="text-indigo-600 font-bold">onboarding flow</span> drives a {stats.avgSuccess}% success rate across {stats.totalRuns.toLocaleString()} runs.
+                                </p>
+                            </div>
+                            <div className="p-3 bg-white border border-indigo-100 rounded-none">
+                                <p className="text-[11px] text-slate-600">
+                                    Consider activating {stats.paused} paused flows to boost coverage.
+                                </p>
+                            </div>
+                            <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-none mt-2" onClick={() => { toast.success("Optimization scan started"); router.push('/client-management/automation/playbooks') }}>
+                                Browse Playbooks
+                            </Button>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="rounded-none">
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <CardTitle className="text-xs font-bold text-slate-400 tracking-wider uppercase">Recent Runs</CardTitle>
+                            <Clock className="h-4 w-4 text-indigo-400" />
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {workflows.slice(0, 3).map((wf, i) => (
+                                <div key={i} className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 -mx-2 px-2 py-1 transition" onClick={() => openDetail(wf)}>
+                                    <div className="h-9 w-9 rounded-none bg-white border border-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500 shadow-sm">{wf.id.slice(-3)}</div>
+                                    <div className="flex-1">
+                                        <p className="text-[12px] font-bold text-slate-700 leading-tight">{wf.name}</p>
+                                        <p className="text-[10px] font-semibold text-slate-400 mt-0.5">{wf.lastRun}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
 
-            {/* ── Workflow List ── */}
-            <Card className="rounded-3xl border-0 shadow-xl shadow-slate-200/50 bg-white overflow-hidden">
-                <CardHeader className="px-8 py-6 border-b border-slate-100">
-                    <CardTitle className="text-lg font-semibold text-slate-900">
-                        All workflows <span className="text-slate-400 font-medium text-sm ml-2">({filtered.length})</span>
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                    <div className="divide-y divide-slate-50">
-                        {filtered.map((wf) => (
-                            <div key={wf.id} className="px-8 py-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5 hover:bg-slate-50/50 transition-colors group">
-                                <div className="flex items-start gap-5 flex-1">
-                                    <div className={`h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 ${(CATEGORY_COLORS[wf.category] || "bg-slate-50 text-slate-400").split(" ").slice(0, 2).join(" ")}`}>
-                                        <GitBranch className="w-5 h-5" />
-                                    </div>
-                                    <div className="space-y-2 flex-1">
-                                        <div className="flex items-center gap-3 flex-wrap">
-                                            <h4 className="text-sm font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">{wf.name}</h4>
-                                            <Badge className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${CATEGORY_COLORS[wf.category] || "bg-slate-100 text-slate-500"}`}>{wf.category}</Badge>
-                                            <Badge className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border-0 ${wf.status === "Active" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>{wf.status}</Badge>
-                                        </div>
-                                        <p className="text-xs font-medium text-slate-400 flex items-center gap-1.5">
-                                            <Zap className="w-3 h-3" /> Trigger: {wf.trigger}
-                                        </p>
-                                        <div className="flex items-center gap-6 text-[11px] text-slate-400 font-medium">
-                                            <span className="flex items-center gap-1"><Activity className="w-3 h-3" /> {wf.runs} runs</span>
-                                            <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-emerald-500" /> {wf.successRate}% success</span>
-                                            <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Last run: {wf.lastRun}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3 shrink-0">
-                                    <div className="flex items-center gap-2 border border-slate-100 rounded-xl px-3 py-2 bg-white shadow-sm">
-                                        <Switch checked={wf.status === "Active"} onCheckedChange={() => handleToggle(wf.id, wf.status)} className="data-[state=checked]:bg-indigo-600 scale-90" />
-                                        <span className="text-[10px] font-semibold text-slate-400">{wf.status}</span>
-                                    </div>
-                                    <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl" onClick={() => handleEditOpen(wf)}>
-                                        <Edit className="w-4 h-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl" onClick={() => handleDeleteOpen(wf)}>
-                                        <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                </div>
+            {/* Form Sheet */}
+            <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <SheetContent side="right" className="sm:max-w-md w-full p-0 rounded-none flex flex-col">
+                    <SheetHeader className="p-6 border-b bg-gradient-to-br from-indigo-50 to-violet-50">
+                        <SheetTitle className="text-[18px] font-semibold text-slate-900">{editingId ? "Edit Workflow" : "Create Workflow"}</SheetTitle>
+                        <p className="text-[12px] text-slate-500">Define automated actions triggered by a condition.</p>
+                    </SheetHeader>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Workflow Name <span className="text-rose-500">*</span></Label>
+                            <Input value={form.name} onChange={e => setField("name", e.target.value)} placeholder="e.g. Client onboarding sequence" className={`h-10 rounded-none ${errors.name ? "border-rose-500" : ""}`} />
+                            {errors.name && <p className="text-[11px] text-rose-500">{errors.name}</p>}
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Trigger Condition <span className="text-rose-500">*</span></Label>
+                            <Input value={form.trigger} onChange={e => setField("trigger", e.target.value)} placeholder="e.g. New client added" className={`h-10 rounded-none ${errors.trigger ? "border-rose-500" : ""}`} />
+                            {errors.trigger && <p className="text-[11px] text-rose-500">{errors.trigger}</p>}
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-[12px] font-semibold">Category</Label>
+                                <Select value={form.category} onValueChange={(v: any) => setField("category", v)}>
+                                    <SelectTrigger className="h-10 rounded-none"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-none">
+                                        {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
                             </div>
-                        ))}
-                        {filtered.length === 0 && (
-                            <div className="px-8 py-16 text-center">
-                                <GitBranch className="w-10 h-10 text-slate-200 mx-auto mb-3" />
-                                <p className="text-slate-400 font-medium">No workflows found matching your criteria.</p>
-                                <Button variant="ghost" className="mt-3 text-indigo-600 font-semibold text-sm" onClick={() => { setSearchQuery(""); setFilterStatus("all"); setFilterCategory("all") }}>Clear filters</Button>
-                            </div>
-                        )}
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* ── Edit Dialog ── */}
-            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent className="sm:max-w-[440px] rounded-3xl border-slate-100 bg-white shadow-2xl p-8 font-outfit">
-                    <DialogHeader>
-                        <DialogTitle className="text-2xl font-semibold text-slate-900 tracking-tight">
-                            Edit <span className="text-indigo-600">workflow</span>
-                        </DialogTitle>
-                    </DialogHeader>
-                    {editTarget && (
-                        <div className="grid gap-5 py-6">
-                            <div className="space-y-2">
-                                <Label className="text-sm font-semibold text-slate-700">Workflow name *</Label>
-                                <Input value={editTarget.name} onChange={(e) => setEditTarget({ ...editTarget, name: e.target.value })} className="h-11 rounded-xl bg-slate-50 border-slate-100 font-medium text-slate-900" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-sm font-semibold text-slate-700">Trigger condition *</Label>
-                                <Input value={editTarget.trigger} onChange={(e) => setEditTarget({ ...editTarget, trigger: e.target.value })} className="h-11 rounded-xl bg-slate-50 border-slate-100 font-medium text-slate-900" />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-semibold text-slate-700">Category</Label>
-                                    <Select value={editTarget.category} onValueChange={(v) => setEditTarget({ ...editTarget, category: v })}>
-                                        <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100 font-semibold text-slate-900 shadow-none"><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-xl">
-                                            {Object.keys(CATEGORY_COLORS).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-semibold text-slate-700">Status</Label>
-                                    <Select value={editTarget.status} onValueChange={(v) => setEditTarget({ ...editTarget, status: v })}>
-                                        <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100 font-semibold text-slate-900 shadow-none"><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-xl">
-                                            <SelectItem value="Active">Active</SelectItem>
-                                            <SelectItem value="Paused">Paused</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[12px] font-semibold">Status</Label>
+                                <Select value={form.status} onValueChange={(v: any) => setField("status", v)}>
+                                    <SelectTrigger className="h-10 rounded-none"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-none">
+                                        <SelectItem value="Active">Active</SelectItem>
+                                        <SelectItem value="Paused">Paused</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
-                    )}
-                    <DialogFooter className="gap-2">
-                        <Button variant="ghost" className="rounded-xl font-semibold gap-2" onClick={() => { setIsEditOpen(false); setEditTarget(null) }}><X className="w-4 h-4" />Cancel</Button>
-                        <Button className="rounded-xl bg-indigo-600 hover:bg-indigo-700 font-semibold px-8 text-white gap-2" onClick={handleEditSave}><Save className="w-4 h-4" />Save changes</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* ── Delete Confirm Dialog ── */}
-            <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-                <DialogContent className="sm:max-w-[400px] rounded-3xl border-slate-100 bg-white shadow-2xl p-8 font-outfit">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-semibold text-slate-900">Delete workflow</DialogTitle>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <p className="text-sm font-medium text-slate-500">Are you sure you want to delete <span className="text-slate-900 font-semibold">"{deleteTarget?.name}"</span>? This action cannot be undone.</p>
                     </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="ghost" className="rounded-xl font-semibold" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
-                        <Button className="rounded-xl bg-rose-600 hover:bg-rose-700 font-semibold px-6 text-white gap-2" onClick={handleDeleteConfirm}><Trash2 className="w-4 h-4" />Delete</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <div className="p-5 border-t flex gap-3 bg-white">
+                        <Button variant="outline" className="flex-1 h-10 rounded-none" onClick={() => setIsFormOpen(false)}>Cancel</Button>
+                        <Button className="flex-1 h-10 bg-indigo-600 hover:bg-indigo-700 text-white rounded-none" onClick={handleSave}>
+                            {editingId ? "Save Changes" : "Create Workflow"}
+                        </Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* Filter Sheet */}
+            <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <SheetContent side="right" className="sm:max-w-md w-full p-0 rounded-none flex flex-col">
+                    <SheetHeader className="p-6 border-b bg-gradient-to-br from-slate-50 to-indigo-50">
+                        <SheetTitle className="text-[18px] font-semibold">Filter Workflows</SheetTitle>
+                    </SheetHeader>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Status</Label>
+                            <Select value={filterStatus} onValueChange={setFilterStatus}>
+                                <SelectTrigger className="h-10 rounded-none"><SelectValue /></SelectTrigger>
+                                <SelectContent className="rounded-none">
+                                    <SelectItem value="all">All statuses</SelectItem>
+                                    <SelectItem value="active">Active only</SelectItem>
+                                    <SelectItem value="paused">Paused only</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Category</Label>
+                            <Select value={filterCategory} onValueChange={setFilterCategory}>
+                                <SelectTrigger className="h-10 rounded-none"><SelectValue /></SelectTrigger>
+                                <SelectContent className="rounded-none">
+                                    <SelectItem value="all">All categories</SelectItem>
+                                    {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div className="p-5 border-t flex gap-3 bg-white">
+                        <Button variant="outline" className="flex-1 h-10 rounded-none" onClick={() => { setFilterStatus("all"); setFilterCategory("all"); toast.success("Filters reset") }}>Reset</Button>
+                        <Button className="flex-1 h-10 bg-indigo-600 hover:bg-indigo-700 rounded-none" onClick={() => { setIsFilterOpen(false); toast.success("Filters applied") }}>Apply</Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* Detail Sheet */}
+            <Sheet open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+                <SheetContent side="right" className="sm:max-w-md w-full p-0 rounded-none flex flex-col">
+                    <SheetHeader className="p-6 border-b bg-gradient-to-br from-slate-50 to-indigo-50">
+                        <SheetTitle className="text-[18px] font-semibold">Workflow Details</SheetTitle>
+                    </SheetHeader>
+                    {selected && (
+                        <>
+                            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                                <div>
+                                    <p className="text-[11px] text-slate-400 uppercase tracking-wider">Workflow</p>
+                                    <p className="text-lg font-semibold text-slate-900">{selected.name}</p>
+                                    <p className="text-sm text-slate-500">{selected.id}</p>
+                                </div>
+                                <div className="pt-3 border-t">
+                                    <p className="text-[11px] text-slate-400 uppercase">Trigger</p>
+                                    <p className="text-sm font-semibold text-slate-900">{selected.trigger}</p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 pt-3 border-t">
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Category</p>
+                                        <span className={`px-2 py-0.5 rounded-none text-[11px] font-semibold border ${CATEGORY_COLORS[selected.category] || ""}`}>{selected.category}</span>
+                                    </div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Status</p>
+                                        <Badge className={`rounded-none ${selected.status === "Active" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>{selected.status}</Badge>
+                                    </div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Total Runs</p><p className="font-semibold text-slate-900">{selected.runs}</p></div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Success Rate</p><p className="font-semibold text-slate-900">{selected.successRate}%</p></div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Last Run</p><p className="font-semibold text-slate-900">{selected.lastRun}</p></div>
+                                </div>
+                            </div>
+                            <div className="p-5 border-t flex gap-3 bg-white">
+                                <Button variant="outline" className="flex-1 h-10 rounded-none" onClick={() => { setIsDetailOpen(false); openEdit(selected) }}>
+                                    <PencilLine className="h-4 w-4 mr-2" />Edit
+                                </Button>
+                                <Button variant="outline" className="flex-1 h-10 rounded-none text-rose-500 border-rose-200 hover:bg-rose-50" onClick={() => { handleDelete(selected.id); setIsDetailOpen(false) }}>
+                                    <Trash2 className="h-4 w-4 mr-2" />Delete
+                                </Button>
+                            </div>
+                        </>
+                    )}
+                </SheetContent>
+            </Sheet>
         </div>
     )
 }

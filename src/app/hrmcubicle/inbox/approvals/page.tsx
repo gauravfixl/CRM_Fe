@@ -67,6 +67,7 @@ const ApprovalsPage = () => {
     const [searchQuery, setSearchQuery] = useState("");
 
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [detailApproval, setDetailApproval] = useState<ApprovalItem | null>(null);
 
     /* ----- Backend-backed Leave approvals (live) ----- */
     const [liveLeaveApprovals, setLiveLeaveApprovals] = useState<ApprovalItem[]>([]);
@@ -449,7 +450,10 @@ const ApprovalsPage = () => {
                                                 animate={{ opacity: 1, scale: 1 }}
                                                 transition={{ duration: 0.2 }}
                                             >
-                                                <Card className={`group border border-slate-100 shadow-sm hover:shadow-md transition-all rounded-3xl overflow-hidden bg-white ${isSelected ? 'ring-2 ring-indigo-500 border-indigo-200 bg-indigo-50/10' : ''}`}>
+                                                <Card
+                                                    onClick={() => setDetailApproval(approval)}
+                                                    className={`group border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all rounded-3xl overflow-hidden bg-white cursor-pointer ${isSelected ? 'ring-2 ring-indigo-500 border-indigo-200 bg-indigo-50/10' : ''}`}
+                                                >
                                                     <CardContent className="py-3 px-5">
                                                         <div className="flex flex-col lg:flex-row gap-4">
                                                             {/* Selection & Avatar */}
@@ -457,6 +461,7 @@ const ApprovalsPage = () => {
                                                                 <Checkbox
                                                                     checked={isSelected}
                                                                     onCheckedChange={() => toggleSelect(approval.id)}
+                                                                    onClick={(e) => e.stopPropagation()}
                                                                     className="mt-1 lg:mt-0 rounded-md border-slate-200 data-[state=checked]:bg-indigo-600"
                                                                 />
                                                                 <div className="flex items-center gap-3">
@@ -515,7 +520,7 @@ const ApprovalsPage = () => {
                                                             </div>
 
                                                             {/* Actions */}
-                                                            <div className="flex lg:flex-col justify-end gap-2 shrink-0 border-t lg:border-t-0 lg:border-l border-slate-100 pt-3 lg:pt-0 lg:pl-4">
+                                                            <div className="flex lg:flex-col justify-end gap-2 shrink-0 border-t lg:border-t-0 lg:border-l border-slate-100 pt-3 lg:pt-0 lg:pl-4" onClick={(e) => e.stopPropagation()}>
                                                                 {approval.status === 'Pending' ? (
                                                                     <>
                                                                         <Button

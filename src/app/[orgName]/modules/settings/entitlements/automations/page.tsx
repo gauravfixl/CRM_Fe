@@ -79,7 +79,10 @@ export default function AutomationsGovernancePage() {
 
             {/* TOP METRICS */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <SmallCard className="bg-gradient-to-br from-blue-600 to-blue-700 border-none rounded-none shadow-lg text-white">
+                <SmallCard
+                    onClick={() => router.push(`/${params.orgName}/modules/settings/entitlements/automations/execution`)}
+                    className="bg-gradient-to-br from-blue-600 to-blue-700 border-none rounded-none shadow-lg text-white cursor-pointer hover:shadow-xl transition-all"
+                >
                     <SmallCardHeader className="pb-1 text-left px-4 pt-4 flex flex-row justify-between items-center">
                         <p className="text-[10px] font-bold text-blue-100 uppercase tracking-widest">Global Triggers</p>
                         <Network className="w-4 h-4 text-blue-200" />
@@ -90,7 +93,10 @@ export default function AutomationsGovernancePage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-slate-200 rounded-none shadow-md">
+                <SmallCard
+                    onClick={() => router.push(`/${params.orgName}/modules/settings/entitlements/automations/quotas`)}
+                    className="bg-white border-slate-200 rounded-none shadow-md cursor-pointer hover:shadow-lg transition-all"
+                >
                     <SmallCardHeader className="pb-1 text-left px-4 pt-4 flex flex-row justify-between items-center">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Engine Load</p>
                         <Cpu className="w-4 h-4 text-blue-500" />
@@ -101,7 +107,10 @@ export default function AutomationsGovernancePage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-slate-200 rounded-none shadow-md">
+                <SmallCard
+                    onClick={() => router.push(`/${params.orgName}/modules/settings/entitlements/automations/audit`)}
+                    className="bg-white border-slate-200 rounded-none shadow-md cursor-pointer hover:shadow-lg transition-all"
+                >
                     <SmallCardHeader className="pb-1 text-left px-4 pt-4 flex flex-row justify-between items-center">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Efficiency Rate</p>
                         <CheckCircle2 className="w-4 h-4 text-emerald-500" />
@@ -112,7 +121,10 @@ export default function AutomationsGovernancePage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-slate-200 rounded-none shadow-md">
+                <SmallCard
+                    onClick={() => router.push(`/${params.orgName}/modules/settings/entitlements/automations/error-handling`)}
+                    className="bg-white border-slate-200 rounded-none shadow-md cursor-pointer hover:shadow-lg transition-all"
+                >
                     <SmallCardHeader className="pb-1 text-left px-4 pt-4 flex flex-row justify-between items-center">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Circuit Breakers</p>
                         <ShieldAlert className="w-4 h-4 text-rose-500" />

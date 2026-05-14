@@ -29,7 +29,9 @@ import {
     ArrowUpDown,
     Bell,
     Link2,
-    Component
+    Component,
+    History,
+    Map
 } from "lucide-react"
 
 export type SidebarRole = 'Admin' | 'Manager' | 'Member'
@@ -121,6 +123,7 @@ export const SIDEBAR_CONFIG: SidebarSection[] = [
             { id: "backlog", title: "Backlog", icon: LayoutList, href: "/projectmanagement/backlog", roles: ["Admin", "Manager", "Member"] as SidebarRole[] },
             { id: "timeline", title: "Timeline", icon: GanttChart, href: "/projectmanagement/timeline", roles: ["Admin", "Manager", "Member"] as SidebarRole[] },
             { id: "epics", title: "Epics", icon: Layers, href: "/projectmanagement/epics", roles: ["Admin", "Manager", "Member"] as SidebarRole[] },
+            { id: "roadmap", title: "Roadmap", icon: Map, href: "/projectmanagement/roadmap", roles: ["Admin", "Manager"] as SidebarRole[] },
             { id: "dependencies", title: "Dependencies", icon: Link2, href: "/projectmanagement/linking", roles: ["Admin", "Manager", "Member"] as SidebarRole[] },
         ]
     },
@@ -158,6 +161,7 @@ export const SIDEBAR_CONFIG: SidebarSection[] = [
             { id: "board-config", title: "Board Config", icon: Settings2, href: "/projectmanagement/board-settings", roles: ["Admin", "Manager"] as SidebarRole[] },
             { id: "import-export", title: "Import/Export", icon: ArrowUpDown, href: "/projectmanagement/import-export", roles: ["Admin", "Manager"] as SidebarRole[] },
             { id: "notifications-mgmt", title: "Notifications", icon: Bell, href: "/projectmanagement/notifications", roles: ["Admin", "Manager", "Member"] as SidebarRole[] },
+            { id: "audit-log", title: "Audit Log", icon: History, href: "/projectmanagement/audit", roles: ["Admin", "Manager"] as SidebarRole[] },
         ]
     },
     {

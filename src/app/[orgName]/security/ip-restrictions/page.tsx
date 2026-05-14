@@ -177,29 +177,41 @@ export default function IPRestrictionsPage() {
 
       {/* Stats cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-primary rounded-none p-4 text-white">
+        <button
+          type="button"
+          onClick={() => setFilterType("All")}
+          className={`bg-primary rounded-none p-4 text-white text-left cursor-pointer transition-all hover:shadow-lg ${filterType === "All" ? "ring-2 ring-primary/60 ring-offset-2" : ""}`}
+        >
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-white/80">Total rules</p>
             <Globe size={18} className="text-white/60" />
           </div>
           <p className="text-2xl font-semibold mt-2">{totalRules}</p>
-        </div>
+        </button>
 
-        <div className="bg-white border border-gray-200 rounded-none p-4">
+        <button
+          type="button"
+          onClick={() => setFilterType("Whitelist")}
+          className={`bg-white border border-gray-200 rounded-none p-4 text-left cursor-pointer transition-all hover:shadow-md ${filterType === "Whitelist" ? "ring-2 ring-green-500" : ""}`}
+        >
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-gray-500">Whitelisted</p>
             <ShieldCheck size={18} className="text-green-500" />
           </div>
           <p className="text-2xl font-semibold text-green-600 mt-2">{whitelisted}</p>
-        </div>
+        </button>
 
-        <div className="bg-white border border-gray-200 rounded-none p-4">
+        <button
+          type="button"
+          onClick={() => setFilterType("Blacklist")}
+          className={`bg-white border border-gray-200 rounded-none p-4 text-left cursor-pointer transition-all hover:shadow-md ${filterType === "Blacklist" ? "ring-2 ring-red-500" : ""}`}
+        >
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-gray-500">Blacklisted</p>
             <ShieldBan size={18} className="text-red-500" />
           </div>
           <p className="text-2xl font-semibold text-red-600 mt-2">{blacklisted}</p>
-        </div>
+        </button>
 
         <div className="bg-white border border-gray-200 rounded-none p-4">
           <div className="flex items-center justify-between">

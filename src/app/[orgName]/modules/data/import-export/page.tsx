@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
 import {
     Download,
     Upload,
@@ -48,6 +49,10 @@ interface DataJob {
 }
 
 export default function ImportExportPage() {
+    const router = useRouter();
+    const params = useParams();
+    const orgName = (params?.orgName as string) || "";
+
     const [showImportModal, setShowImportModal] = useState(false);
     const [showExportModal, setShowExportModal] = useState(false);
     const [importing, setImporting] = useState(false);
@@ -191,29 +196,45 @@ export default function ImportExportPage() {
 
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-gradient-to-r from-primary/70 to-primary text-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/audit-logs`)}
+                    className="bg-gradient-to-r from-primary/70 to-primary text-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 text-left cursor-pointer"
+                >
                     <p className="text-xs font-semibold text-white">Total Operations</p>
                     <h2 className="text-xl font-semibold text-white">142</h2>
                     <p className="text-[10px] mt-1 opacity-80">Last 30 days</p>
-                </div>
+                </button>
 
-                <div className="border bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <button
+                    type="button"
+                    onClick={() => setShowImportModal(true)}
+                    className="border bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 text-left cursor-pointer"
+                >
                     <p className="text-xs text-gray-500">Records Imported</p>
                     <h3 className="text-xl font-semibold text-gray-900">12,450</h3>
                     <p className="text-[10px] text-green-600 mt-1">This month</p>
-                </div>
+                </button>
 
-                <div className="border bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <button
+                    type="button"
+                    onClick={() => setShowExportModal(true)}
+                    className="border bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 text-left cursor-pointer"
+                >
                     <p className="text-xs text-gray-500">Records Exported</p>
                     <h3 className="text-xl font-semibold text-gray-900">8,920</h3>
                     <p className="text-[10px] text-blue-600 mt-1">This month</p>
-                </div>
+                </button>
 
-                <div className="border bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/usage-analytics`)}
+                    className="border bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 text-left cursor-pointer"
+                >
                     <p className="text-xs text-gray-500">Success Rate</p>
                     <h3 className="text-xl font-semibold text-gray-900">97.2%</h3>
                     <p className="text-[10px] text-green-600 mt-1">Excellent quality</p>
-                </div>
+                </button>
             </div>
 
             {/* Data Modules */}

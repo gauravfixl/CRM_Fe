@@ -299,7 +299,7 @@ const CompOffManagementPage = () => {
                         return diff <= 30 && diff > 0;
                       })();
                       return (
-                        <tr key={co.id} className="border-b border-slate-50 hover:bg-slate-50/50">
+                        <tr key={co.id} className="border-b border-slate-50 hover:bg-slate-50/50 cursor-pointer">
                           <td className="py-3 px-3">
                             <div className="font-medium text-slate-800">{co.employeeName}</div>
                             <div className="text-xs text-slate-400">{co.employeeId}</div>

@@ -387,13 +387,18 @@ const HRDocsPage = () => {
                                         </TableHeader>
                                         <TableBody>
                                             {filteredDocs.map((doc) => (
-                                                <TableRow key={doc.id} className={`group hover:bg-indigo-50/20 transition-all border-b border-slate-50 last:border-0 border-l-4 ${selectedDocIds.includes(doc.id) ? 'border-l-indigo-500 bg-indigo-50/10' : 'border-l-transparent hover:border-l-indigo-500'}`}>
+                                                <TableRow
+                                                    key={doc.id}
+                                                    onClick={() => { setSelectedDocForAudit(doc); setIsAuditOpen(true); }}
+                                                    className={`group hover:bg-indigo-50/20 transition-all border-b border-slate-50 last:border-0 border-l-4 cursor-pointer ${selectedDocIds.includes(doc.id) ? 'border-l-indigo-500 bg-indigo-50/10' : 'border-l-transparent hover:border-l-indigo-500'}`}
+                                                >
                                                     <TableCell className="px-8 py-6">
                                                         <div className="flex items-center gap-6">
                                                             <input
                                                                 type="checkbox"
                                                                 checked={selectedDocIds.includes(doc.id)}
                                                                 onChange={() => toggleSelect(doc.id)}
+                                                                onClick={(e) => e.stopPropagation()}
                                                                 className="w-5 h-5 rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer"
                                                             />
                                                             <div className="flex items-center gap-4">
@@ -422,7 +427,7 @@ const HRDocsPage = () => {
                                                             {doc.status}
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell className="px-8 py-6 text-right">
+                                                    <TableCell className="px-8 py-6 text-right" onClick={(e) => e.stopPropagation()}>
                                                         <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
                                                             <Button variant="ghost" size="icon" className="h-10 w-10 text-slate-400 hover:text-indigo-600 hover:bg-white hover:shadow-sm rounded-xl transition-all border-none" onClick={() => { setSelectedDocForAudit(doc); setIsAuditOpen(true); }}>
                                                                 <Activity size={18} />

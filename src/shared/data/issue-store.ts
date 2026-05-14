@@ -3,7 +3,8 @@ import { persist } from 'zustand/middleware'
 import { axiosInstance as axios } from '@/lib/axios'
 
 export type IssueStatus = "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE" | "BACKLOG" | "TESTING" | "REPORTED" | "TRIAGE" | "REPRODUCED" | "FIXING" | "VERIFIED" | "IDEAS" | "BRIEFING" | "DRAFTING" | "REVIEW" | "PUBLISHED" | "PLANNING" | "BLOCKED" | "COMPLETED"
-export type IssuePriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT"
+// Jira-style 5-level priority
+export type IssuePriority = "LOWEST" | "LOW" | "MEDIUM" | "HIGH" | "HIGHEST" | "URGENT"
 export type IssueType = "TASK" | "BUG" | "STORY" | "EPIC" | "SUBTASK"
 
 export interface IssueHistory {
@@ -12,6 +13,33 @@ export interface IssueHistory {
     newValue: string
     changedBy: string
     changedAt: string
+}
+
+export type LinkType = "BLOCKS" | "BLOCKED_BY" | "RELATES_TO" | "DUPLICATES" | "CLONED_FROM"
+
+export interface IssueLink {
+    id: string
+    targetIssueId: string
+    type: LinkType
+    createdAt: string
+}
+
+export interface IssueAttachment {
+    id: string
+    name: string
+    size: number
+    type: string
+    dataUrl: string // base64 data URL for frontend-only storage
+    uploadedBy: string
+    uploadedAt: string
+}
+
+export interface TimeLog {
+    id: string
+    minutes: number
+    note?: string
+    loggedBy: string
+    loggedAt: string
 }
 
 export interface Issue {
@@ -28,11 +56,15 @@ export interface Issue {
         name: string
         avatar: string
     }
+    watchers?: string[] // user IDs watching this issue
     reporterId: string
+    estimateHours?: number // Original estimate in hours (separate from logged time)
     createdAt: string
     updatedAt?: string
     sprintId?: string | null
     epicId?: string | null
+    releaseId?: string | null
+    componentId?: string | null
     storyPoints?: number
     parentId?: string | null
     dueDate?: string
@@ -41,6 +73,11 @@ export interface Issue {
     labels?: string[]
     columnOrder?: number // For drag-and-drop ordering within a column
     history?: IssueHistory[]
+    links?: IssueLink[]
+    attachments?: IssueAttachment[]
+    timeLogs?: TimeLog[]
+    timeSpent?: number // total minutes (computed from timeLogs)
+    customFields?: Record<string, any>
 }
 
 interface IssueStore {
@@ -71,6 +108,31 @@ interface IssueStore {
     // Reordering & Workflow
     reorderTask: (issueId: string, fromStatus: IssueStatus, toStatus: IssueStatus, newOrder: number, canTransition: (from: string, to: string) => boolean, userId: string) => { success: boolean, error?: string }
     getTasksByColumn: (projectId: string, boardId?: string) => Record<string, Issue[]>
+
+    // Links / Dependencies
+    addLink: (issueId: string, targetIssueId: string, type: LinkType) => void
+    removeLink: (issueId: string, linkId: string) => void
+    getLinksByIssue: (issueId: string) => IssueLink[]
+    getAllLinks: () => { fromIssueId: string; link: IssueLink }[]
+
+    // Attachments
+    addAttachment: (issueId: string, attachment: Omit<IssueAttachment, 'id'>) => void
+    removeAttachment: (issueId: string, attachmentId: string) => void
+
+    // Time tracking
+    addTimeLog: (issueId: string, minutes: number, note: string | undefined, userId: string) => void
+    removeTimeLog: (issueId: string, logId: string) => void
+
+    // Custom fields
+    setCustomFieldValue: (issueId: string, fieldId: string, value: any) => void
+
+    // Cascade
+    deleteIssuesByProject: (projectId: string) => number // returns count deleted
+
+    // Watchers
+    addWatcher: (issueId: string, userId: string) => void
+    removeWatcher: (issueId: string, userId: string) => void
+    isWatching: (issueId: string, userId: string) => boolean
 }
 
 const INITIAL_ISSUES: Issue[] = [
@@ -234,31 +296,42 @@ export const useIssueStore = create<IssueStore>()(
                 set(() => ({ issues: mapped }))
             },
 
-            addIssue: (issue) => set((state) => ({
-                issues: [issue, ...state.issues]
-            })),
+            addIssue: (issue) => {
+                set((state) => ({ issues: [issue, ...state.issues] }))
+                import('./event-bridges').then(eb => eb.emitIssueCreated(issue)).catch(() => {})
+            },
 
-            updateIssue: (issueId, updates) => set((state) => ({
-                issues: state.issues.map(i => i.id === issueId ? { ...i, ...updates, updatedAt: new Date().toISOString() } : i)
-            })),
+            updateIssue: (issueId, updates) => {
+                const prev = get().issues.find(i => i.id === issueId)
+                set((state) => ({
+                    issues: state.issues.map(i => i.id === issueId ? { ...i, ...updates, updatedAt: new Date().toISOString() } : i)
+                }))
+                if (prev) {
+                    const changes = Object.keys(updates)
+                        .filter(k => (prev as any)[k] !== (updates as any)[k])
+                        .map(k => ({ field: k, oldValue: (prev as any)[k], newValue: (updates as any)[k] }))
+                    if (changes.length > 0) {
+                        const merged = { ...prev, ...updates } as Issue
+                        import('./event-bridges').then(eb => eb.emitIssueUpdated(merged, changes)).catch(() => {})
+                    }
+                }
+            },
 
             updateIssueStatus: (issueId, newStatus, userId) => {
                 const state = get()
                 const issue = state.issues.find(i => i.id === issueId)
 
                 if (!issue) return
+                if (issue.status === newStatus) return
+
+                const oldStatus = issue.status
 
                 const historyEntry: IssueHistory = {
                     field: "status",
-                    oldValue: issue.status,
+                    oldValue: oldStatus,
                     newValue: newStatus,
                     changedBy: userId,
                     changedAt: new Date().toISOString()
-                }
-
-                // AUTOMATION ENGINE SIMULATION
-                if (newStatus === "DONE" && issue.status !== "DONE") {
-                    console.log(`[Automation] Trigger: Issue ${issueId} moved to DONE. Running post-deployment protocols...`)
                 }
 
                 set((state) => ({
@@ -273,6 +346,11 @@ export const useIssueStore = create<IssueStore>()(
                             : i
                     )
                 }))
+
+                const updated = get().issues.find(i => i.id === issueId)
+                if (updated) {
+                    import('./event-bridges').then(eb => eb.emitIssueStatusChanged(updated, oldStatus, newStatus)).catch(() => {})
+                }
             },
 
             deleteIssue: (issueId) => {
@@ -283,6 +361,7 @@ export const useIssueStore = create<IssueStore>()(
                 set((state) => ({
                     issues: state.issues.filter(i => i.id !== issueId && i.parentId !== issueId)
                 }))
+                import('./event-bridges').then(eb => eb.emitIssueDeleted(issue)).catch(() => {})
             },
 
             getIssues: (filters = {}) => {
@@ -386,7 +465,127 @@ export const useIssueStore = create<IssueStore>()(
                 })
 
                 return grouped
-            }
+            },
+
+            // Links / Dependencies
+            addLink: (issueId, targetIssueId, type) => set((state) => ({
+                issues: state.issues.map(i => {
+                    if (i.id !== issueId) return i
+                    const newLink: IssueLink = {
+                        id: `link-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                        targetIssueId,
+                        type,
+                        createdAt: new Date().toISOString(),
+                    }
+                    return { ...i, links: [...(i.links || []), newLink] }
+                })
+            })),
+
+            removeLink: (issueId, linkId) => set((state) => ({
+                issues: state.issues.map(i =>
+                    i.id === issueId
+                        ? { ...i, links: (i.links || []).filter(l => l.id !== linkId) }
+                        : i
+                )
+            })),
+
+            getLinksByIssue: (issueId) => get().issues.find(i => i.id === issueId)?.links || [],
+
+            getAllLinks: () => {
+                const result: { fromIssueId: string; link: IssueLink }[] = []
+                get().issues.forEach(i => {
+                    (i.links || []).forEach(link => {
+                        result.push({ fromIssueId: i.id, link })
+                    })
+                })
+                return result
+            },
+
+            // Attachments
+            addAttachment: (issueId, attachment) => set((state) => ({
+                issues: state.issues.map(i => {
+                    if (i.id !== issueId) return i
+                    const newAttach: IssueAttachment = {
+                        ...attachment,
+                        id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                    }
+                    return { ...i, attachments: [...(i.attachments || []), newAttach] }
+                })
+            })),
+
+            removeAttachment: (issueId, attachmentId) => set((state) => ({
+                issues: state.issues.map(i =>
+                    i.id === issueId
+                        ? { ...i, attachments: (i.attachments || []).filter(a => a.id !== attachmentId) }
+                        : i
+                )
+            })),
+
+            // Time tracking
+            addTimeLog: (issueId, minutes, note, userId) => set((state) => ({
+                issues: state.issues.map(i => {
+                    if (i.id !== issueId) return i
+                    const newLog: TimeLog = {
+                        id: `tlog-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                        minutes,
+                        note,
+                        loggedBy: userId,
+                        loggedAt: new Date().toISOString(),
+                    }
+                    const logs = [...(i.timeLogs || []), newLog]
+                    const total = logs.reduce((s, l) => s + l.minutes, 0)
+                    return { ...i, timeLogs: logs, timeSpent: total }
+                })
+            })),
+
+            removeTimeLog: (issueId, logId) => set((state) => ({
+                issues: state.issues.map(i => {
+                    if (i.id !== issueId) return i
+                    const logs = (i.timeLogs || []).filter(l => l.id !== logId)
+                    const total = logs.reduce((s, l) => s + l.minutes, 0)
+                    return { ...i, timeLogs: logs, timeSpent: total }
+                })
+            })),
+
+            // Custom fields
+            setCustomFieldValue: (issueId, fieldId, value) => set((state) => ({
+                issues: state.issues.map(i =>
+                    i.id === issueId
+                        ? { ...i, customFields: { ...(i.customFields || {}), [fieldId]: value } }
+                        : i
+                )
+            })),
+
+            // Cascade delete
+            deleteIssuesByProject: (projectId) => {
+                const state = get()
+                const toDelete = state.issues.filter(i => i.projectId === projectId)
+                set({ issues: state.issues.filter(i => i.projectId !== projectId) })
+                return toDelete.length
+            },
+
+            // Watchers
+            addWatcher: (issueId, userId) => set((state) => ({
+                issues: state.issues.map(i => {
+                    if (i.id !== issueId) return i
+                    const list = i.watchers || []
+                    if (list.includes(userId)) return i
+                    return { ...i, watchers: [...list, userId] }
+                })
+            })),
+
+            removeWatcher: (issueId, userId) => set((state) => ({
+                issues: state.issues.map(i =>
+                    i.id === issueId
+                        ? { ...i, watchers: (i.watchers || []).filter(w => w !== userId) }
+                        : i
+                )
+            })),
+
+            isWatching: (issueId, userId) => {
+                const issue = get().issues.find(i => i.id === issueId)
+                return Boolean(issue?.watchers?.includes(userId))
+            },
         }),
         {
             name: 'cubicle-issues-storage',

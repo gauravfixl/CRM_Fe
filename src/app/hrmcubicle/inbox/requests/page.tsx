@@ -292,7 +292,10 @@ const RequestsPage = () => {
                                                 exit={{ opacity: 0, scale: 0.95 }}
                                                 transition={{ delay: i * 0.03 }}
                                             >
-                                                <Card className="group border border-slate-100 shadow-sm hover:shadow-lg transition-all rounded-3xl bg-white overflow-hidden hover:border-indigo-100">
+                                                <Card
+                                                    onClick={() => { setSelectedRequest(req); setIsDetailDialogOpen(true); }}
+                                                    className="group border border-slate-100 shadow-sm hover:shadow-lg transition-all rounded-3xl bg-white overflow-hidden hover:border-indigo-100 cursor-pointer"
+                                                >
                                                     <CardContent className="p-0">
                                                         <div className="flex flex-col md:flex-row">
                                                             <div className={`p-6 md:w-56 ${styles.bg} border-r border-slate-50 flex flex-col justify-between gap-4 shrink-0`}>
@@ -330,7 +333,7 @@ const RequestsPage = () => {
 
                                                                 <p className="text-sm text-slate-500 font-medium leading-relaxed line-clamp-2 border-l-2 border-slate-100 pl-3">{req.message}</p>
 
-                                                                <div className="pt-4 flex items-center justify-between border-t border-slate-50">
+                                                                <div className="pt-4 flex items-center justify-between border-t border-slate-50" onClick={(e) => e.stopPropagation()}>
                                                                     <div className="flex items-center gap-2">
                                                                         <Select value={req.status} onValueChange={(val) => handleStatusUpdate(req.id, val as RequestStatus)}>
                                                                             <SelectTrigger className="w-[140px] h-9 rounded-xl border-slate-100 bg-slate-50 font-bold text-[11px] tracking-wider">

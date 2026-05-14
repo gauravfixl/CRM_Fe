@@ -17,12 +17,20 @@ import {
     Check,
     ChevronLeft,
     ChevronRight,
+    ArrowRight,
     Briefcase,
     Plane,
     Info,
     LayoutGrid,
     List
 } from "lucide-react";
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetDescription,
+} from "@/shared/components/ui/sheet";
 import { Card } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
@@ -45,6 +53,7 @@ const MyAttendancePage = () => {
         checkOut: '',
         reason: ''
     });
+    const [selectedDay, setSelectedDay] = useState<any | null>(null);
 
     const currentMonth = selectedDate.getMonth();
     const currentYear = selectedDate.getFullYear();
@@ -407,7 +416,21 @@ const MyAttendancePage = () => {
                                         return (
                                             <div
                                                 key={day}
-                                                className={`h-14 rounded-lg border-2 p-1.5 flex flex-col items-center justify-center transition-all ${hasAttendance || isToday ? 'hover:shadow-md cursor-pointer' : 'cursor-default'
+                                                onClick={() => {
+                                                    if (isFutureDate) return;
+                                                    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                                                    setSelectedDay({
+                                                        date: currentDate.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+                                                        dateStr,
+                                                        status: attendanceData?.status || (currentDate.getDay() === 0 || currentDate.getDay() === 6 ? 'Weekend' : 'Absent'),
+                                                        checkIn: attendanceData?.checkIn || '--',
+                                                        checkOut: attendanceData?.checkOut || '--',
+                                                        totalHours: attendanceData?.totalHours || '0.0h',
+                                                        isToday,
+                                                        isWeekend: currentDate.getDay() === 0 || currentDate.getDay() === 6,
+                                                    });
+                                                }}
+                                                className={`h-14 rounded-lg border-2 p-1.5 flex flex-col items-center justify-center transition-all ${!isFutureDate ? 'hover:shadow-md cursor-pointer' : 'cursor-default'
                                                     } ${cellStyle}`}
                                                 title={
                                                     attendanceData
@@ -482,7 +505,20 @@ const MyAttendancePage = () => {
                                             if (isFutureDate) return null;
 
                                             return (
-                                                <tr key={day} className={`group hover:bg-slate-50/50 transition-all ${isToday ? 'bg-indigo-50/30' : ''}`}>
+                                                <tr
+                                                    key={day}
+                                                    onClick={() => setSelectedDay({
+                                                        date: currentDate.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+                                                        dateStr,
+                                                        status: attendanceData?.status || status,
+                                                        checkIn: attendanceData?.checkIn || '--',
+                                                        checkOut: attendanceData?.checkOut || '--',
+                                                        totalHours: attendanceData?.totalHours || '0.0h',
+                                                        isToday,
+                                                        isWeekend,
+                                                    })}
+                                                    className={`group hover:bg-slate-50/50 transition-all cursor-pointer ${isToday ? 'bg-indigo-50/30' : ''}`}
+                                                >
                                                     <td className="px-6 py-3.5 whitespace-nowrap">
                                                         <div className="flex items-center gap-3">
                                                             <div className={`h-10 w-10 rounded-xl flex flex-col items-center justify-center font-bold border ${isToday ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-400 border-slate-200 group-hover:border-indigo-200 group-hover:text-indigo-600'}`}>
@@ -531,7 +567,11 @@ const MyAttendancePage = () => {
                                                             <Badge className="bg-white border border-indigo-100 text-indigo-700 font-black text-[10px] px-2 py-0.5 shadow-sm">
                                                                 {attendanceData?.totalHours || '0.0h'}
                                                             </Badge>
-                                                            {status === 'Late' && <AlertTriangle size={12} className="text-orange-500" title="Late Check-in Policy Applied" />}
+                                                            {status === 'Late' && (
+                                                                <span title="Late Check-in Policy Applied" className="inline-flex">
+                                                                    <AlertTriangle size={12} className="text-orange-500" />
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-3.5 text-right">
@@ -540,12 +580,12 @@ const MyAttendancePage = () => {
                                                                 variant="ghost"
                                                                 size="sm"
                                                                 className="h-8 px-4 text-[10px] font-black text-indigo-600 hover:text-white hover:bg-indigo-600 rounded-lg border border-indigo-100 transition-all uppercase tracking-widest shadow-sm"
-                                                                onClick={() => handleRegularizeRequest(dateStr)}
+                                                                onClick={(e) => { e.stopPropagation(); handleRegularizeRequest(dateStr); }}
                                                             >
                                                                 CORRECT LOG
                                                             </Button>
                                                         ) : (
-                                                            <Badge variant="ghost" className="text-slate-300 pointer-events-none">
+                                                            <Badge variant="outline" className="text-slate-300 border-transparent pointer-events-none">
                                                                 <CheckCircle2 size={14} />
                                                             </Badge>
                                                         )}

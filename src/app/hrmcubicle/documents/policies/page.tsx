@@ -299,9 +299,10 @@ const PolicyPage = () => {
                                         {filteredPolicies.map((policy) => (
                                             <TableRow
                                                 key={policy.id}
-                                                className={`group hover:bg-indigo-50/20 transition-all border-b border-slate-50 last:border-0 ${selectedPolicyIds.includes(policy.id) ? 'bg-indigo-50/30' : ''}`}
+                                                onClick={() => setSelectedPolicy(policy)}
+                                                className={`group hover:bg-indigo-50/20 transition-all border-b border-slate-50 last:border-0 cursor-pointer ${selectedPolicyIds.includes(policy.id) ? 'bg-indigo-50/30' : ''}`}
                                             >
-                                                <TableCell className="px-8 py-6 w-10">
+                                                <TableCell className="px-8 py-6 w-10" onClick={(e) => e.stopPropagation()}>
                                                     <input
                                                         type="checkbox"
                                                         className="rounded-lg border-slate-300 text-indigo-600 cursor-pointer w-4 h-4"
@@ -351,7 +352,7 @@ const PolicyPage = () => {
                                                         )}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="px-8 py-3.5 text-right">
+                                                <TableCell className="px-8 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
                                                     <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
                                                         <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-indigo-600 hover:bg-white hover:shadow-sm rounded-xl transition-all border-none" onClick={() => toast.success("Opening document viewer")}>
                                                             <Eye size={16} />

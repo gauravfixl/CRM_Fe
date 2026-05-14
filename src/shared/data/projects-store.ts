@@ -1,5 +1,11 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { useIssueStore } from './issue-store'
+import { useSprintStore } from './sprint-store'
+import { useSprintEpicStore } from './sprint-epic-store'
+import { useWorkflowStore } from './workflow-store'
+import { useComponentStore } from './component-store'
+import { useReleaseStore } from './release-store'
 
 export type ProjectStatus = "Active" | "Planned" | "On Hold" | "Completed" | "Closing"
 export type ProjectPriority = "Low" | "Medium" | "High"
@@ -84,7 +90,7 @@ export const useProjectStore = create<ProjectStore>()(
             setProjects: (nextProjects) => set(() => ({
                 projects: nextProjects
             })),
-            createProject: (projectData) => set((state) => {
+            createProject: (projectData) => {
                 const newProject: Project = {
                     id: `p-${Date.now()}`,
                     key: projectData.key || projectData.name.substring(0, 3).toUpperCase(),
@@ -100,11 +106,24 @@ export const useProjectStore = create<ProjectStore>()(
                     starred: false,
                     ...projectData
                 } as Project
-                return { projects: [newProject, ...state.projects] }
-            }),
-            updateProject: (id, updates) => set((state) => ({
-                projects: state.projects.map(p => p.id === id ? { ...p, ...updates } : p)
-            })),
+                set((state) => ({ projects: [newProject, ...state.projects] }))
+                // Fire-and-forget audit event (dynamic import to avoid circular)
+                import('./event-bridges').then(eb => eb.emitProjectCreated(newProject)).catch(() => {})
+            },
+            updateProject: (id, updates) => {
+                const prev = get().projects.find(p => p.id === id)
+                set((state) => ({
+                    projects: state.projects.map(p => p.id === id ? { ...p, ...updates } : p)
+                }))
+                if (prev) {
+                    const changes = Object.keys(updates)
+                        .filter(k => (prev as any)[k] !== (updates as any)[k])
+                        .map(k => ({ field: k, oldValue: (prev as any)[k], newValue: (updates as any)[k] }))
+                    if (changes.length > 0) {
+                        import('./event-bridges').then(eb => eb.emitProjectUpdated({ ...prev, ...updates }, changes)).catch(() => {})
+                    }
+                }
+            },
             toggleStar: (id) => set((state) => ({
                 projects: state.projects.map(p =>
                     p.id === id ? { ...p, starred: !p.starred } : p
@@ -112,9 +131,52 @@ export const useProjectStore = create<ProjectStore>()(
             })),
             getProjectById: (id) => get().projects.find(p => p.id === id),
             getProjectsByWorkspace: (workspaceId) => get().projects.filter(p => p.workspaceId === workspaceId),
-            deleteProject: (id) => set((state) => ({
-                projects: state.projects.filter(p => p.id !== id)
-            })),
+            deleteProject: (id) => {
+                const project = get().projects.find(p => p.id === id)
+                if (project) {
+                    import('./event-bridges').then(eb => eb.emitProjectDeleted(project)).catch(() => {})
+                }
+                // Cascade delete: remove all issues, sprints, epics, components, releases, workflow config
+                try {
+                    useIssueStore.getState().deleteIssuesByProject(id)
+                } catch (e) { /* store may not be initialized yet */ }
+                try {
+                    const sprintStore = useSprintStore.getState()
+                    sprintStore.sprints
+                        .filter(s => s.projectId === id)
+                        .forEach(s => {
+                            // Soft-delete active sprints, hard-delete others
+                            if (s.status !== "ACTIVE") sprintStore.deleteSprint(s.id)
+                        })
+                } catch (e) { /* ignore */ }
+                try {
+                    const epicStore = useSprintEpicStore.getState()
+                    epicStore.epics.filter(e => e.projectId === id).forEach(e => epicStore.deleteEpic(e.id))
+                    epicStore.sprints.filter(s => s.projectId === id).forEach(s => epicStore.deleteSprint(s.id))
+                } catch (e) { /* ignore */ }
+                try {
+                    const wfStore = useWorkflowStore.getState()
+                    if (wfStore.configs[id]) {
+                        const next = { ...wfStore.configs }
+                        delete next[id]
+                        wfStore.setConfig(id, undefined as any)
+                        // setConfig wraps in an object — easier to just reset directly via internal set
+                        ;(useWorkflowStore as any).setState({ configs: next })
+                    }
+                } catch (e) { /* ignore */ }
+                try {
+                    const compStore = useComponentStore.getState()
+                    compStore.components.filter(c => c.projectId === id).forEach(c => compStore.deleteComponent(c.id))
+                } catch (e) { /* ignore */ }
+                try {
+                    const relStore = useReleaseStore.getState()
+                    relStore.releases.filter(r => r.projectId === id).forEach(r => relStore.deleteRelease(r.id))
+                } catch (e) { /* ignore */ }
+
+                set((state) => ({
+                    projects: state.projects.filter(p => p.id !== id)
+                }))
+            },
             addMemberToProject: (projectId, memberId) => set((state) => ({
                 projects: state.projects.map(p =>
                     p.id === projectId && !p.memberIds.includes(memberId)

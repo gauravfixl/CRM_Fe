@@ -381,7 +381,7 @@ export default function CRMGlobalSettingsPage() {
                                             ].map(item => (
                                                 <div key={item.label} className="flex items-center justify-between p-6 bg-white dark:bg-zinc-900 rounded-[28px] border border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all">
                                                     <span className="font-black text-xs uppercase tracking-tight italic">{item.label}</span>
-                                                    <Badge variant="ghost" className="font-black uppercase text-[10px] tracking-widest text-zinc-400">{item.status}</Badge>
+                                                    <Badge variant="outline" className="font-black uppercase text-[10px] tracking-widest text-zinc-400">{item.status}</Badge>
                                                 </div>
                                             ))}
                                         </div>

@@ -331,7 +331,15 @@ const ReviewsPage = () => {
                                             exit={{ opacity: 0, x: 10 }}
                                             transition={{ delay: i * 0.05 }}
                                         >
-                                            <Card className="group border border-slate-100 shadow-sm hover:shadow-xl transition-all rounded-3xl bg-white overflow-hidden p-0">
+                                            <Card
+                                                onClick={() => {
+                                                    setActiveReview(review);
+                                                    setDetailNotes(review.notes || "");
+                                                    setDetailStatus(review.status);
+                                                    setIsDetailOpen(true);
+                                                }}
+                                                className="group border border-slate-100 shadow-sm hover:shadow-xl transition-all rounded-3xl bg-white overflow-hidden p-0 cursor-pointer"
+                                            >
                                                 <CardContent className="p-6">
                                                     <div className="flex flex-col lg:flex-row items-center gap-8">
                                                         <div className="flex items-center gap-10 shrink-0">
@@ -375,7 +383,7 @@ const ReviewsPage = () => {
                                                             )}
                                                         </div>
 
-                                                        <div className="flex lg:flex-col items-center justify-end gap-3 pt-6 lg:pt-0 shrink-0 border-t lg:border-t-0 lg:border-l border-slate-50 lg:pl-8 w-full lg:w-auto">
+                                                        <div className="flex lg:flex-col items-center justify-end gap-3 pt-6 lg:pt-0 shrink-0 border-t lg:border-t-0 lg:border-l border-slate-50 lg:pl-8 w-full lg:w-auto" onClick={(e) => e.stopPropagation()}>
                                                             <Button
                                                                 variant="secondary"
                                                                 className="bg-slate-50 hover:bg-white text-slate-600 rounded-xl h-10 px-5 border-none font-bold text-[10px] uppercase tracking-widest gap-2 shadow-sm flex-1 lg:flex-none"

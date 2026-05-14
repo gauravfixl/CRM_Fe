@@ -1,30 +1,49 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import * as React from "react"
+import { useRouter } from "next/navigation"
 import {
-    Plus, Search, RefreshCw, Download, Bell,
-    CheckCircle2, Clock, Activity,
-    Trash2, Edit,
-    Loader2, Mail, MessageSquare, Smartphone,
-    Volume2, Users, AlertCircle, X, Save
+    Bell,
+    Activity,
+    CheckCircle2,
+    Volume2,
+    Plus,
+    Search,
+    Filter,
+    RefreshCw,
+    Download,
+    MoreVertical,
+    Trash2,
+    PencilLine,
+    Eye,
+    Mail,
+    MessageSquare,
+    Smartphone,
+    AlertCircle,
+    Users,
+    Clock,
+    Sparkles,
+    Loader2,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { Button } from "@/shared/components/ui/button"
 import { Badge } from "@/shared/components/ui/badge"
 import { Input } from "@/shared/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/shared/components/ui/dialog"
 import { Label } from "@/shared/components/ui/label"
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/shared/components/ui/sheet"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu"
 import { Switch } from "@/shared/components/ui/switch"
+import { Progress } from "@/shared/components/ui/progress"
 import { toast } from "@/shared/utils/toast"
 
-type NotificationRule = {
+interface NotificationRule {
     id: string
     name: string
     trigger: string
     channel: string
     audience: string
-    priority: string
+    priority: "Critical" | "High" | "Medium" | "Low"
     enabled: boolean
     sent: number
     openRate: number
@@ -56,38 +75,41 @@ const PRIORITY_COLORS: Record<string, string> = {
 }
 
 const CHANNEL_COLORS: Record<string, string> = {
-    Email: "bg-indigo-50 text-indigo-600",
-    SMS: "bg-emerald-50 text-emerald-600",
-    "In-app": "bg-violet-50 text-violet-600",
-    Slack: "bg-amber-50 text-amber-600",
-    Push: "bg-cyan-50 text-cyan-600",
+    Email: "bg-indigo-50 text-indigo-600 border-indigo-100",
+    SMS: "bg-emerald-50 text-emerald-600 border-emerald-100",
+    "In-app": "bg-violet-50 text-violet-600 border-violet-100",
+    Slack: "bg-amber-50 text-amber-600 border-amber-100",
+    Push: "bg-cyan-50 text-cyan-600 border-cyan-100",
 }
 
 const PRIORITIES = ["Critical", "High", "Medium", "Low"]
 const CHANNELS = Object.keys(CHANNEL_ICONS)
 
+const validators = {
+    required: (v: string) => !v || !v.toString().trim() ? "This field is required" : "",
+    minLen: (n: number) => (v: string) => v && v.trim().length < n ? `Must be at least ${n} characters` : "",
+}
+
 export default function NotificationRulesPage() {
-    const [rules, setRules] = useState<NotificationRule[]>(INITIAL_RULES)
-    const [searchQuery, setSearchQuery] = useState("")
-    const [filterChannel, setFilterChannel] = useState("all")
-    const [filterPriority, setFilterPriority] = useState("all")
+    const router = useRouter()
+    const [rules, setRules] = React.useState<NotificationRule[]>(INITIAL_RULES)
+    const [search, setSearch] = React.useState("")
+    const [filterChannel, setFilterChannel] = React.useState("all")
+    const [filterPriority, setFilterPriority] = React.useState("all")
 
-    // Create
-    const [isCreateOpen, setIsCreateOpen] = useState(false)
-    const [newRule, setNewRule] = useState({ name: "", trigger: "", channel: "Email", audience: "", priority: "Medium" })
+    const [isFormOpen, setIsFormOpen] = React.useState(false)
+    const [isDetailOpen, setIsDetailOpen] = React.useState(false)
+    const [isFilterOpen, setIsFilterOpen] = React.useState(false)
+    const [editingId, setEditingId] = React.useState<string | null>(null)
+    const [selected, setSelected] = React.useState<NotificationRule | null>(null)
+    const [isSyncing, setIsSyncing] = React.useState(false)
 
-    // Edit
-    const [editTarget, setEditTarget] = useState<NotificationRule | null>(null)
-    const [isEditOpen, setIsEditOpen] = useState(false)
+    const [form, setForm] = React.useState({
+        name: "", trigger: "", channel: "Email", audience: "", priority: "Medium" as NotificationRule["priority"], enabled: true,
+    })
+    const [errors, setErrors] = React.useState<Record<string, string>>({})
 
-    // Delete
-    const [deleteTarget, setDeleteTarget] = useState<NotificationRule | null>(null)
-    const [isDeleteOpen, setIsDeleteOpen] = useState(false)
-
-    const [isSyncing, setIsSyncing] = useState(false)
-
-    // ── Dynamic Stats ────────────────────────────────────────────────────
-    const stats = useMemo(() => {
+    const stats = React.useMemo(() => {
         const active = rules.filter(r => r.enabled).length
         const totalSent = rules.reduce((a, r) => a + r.sent, 0)
         const avgOpenRate = rules.length
@@ -97,86 +119,98 @@ export default function NotificationRulesPage() {
         return { active, totalSent, avgOpenRate, channels }
     }, [rules])
 
-    // ── Filtered list ────────────────────────────────────────────────────
-    const filtered = useMemo(() => {
+    const filtered = React.useMemo(() => {
         return rules.filter(r => {
-            const matchSearch = r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                r.trigger.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                r.audience.toLowerCase().includes(searchQuery.toLowerCase())
+            const matchSearch = !search ||
+                r.name.toLowerCase().includes(search.toLowerCase()) ||
+                r.trigger.toLowerCase().includes(search.toLowerCase()) ||
+                r.audience.toLowerCase().includes(search.toLowerCase())
             const matchChannel = filterChannel === "all" || r.channel === filterChannel
             const matchPriority = filterPriority === "all" || r.priority === filterPriority
             return matchSearch && matchChannel && matchPriority
         })
-    }, [rules, searchQuery, filterChannel, filterPriority])
+    }, [rules, search, filterChannel, filterPriority])
 
-    // ── CRUD ─────────────────────────────────────────────────────────────
+    const setField = (field: string, value: any) => {
+        setForm(prev => ({ ...prev, [field]: value }))
+        if (errors[field]) setErrors(prev => { const c = { ...prev }; delete c[field]; return c })
+    }
 
-    const handleCreate = () => {
-        if (!newRule.name.trim() || !newRule.trigger.trim()) {
-            toast.error("Rule name and trigger condition are required")
-            return
+    const validate = (): boolean => {
+        const errs: Record<string, string> = {}
+        errs.name = validators.required(form.name) || validators.minLen(2)(form.name)
+        errs.trigger = validators.required(form.trigger) || validators.minLen(3)(form.trigger)
+        errs.audience = validators.required(form.audience)
+        Object.keys(errs).forEach(k => { if (!errs[k]) delete errs[k] })
+        setErrors(errs)
+        return Object.keys(errs).length === 0
+    }
+
+    const openCreate = () => {
+        setEditingId(null)
+        setForm({ name: "", trigger: "", channel: "Email", audience: "", priority: "Medium", enabled: true })
+        setErrors({})
+        setIsFormOpen(true)
+    }
+
+    const openEdit = (r: NotificationRule) => {
+        setEditingId(r.id)
+        setForm({ name: r.name, trigger: r.trigger, channel: r.channel, audience: r.audience, priority: r.priority, enabled: r.enabled })
+        setErrors({})
+        setIsFormOpen(true)
+    }
+
+    const handleSave = () => {
+        if (!validate()) { toast.error("Please correct the highlighted fields"); return }
+        if (editingId) {
+            setRules(prev => prev.map(r => r.id === editingId ? {
+                ...r,
+                name: form.name.trim(),
+                trigger: form.trigger.trim(),
+                channel: form.channel,
+                audience: form.audience.trim(),
+                priority: form.priority,
+                enabled: form.enabled,
+            } : r))
+            toast.success("Rule updated")
+        } else {
+            const r: NotificationRule = {
+                id: `NR-${String(rules.length + 1).padStart(3, "0")}`,
+                name: form.name.trim(),
+                trigger: form.trigger.trim(),
+                channel: form.channel,
+                audience: form.audience.trim() || "All",
+                priority: form.priority,
+                enabled: form.enabled,
+                sent: 0,
+                openRate: 0,
+                lastSent: "Never",
+            }
+            setRules(prev => [r, ...prev])
+            toast.success("Rule created")
         }
-        const r: NotificationRule = {
-            id: `NR-${String(rules.length + 1).padStart(3, "0")}`,
-            name: newRule.name.trim(),
-            trigger: newRule.trigger.trim(),
-            channel: newRule.channel,
-            audience: newRule.audience.trim() || "All",
-            priority: newRule.priority,
-            enabled: true,
-            sent: 0,
-            openRate: 0,
-            lastSent: "Never",
-        }
-        setRules(prev => [r, ...prev])
-        setNewRule({ name: "", trigger: "", channel: "Email", audience: "", priority: "Medium" })
-        setIsCreateOpen(false)
-        toast.success(`Notification rule "${r.name}" created successfully`)
+        setIsFormOpen(false)
     }
 
-    const handleEditOpen = (r: NotificationRule) => {
-        setEditTarget({ ...r })
-        setIsEditOpen(true)
+    const handleDelete = (id: string) => {
+        setRules(prev => prev.filter(r => r.id !== id))
+        toast.success("Rule removed")
     }
 
-    const handleEditSave = () => {
-        if (!editTarget) return
-        if (!editTarget.name.trim() || !editTarget.trigger.trim()) {
-            toast.error("Name and trigger are required")
-            return
-        }
-        setRules(prev => prev.map(r => r.id === editTarget.id ? { ...editTarget } : r))
-        setIsEditOpen(false)
-        setEditTarget(null)
-        toast.success("Notification rule updated successfully")
-    }
-
-    const handleDeleteOpen = (r: NotificationRule) => {
-        setDeleteTarget(r)
-        setIsDeleteOpen(true)
-    }
-
-    const handleDeleteConfirm = () => {
-        if (!deleteTarget) return
-        setRules(prev => prev.filter(r => r.id !== deleteTarget.id))
-        setIsDeleteOpen(false)
-        setDeleteTarget(null)
-        toast.success("Notification rule deleted successfully")
-    }
-
-    const handleToggle = (id: string, current: boolean) => {
-        setRules(prev => prev.map(r => r.id === id ? { ...r, enabled: !current } : r))
-        toast.success(current ? "Rule disabled" : "Rule enabled")
+    const handleToggle = (id: string) => {
+        const r = rules.find(r => r.id === id)
+        setRules(prev => prev.map(r => r.id === id ? { ...r, enabled: !r.enabled } : r))
+        toast.success(r?.enabled ? "Rule disabled" : "Rule enabled")
     }
 
     const handleSync = () => {
         setIsSyncing(true)
-        toast.promise(new Promise(r => setTimeout(r, 1500)), {
+        toast.promise(new Promise(r => setTimeout(r, 1200)), {
             loading: "Syncing notification rules...",
             success: "All rules synchronized",
             error: "Sync failed",
         })
-        setTimeout(() => setIsSyncing(false), 1500)
+        setTimeout(() => setIsSyncing(false), 1200)
     }
 
     const handleExport = () => {
@@ -191,259 +225,385 @@ export default function NotificationRulesPage() {
         a.download = "notification-rules.csv"
         a.click()
         URL.revokeObjectURL(url)
-        toast.success("Notification rules exported as CSV")
+        toast.success("Rules exported")
+    }
+
+    const openDetail = (r: NotificationRule) => {
+        setSelected(r)
+        setIsDetailOpen(true)
+    }
+
+    const kpiCards = [
+        { title: "Active Rules", value: String(stats.active), subtitle: `${rules.length} total configured`, icon: Bell, color: "indigo", trend: `+${stats.active}`, path: "/client-management/automation/triggers" },
+        { title: "Notifications Sent", value: stats.totalSent.toLocaleString(), subtitle: "All-time deliveries", icon: Activity, color: "emerald", trend: "+22%", path: "/client-management/automation/logs" },
+        { title: "Avg Open Rate", value: `${stats.avgOpenRate}%`, subtitle: "Engagement across channels", icon: CheckCircle2, color: "violet", trend: "+3%", path: "/client-management/analytics/overview" },
+        { title: "Channels Configured", value: String(stats.channels), subtitle: "Delivery surfaces", icon: Volume2, color: "amber", trend: `+${stats.channels}`, path: "/client-management/automation/workflows" },
+    ]
+
+    const colorMap: Record<string, { bg: string; border: string; text: string; iconBg: string }> = {
+        indigo: { bg: "bg-gradient-to-br from-indigo-50 to-indigo-100/50", border: "border-indigo-200/50", text: "text-indigo-600", iconBg: "bg-indigo-100" },
+        emerald: { bg: "bg-gradient-to-br from-emerald-50 to-emerald-100/50", border: "border-emerald-200/50", text: "text-emerald-600", iconBg: "bg-emerald-100" },
+        violet: { bg: "bg-gradient-to-br from-violet-50 to-violet-100/50", border: "border-violet-200/50", text: "text-violet-600", iconBg: "bg-violet-100" },
+        amber: { bg: "bg-gradient-to-br from-amber-50 to-amber-100/50", border: "border-amber-200/50", text: "text-amber-600", iconBg: "bg-amber-100" },
     }
 
     return (
-        <div className="px-8 py-8 space-y-8 bg-slate-50/50 min-h-screen font-outfit">
-
-            {/* ── Header ── */}
-            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-                <div>
-                    <h1 className="text-[28px] font-semibold text-slate-900 tracking-tight">
-                        Notification <span className="text-indigo-600">rules</span>
+        <div className="px-8 py-6 space-y-6 bg-slate-50 min-h-screen">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+                <div className="flex flex-col gap-1">
+                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+                        Notification <span className="text-indigo-600">Rules</span>
                     </h1>
-                    <p className="text-[15px] font-medium text-slate-500 mt-1">
-                        Define who gets notified, when, and through which channel
-                    </p>
+                    <p className="text-[14px] font-medium text-slate-500">Define who gets notified, when, and through which channel.</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <Button variant="outline" className="h-11 px-5 rounded-xl border-slate-200 bg-white font-semibold shadow-sm gap-2 text-slate-700 hover:bg-slate-50" onClick={handleSync}>
-                        {isSyncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4 text-slate-400" />}
+                <div className="flex gap-3">
+                    <Button variant="outline" className="rounded-none h-10" onClick={handleSync}>
+                        {isSyncing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
                         {isSyncing ? "Syncing" : "Sync"}
                     </Button>
-                    <Button variant="outline" className="h-11 px-5 rounded-xl border-slate-200 bg-white font-semibold shadow-sm gap-2 text-slate-700 hover:bg-slate-50" onClick={handleExport}>
-                        <Download className="w-4 h-4 text-slate-400" /> Export
+                    <Button variant="outline" className="rounded-none h-10" onClick={handleExport}>
+                        <Download className="h-4 w-4 mr-2" /> Export
                     </Button>
-                    <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                        <DialogTrigger asChild>
-                            <Button className="h-11 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-sm gap-2">
-                                <Plus className="w-4 h-4" /> New rule
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[480px] rounded-3xl border-slate-100 bg-white shadow-2xl p-8 font-outfit">
-                            <DialogHeader>
-                                <DialogTitle className="text-2xl font-semibold text-slate-900 tracking-tight">
-                                    Create <span className="text-indigo-600">notification rule</span>
-                                </DialogTitle>
-                            </DialogHeader>
-                            <div className="grid gap-5 py-6">
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-semibold text-slate-700">Rule name *</Label>
-                                    <Input value={newRule.name} onChange={(e) => setNewRule({ ...newRule, name: e.target.value })} placeholder="e.g. Welcome email on signup" className="h-11 rounded-xl bg-slate-50 border-slate-100 font-medium text-slate-900" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-semibold text-slate-700">Trigger condition *</Label>
-                                    <Input value={newRule.trigger} onChange={(e) => setNewRule({ ...newRule, trigger: e.target.value })} placeholder="e.g. New client onboarded" className="h-11 rounded-xl bg-slate-50 border-slate-100 font-medium text-slate-900" />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label className="text-sm font-semibold text-slate-700">Channel</Label>
-                                        <Select value={newRule.channel} onValueChange={(v) => setNewRule({ ...newRule, channel: v })}>
-                                            <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100 font-semibold text-slate-900 shadow-none"><SelectValue /></SelectTrigger>
-                                            <SelectContent className="rounded-xl">
-                                                {CHANNELS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-sm font-semibold text-slate-700">Priority</Label>
-                                        <Select value={newRule.priority} onValueChange={(v) => setNewRule({ ...newRule, priority: v })}>
-                                            <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100 font-semibold text-slate-900 shadow-none"><SelectValue /></SelectTrigger>
-                                            <SelectContent className="rounded-xl">
-                                                {PRIORITIES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-semibold text-slate-700">Audience</Label>
-                                    <Input value={newRule.audience} onChange={(e) => setNewRule({ ...newRule, audience: e.target.value })} placeholder="e.g. Client, Account manager, Finance team" className="h-11 rounded-xl bg-slate-50 border-slate-100 font-medium text-slate-900" />
-                                </div>
-                            </div>
-                            <DialogFooter className="gap-2">
-                                <Button variant="ghost" className="rounded-xl font-semibold" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-                                <Button className="rounded-xl bg-indigo-600 hover:bg-indigo-700 font-semibold px-8 text-white" onClick={handleCreate}>Create rule</Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
+                    <Button variant="outline" className="rounded-none h-10" onClick={() => setIsFilterOpen(true)}>
+                        <Filter className="h-4 w-4 mr-2" /> Filter
+                    </Button>
+                    <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-none h-10 px-5" onClick={openCreate}>
+                        <Plus className="h-4 w-4 mr-2" /> New Rule
+                    </Button>
                 </div>
             </div>
 
-            {/* ── Stats Cards (dynamic) ── */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                {[
-                    { label: "Active rules", value: stats.active, icon: Bell, bg: "bg-gradient-to-br from-indigo-50 to-indigo-100/50", iconBg: "bg-indigo-100", iconColor: "text-indigo-600", border: "border-indigo-100/50" },
-                    { label: "Total notifications sent", value: stats.totalSent, icon: Activity, bg: "bg-gradient-to-br from-emerald-50 to-emerald-100/50", iconBg: "bg-emerald-100", iconColor: "text-emerald-600", border: "border-emerald-100/50" },
-                    { label: "Avg open rate", value: `${stats.avgOpenRate}%`, icon: CheckCircle2, bg: "bg-gradient-to-br from-violet-50 to-violet-100/50", iconBg: "bg-violet-100", iconColor: "text-violet-600", border: "border-violet-100/50" },
-                    { label: "Channels configured", value: stats.channels, icon: Volume2, bg: "bg-gradient-to-br from-amber-50 to-amber-100/50", iconBg: "bg-amber-100", iconColor: "text-amber-600", border: "border-amber-100/50" },
-                ].map((stat, i) => (
-                    <Card key={i} className={`${stat.bg} ${stat.border} border shadow-sm hover:shadow-md transition-all rounded-3xl overflow-hidden`}>
-                        <CardContent className="p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <div className={`h-11 w-11 rounded-2xl flex items-center justify-center ${stat.iconBg}`}>
-                                    <stat.icon className={`w-5 h-5 ${stat.iconColor}`} />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {kpiCards.map((kpi, i) => {
+                    const cc = colorMap[kpi.color]
+                    const Icon = kpi.icon
+                    return (
+                        <Card key={i} className={`rounded-none cursor-pointer hover:shadow-md transition ${cc.bg} ${cc.border} border`} onClick={() => router.push(kpi.path)}>
+                            <CardContent className="p-5">
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <p className="text-xs font-semibold text-slate-500 tracking-wide mb-1">{kpi.title}</p>
+                                        <div className="flex items-baseline gap-2">
+                                            <h3 className="text-2xl font-bold text-slate-900">{kpi.value}</h3>
+                                            <span className="text-xs font-bold text-emerald-600">{kpi.trend}</span>
+                                        </div>
+                                        <p className="mt-2 text-xs text-slate-400">{kpi.subtitle}</p>
+                                    </div>
+                                    <div className={`h-10 w-10 rounded-none flex items-center justify-center ${cc.iconBg}`}>
+                                        <Icon className={`h-5 w-5 ${cc.text}`} />
+                                    </div>
                                 </div>
-                                <span className="text-[11px] font-semibold text-slate-400 bg-white/70 px-2 py-1 rounded-full border border-slate-100">{rules.length} total</span>
+                            </CardContent>
+                        </Card>
+                    )
+                })}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-6">
+                    <Card className="rounded-none">
+                        <CardHeader className="border-b border-slate-100 flex flex-row items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                                <CardTitle className="text-base font-semibold">Notification Rules</CardTitle>
+                                <Badge className="rounded-none bg-slate-100 text-slate-600">{filtered.length} Results</Badge>
                             </div>
-                            <p className="text-sm font-medium text-slate-500 mb-1">{stat.label}</p>
-                            <h3 className="text-2xl font-semibold text-slate-900 tracking-tight">{stat.value}</h3>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                <Input placeholder="Search rules..." value={search} onChange={e => setSearch(e.target.value)}
+                                    className="pl-10 rounded-none w-64 h-9" />
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <div className="divide-y divide-slate-50">
+                                {filtered.length > 0 ? filtered.map(r => {
+                                    const ChannelIcon = CHANNEL_ICONS[r.channel] || Bell
+                                    return (
+                                        <div key={r.id} className="px-6 py-4 hover:bg-slate-50/80 transition cursor-pointer group flex items-center gap-4" onClick={() => openDetail(r)}>
+                                            <div className={`h-10 w-10 rounded-none flex items-center justify-center shrink-0 border ${CHANNEL_COLORS[r.channel]}`}>
+                                                <ChannelIcon className="h-4 w-4" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <p className="text-sm font-semibold text-slate-800">{r.name}</p>
+                                                    <span className={`px-1.5 py-0.5 rounded-none text-[10px] font-semibold border ${PRIORITY_COLORS[r.priority]}`}>{r.priority}</span>
+                                                    <span className={`px-1.5 py-0.5 rounded-none text-[10px] font-semibold border ${CHANNEL_COLORS[r.channel]}`}>{r.channel}</span>
+                                                </div>
+                                                <p className="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
+                                                    <AlertCircle className="h-3 w-3" /> Trigger: {r.trigger}
+                                                </p>
+                                                <div className="flex items-center gap-4 mt-1 text-[10px] text-slate-400 font-semibold">
+                                                    <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {r.audience}</span>
+                                                    <span>{r.sent} sent</span>
+                                                    <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-emerald-500" /> {r.openRate}% open</span>
+                                                    <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {r.lastSent}</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                                <div className="flex items-center gap-2">
+                                                    <Switch checked={r.enabled} onCheckedChange={() => handleToggle(r.id)} />
+                                                    <span className="text-[10px] font-bold text-slate-500">{r.enabled ? "On" : "Off"}</span>
+                                                </div>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="rounded-none">
+                                                            <MoreVertical className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="w-44 rounded-none">
+                                                        <DropdownMenuItem className="flex items-center gap-2" onClick={() => openEdit(r)}>
+                                                            <PencilLine className="h-4 w-4" /> Edit
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem className="flex items-center gap-2" onClick={() => openDetail(r)}>
+                                                            <Eye className="h-4 w-4" /> View Details
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem className="flex items-center gap-2 text-rose-500 border-t mt-1" onClick={() => handleDelete(r.id)}>
+                                                            <Trash2 className="h-4 w-4" /> Remove
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
+                                        </div>
+                                    )
+                                }) : (
+                                    <div className="px-6 py-12 text-center text-sm text-slate-500">No notification rules match your filters.</div>
+                                )}
+                            </div>
                         </CardContent>
                     </Card>
-                ))}
-            </div>
 
-            {/* ── Filters ── */}
-            <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative flex-1 group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 group-focus-within:text-indigo-600 transition-colors" />
-                    <Input placeholder="Search rules, triggers, or audience..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-12 h-11 bg-white border-slate-200 rounded-xl text-sm font-medium" />
+                    <Card className="rounded-none">
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle className="text-base font-semibold">Channel Mix</CardTitle>
+                                <p className="text-sm text-slate-500 mt-1">Distribution of rules across channels</p>
+                            </div>
+                            <Volume2 className="h-5 w-5 text-slate-400" />
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {CHANNELS.map(ch => {
+                                const list = rules.filter(r => r.channel === ch)
+                                const progress = rules.length ? (list.length / rules.length) * 100 : 0
+                                return (
+                                    <div key={ch} className="space-y-2 cursor-pointer hover:bg-slate-50 p-2 -m-2 transition" onClick={() => setFilterChannel(ch)}>
+                                        <div className="flex justify-between items-center text-[11px] font-bold">
+                                            <span className="text-slate-700">{ch} <span className="text-slate-400 font-medium ml-2">{list.length} rules</span></span>
+                                            <span className="text-slate-900">{Math.round(progress)}%</span>
+                                        </div>
+                                        <Progress value={progress} className="h-1.5 bg-slate-50" />
+                                    </div>
+                                )
+                            })}
+                        </CardContent>
+                    </Card>
                 </div>
-                <Select value={filterChannel} onValueChange={setFilterChannel}>
-                    <SelectTrigger className="w-44 h-11 rounded-xl border-slate-200 bg-white font-semibold text-slate-700 shadow-sm">
-                        <Bell className="w-4 h-4 mr-2 text-slate-400" /><SelectValue placeholder="All channels" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                        <SelectItem value="all">All channels</SelectItem>
-                        {CHANNELS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                </Select>
-                <Select value={filterPriority} onValueChange={setFilterPriority}>
-                    <SelectTrigger className="w-44 h-11 rounded-xl border-slate-200 bg-white font-semibold text-slate-700 shadow-sm">
-                        <SelectValue placeholder="All priorities" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                        <SelectItem value="all">All priorities</SelectItem>
-                        {PRIORITIES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                    </SelectContent>
-                </Select>
+
+                <div className="space-y-6">
+                    <Card className="rounded-none">
+                        <CardHeader>
+                            <CardTitle className="text-xs font-bold text-slate-400 tracking-wider uppercase">Priority Distribution</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            {PRIORITIES.map(p => {
+                                const list = rules.filter(r => r.priority === p)
+                                return (
+                                    <div key={p} className="flex items-center justify-between cursor-pointer hover:bg-slate-50 -mx-2 px-2 py-2 rounded-none transition" onClick={() => setFilterPriority(p)}>
+                                        <div className="flex items-center gap-3">
+                                            <div className={`h-9 w-9 rounded-none flex items-center justify-center border ${PRIORITY_COLORS[p]}`}>
+                                                <AlertCircle className="h-4 w-4" />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold text-slate-800 leading-none">{p}</p>
+                                                <p className="text-[10px] text-slate-400 mt-1">{list.length} rules</p>
+                                            </div>
+                                        </div>
+                                        <span className="text-[10px] font-bold text-slate-400">{list.length}</span>
+                                    </div>
+                                )
+                            })}
+                        </CardContent>
+                    </Card>
+
+                    <Card className="rounded-none border-indigo-100 bg-indigo-50/10">
+                        <CardHeader>
+                            <CardTitle className="text-xs font-bold text-indigo-600 tracking-wider flex items-center gap-2 uppercase">
+                                <Sparkles className="h-4 w-4" /> Engagement Insights
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            <div className="p-3 bg-white border border-indigo-100 rounded-none">
+                                <p className="text-[11px] text-slate-600">
+                                    Your <span className="text-indigo-600 font-bold">{stats.active} active</span> rules drive a {stats.avgOpenRate}% avg open rate.
+                                </p>
+                            </div>
+                            <div className="p-3 bg-white border border-indigo-100 rounded-none">
+                                <p className="text-[11px] text-slate-600">
+                                    Critical priority alerts maintain 100% delivery to escalation owners.
+                                </p>
+                            </div>
+                            <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-none mt-2" onClick={() => { toast.success("Reviewing triggers"); router.push('/client-management/automation/triggers') }}>
+                                Wire up Triggers
+                            </Button>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="rounded-none">
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <CardTitle className="text-xs font-bold text-slate-400 tracking-wider uppercase">Recent Deliveries</CardTitle>
+                            <Clock className="h-4 w-4 text-indigo-400" />
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {rules.slice(0, 3).map((r, i) => (
+                                <div key={i} className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 -mx-2 px-2 py-1 transition" onClick={() => openDetail(r)}>
+                                    <div className="h-9 w-9 rounded-none bg-white border border-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500 shadow-sm">{r.id.slice(-3)}</div>
+                                    <div className="flex-1">
+                                        <p className="text-[12px] font-bold text-slate-700 leading-tight">{r.name}</p>
+                                        <p className="text-[10px] font-semibold text-slate-400 mt-0.5">{r.channel} • {r.lastSent}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
 
-            {/* ── Rules Table ── */}
-            <Card className="rounded-3xl border-0 shadow-xl shadow-slate-200/50 bg-white overflow-hidden">
-                <CardHeader className="px-8 py-6 border-b border-slate-100">
-                    <CardTitle className="text-lg font-semibold text-slate-900">
-                        Notification rules <span className="text-slate-400 font-medium text-sm ml-2">({filtered.length})</span>
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                    <div className="divide-y divide-slate-50">
-                        {filtered.map((rule) => {
-                            const ChannelIcon = CHANNEL_ICONS[rule.channel] || Bell
-                            return (
-                                <div key={rule.id} className="px-8 py-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5 hover:bg-slate-50/50 transition-colors group">
-                                    <div className="flex items-start gap-5 flex-1">
-                                        <div className={`h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 ${CHANNEL_COLORS[rule.channel] || "bg-slate-50 text-slate-400"}`}>
-                                            <ChannelIcon className="w-5 h-5" />
-                                        </div>
-                                        <div className="space-y-2 flex-1">
-                                            <div className="flex items-center gap-3 flex-wrap">
-                                                <h4 className="text-sm font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">{rule.name}</h4>
-                                                <Badge className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${PRIORITY_COLORS[rule.priority]}`}>{rule.priority}</Badge>
-                                                <Badge className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border-0 ${CHANNEL_COLORS[rule.channel]}`}>{rule.channel}</Badge>
-                                                <Badge className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border-0 ${rule.enabled ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
-                                                    {rule.enabled ? "Active" : "Disabled"}
-                                                </Badge>
-                                            </div>
-                                            <p className="text-xs font-medium text-slate-400 flex items-center gap-1.5">
-                                                <AlertCircle className="w-3 h-3" /> Trigger: {rule.trigger}
-                                            </p>
-                                            <div className="flex items-center gap-6 text-[11px] text-slate-400 font-medium">
-                                                <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {rule.audience}</span>
-                                                <span className="flex items-center gap-1"><Activity className="w-3 h-3" /> {rule.sent} sent</span>
-                                                <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-emerald-500" /> {rule.openRate}% open rate</span>
-                                                <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {rule.lastSent}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3 shrink-0">
-                                        <div className="flex items-center gap-2 border border-slate-100 rounded-xl px-3 py-2 bg-white shadow-sm">
-                                            <Switch checked={rule.enabled} onCheckedChange={() => handleToggle(rule.id, rule.enabled)} className="data-[state=checked]:bg-indigo-600 scale-90" />
-                                            <span className="text-[10px] font-semibold text-slate-400">{rule.enabled ? "Active" : "Off"}</span>
-                                        </div>
-                                        <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl" onClick={() => handleEditOpen(rule)}><Edit className="w-4 h-4" /></Button>
-                                        <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl" onClick={() => handleDeleteOpen(rule)}><Trash2 className="w-4 h-4" /></Button>
-                                    </div>
-                                </div>
-                            )
-                        })}
-                        {filtered.length === 0 && (
-                            <div className="px-8 py-16 text-center">
-                                <Bell className="w-10 h-10 text-slate-200 mx-auto mb-3" />
-                                <p className="text-slate-400 font-medium">No notification rules match the current filters.</p>
-                                <Button variant="ghost" className="mt-3 text-indigo-600 font-semibold text-sm" onClick={() => { setSearchQuery(""); setFilterChannel("all"); setFilterPriority("all") }}>Clear filters</Button>
+            {/* Form Sheet */}
+            <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <SheetContent side="right" className="sm:max-w-md w-full p-0 rounded-none flex flex-col">
+                    <SheetHeader className="p-6 border-b bg-gradient-to-br from-indigo-50 to-amber-50">
+                        <SheetTitle className="text-[18px] font-semibold text-slate-900">{editingId ? "Edit Notification Rule" : "Create Notification Rule"}</SheetTitle>
+                        <p className="text-[12px] text-slate-500">Tell the system who to notify and how.</p>
+                    </SheetHeader>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Rule Name <span className="text-rose-500">*</span></Label>
+                            <Input value={form.name} onChange={e => setField("name", e.target.value)} placeholder="e.g. Welcome email on signup" className={`h-10 rounded-none ${errors.name ? "border-rose-500" : ""}`} />
+                            {errors.name && <p className="text-[11px] text-rose-500">{errors.name}</p>}
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Trigger Condition <span className="text-rose-500">*</span></Label>
+                            <Input value={form.trigger} onChange={e => setField("trigger", e.target.value)} placeholder="e.g. New client onboarded" className={`h-10 rounded-none ${errors.trigger ? "border-rose-500" : ""}`} />
+                            {errors.trigger && <p className="text-[11px] text-rose-500">{errors.trigger}</p>}
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-[12px] font-semibold">Channel</Label>
+                                <Select value={form.channel} onValueChange={(v: any) => setField("channel", v)}>
+                                    <SelectTrigger className="h-10 rounded-none"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-none">
+                                        {CHANNELS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
                             </div>
-                        )}
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* ── Edit Dialog ── */}
-            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent className="sm:max-w-[480px] rounded-3xl border-slate-100 bg-white shadow-2xl p-8 font-outfit">
-                    <DialogHeader>
-                        <DialogTitle className="text-2xl font-semibold text-slate-900 tracking-tight">
-                            Edit <span className="text-indigo-600">notification rule</span>
-                        </DialogTitle>
-                    </DialogHeader>
-                    {editTarget && (
-                        <div className="grid gap-5 py-6">
-                            <div className="space-y-2">
-                                <Label className="text-sm font-semibold text-slate-700">Rule name *</Label>
-                                <Input value={editTarget.name} onChange={(e) => setEditTarget({ ...editTarget, name: e.target.value })} className="h-11 rounded-xl bg-slate-50 border-slate-100 font-medium text-slate-900" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-sm font-semibold text-slate-700">Trigger condition *</Label>
-                                <Input value={editTarget.trigger} onChange={(e) => setEditTarget({ ...editTarget, trigger: e.target.value })} className="h-11 rounded-xl bg-slate-50 border-slate-100 font-medium text-slate-900" />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-semibold text-slate-700">Channel</Label>
-                                    <Select value={editTarget.channel} onValueChange={(v) => setEditTarget({ ...editTarget, channel: v })}>
-                                        <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100 font-semibold text-slate-900 shadow-none"><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-xl">
-                                            {CHANNELS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-semibold text-slate-700">Priority</Label>
-                                    <Select value={editTarget.priority} onValueChange={(v) => setEditTarget({ ...editTarget, priority: v })}>
-                                        <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100 font-semibold text-slate-900 shadow-none"><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-xl">
-                                            {PRIORITIES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-sm font-semibold text-slate-700">Audience</Label>
-                                <Input value={editTarget.audience} onChange={(e) => setEditTarget({ ...editTarget, audience: e.target.value })} className="h-11 rounded-xl bg-slate-50 border-slate-100 font-medium text-slate-900" />
+                            <div className="space-y-1.5">
+                                <Label className="text-[12px] font-semibold">Priority</Label>
+                                <Select value={form.priority} onValueChange={(v: any) => setField("priority", v)}>
+                                    <SelectTrigger className="h-10 rounded-none"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-none">
+                                        {PRIORITIES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
-                    )}
-                    <DialogFooter className="gap-2">
-                        <Button variant="ghost" className="rounded-xl font-semibold gap-2" onClick={() => { setIsEditOpen(false); setEditTarget(null) }}><X className="w-4 h-4" />Cancel</Button>
-                        <Button className="rounded-xl bg-indigo-600 hover:bg-indigo-700 font-semibold px-8 text-white gap-2" onClick={handleEditSave}><Save className="w-4 h-4" />Save changes</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* ── Delete Confirm ── */}
-            <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-                <DialogContent className="sm:max-w-[400px] rounded-3xl border-slate-100 bg-white shadow-2xl p-8 font-outfit">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-semibold text-slate-900">Delete notification rule</DialogTitle>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <p className="text-sm font-medium text-slate-500">Are you sure you want to delete <span className="text-slate-900 font-semibold">"{deleteTarget?.name}"</span>? This action cannot be undone.</p>
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Audience / Recipients <span className="text-rose-500">*</span></Label>
+                            <Input value={form.audience} onChange={e => setField("audience", e.target.value)} placeholder="e.g. Account manager, Finance team" className={`h-10 rounded-none ${errors.audience ? "border-rose-500" : ""}`} />
+                            {errors.audience && <p className="text-[11px] text-rose-500">{errors.audience}</p>}
+                        </div>
+                        <div className="flex items-center gap-2 pt-1">
+                            <Switch checked={form.enabled} onCheckedChange={(v) => setField("enabled", v)} />
+                            <Label className="text-[12px] font-semibold">Enabled on creation</Label>
+                        </div>
                     </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="ghost" className="rounded-xl font-semibold" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
-                        <Button className="rounded-xl bg-rose-600 hover:bg-rose-700 font-semibold px-6 text-white gap-2" onClick={handleDeleteConfirm}><Trash2 className="w-4 h-4" />Delete</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <div className="p-5 border-t flex gap-3 bg-white">
+                        <Button variant="outline" className="flex-1 h-10 rounded-none" onClick={() => setIsFormOpen(false)}>Cancel</Button>
+                        <Button className="flex-1 h-10 bg-indigo-600 hover:bg-indigo-700 text-white rounded-none" onClick={handleSave}>
+                            {editingId ? "Save Changes" : "Create Rule"}
+                        </Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* Filter Sheet */}
+            <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <SheetContent side="right" className="sm:max-w-md w-full p-0 rounded-none flex flex-col">
+                    <SheetHeader className="p-6 border-b bg-gradient-to-br from-slate-50 to-indigo-50">
+                        <SheetTitle className="text-[18px] font-semibold">Filter Notification Rules</SheetTitle>
+                    </SheetHeader>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Channel</Label>
+                            <Select value={filterChannel} onValueChange={setFilterChannel}>
+                                <SelectTrigger className="h-10 rounded-none"><SelectValue /></SelectTrigger>
+                                <SelectContent className="rounded-none">
+                                    <SelectItem value="all">All channels</SelectItem>
+                                    {CHANNELS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Priority</Label>
+                            <Select value={filterPriority} onValueChange={setFilterPriority}>
+                                <SelectTrigger className="h-10 rounded-none"><SelectValue /></SelectTrigger>
+                                <SelectContent className="rounded-none">
+                                    <SelectItem value="all">All priorities</SelectItem>
+                                    {PRIORITIES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div className="p-5 border-t flex gap-3 bg-white">
+                        <Button variant="outline" className="flex-1 h-10 rounded-none" onClick={() => { setFilterChannel("all"); setFilterPriority("all"); toast.success("Filters reset") }}>Reset</Button>
+                        <Button className="flex-1 h-10 bg-indigo-600 hover:bg-indigo-700 rounded-none" onClick={() => { setIsFilterOpen(false); toast.success("Filters applied") }}>Apply</Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* Detail Sheet */}
+            <Sheet open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+                <SheetContent side="right" className="sm:max-w-md w-full p-0 rounded-none flex flex-col">
+                    <SheetHeader className="p-6 border-b bg-gradient-to-br from-slate-50 to-indigo-50">
+                        <SheetTitle className="text-[18px] font-semibold">Rule Details</SheetTitle>
+                    </SheetHeader>
+                    {selected && (
+                        <>
+                            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                                <div>
+                                    <p className="text-[11px] text-slate-400 uppercase tracking-wider">Rule</p>
+                                    <p className="text-lg font-semibold text-slate-900">{selected.name}</p>
+                                    <p className="text-sm text-slate-500">{selected.id}</p>
+                                </div>
+                                <div className="pt-3 border-t">
+                                    <p className="text-[11px] text-slate-400 uppercase">Trigger</p>
+                                    <p className="text-sm font-semibold text-slate-900">{selected.trigger}</p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 pt-3 border-t">
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Channel</p>
+                                        <span className={`px-2 py-0.5 rounded-none text-[11px] font-semibold border ${CHANNEL_COLORS[selected.channel]}`}>{selected.channel}</span>
+                                    </div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Priority</p>
+                                        <span className={`px-2 py-0.5 rounded-none text-[11px] font-semibold border ${PRIORITY_COLORS[selected.priority]}`}>{selected.priority}</span>
+                                    </div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Audience</p><p className="font-semibold text-slate-900">{selected.audience}</p></div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Status</p>
+                                        <Badge className={`rounded-none ${selected.enabled ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>{selected.enabled ? "Enabled" : "Disabled"}</Badge>
+                                    </div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Sent</p><p className="font-semibold text-slate-900">{selected.sent}</p></div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Open Rate</p><p className="font-semibold text-slate-900">{selected.openRate}%</p></div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Last Sent</p><p className="font-semibold text-slate-900">{selected.lastSent}</p></div>
+                                </div>
+                            </div>
+                            <div className="p-5 border-t flex gap-3 bg-white">
+                                <Button variant="outline" className="flex-1 h-10 rounded-none" onClick={() => { setIsDetailOpen(false); openEdit(selected) }}>
+                                    <PencilLine className="h-4 w-4 mr-2" />Edit
+                                </Button>
+                                <Button variant="outline" className="flex-1 h-10 rounded-none text-rose-500 border-rose-200 hover:bg-rose-50" onClick={() => { handleDelete(selected.id); setIsDetailOpen(false) }}>
+                                    <Trash2 className="h-4 w-4 mr-2" />Delete
+                                </Button>
+                            </div>
+                        </>
+                    )}
+                </SheetContent>
+            </Sheet>
         </div>
     )
 }

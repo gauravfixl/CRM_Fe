@@ -1,18 +1,22 @@
 "use client"
 
-import React, { useEffect } from "react"
+import React, { useEffect, useState } from "react"
 import GlobalFileExplorer from "@/shared/components/projectmanagement/global-file-explorer"
 import { useDocumentStore } from "@/shared/data/document-store"
 import { useProjectStore } from "@/shared/data/projects-store"
 import {
-    CloudIcon,
     HardDrive,
-    Files
+    Files,
+    Folder,
+    Upload,
+    ChevronRight,
+    Image as ImageIcon
 } from "lucide-react"
 
 export default function AssetsHubPage() {
-    const [mounted, setMounted] = React.useState(false)
+    const [mounted, setMounted] = useState(false)
     const { documents } = useDocumentStore()
+    const { projects } = useProjectStore()
 
     useEffect(() => {
         setMounted(true)
@@ -20,8 +24,18 @@ export default function AssetsHubPage() {
         useProjectStore.persist.rehydrate()
     }, [])
 
+    const count = mounted ? documents.length : 0
+    const imageCount = mounted ? documents.filter((d: any) => d.type?.toLowerCase().includes('image') || d.name?.match(/\.(png|jpg|jpeg|gif|svg|webp)$/i)).length : 0
+
+    const kpis = [
+        { label: "Total Files", value: count, icon: <Files size={18} />, color: "text-indigo-800", bg: "bg-indigo-100" },
+        { label: "Projects", value: projects.length, icon: <Folder size={18} />, color: "text-emerald-800", bg: "bg-emerald-100" },
+        { label: "Images", value: imageCount, icon: <ImageIcon size={18} />, color: "text-amber-800", bg: "bg-amber-100" },
+        { label: "Storage", value: "1.2 GB", icon: <HardDrive size={18} />, color: "text-rose-800", bg: "bg-rose-100" },
+    ]
+
     return (
-        <div className="w-full h-full p-6 space-y-6 font-sans">
+        <div className="w-full h-full p-6 space-y-5 font-sans">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                 <div className="space-y-1">
@@ -30,29 +44,31 @@ export default function AssetsHubPage() {
                         Central repository for workspace artifacts and files.
                     </p>
                 </div>
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-3 px-4 py-2 bg-white border border-slate-200 rounded-lg shadow-sm">
-                        <div className="h-8 w-8 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600">
-                            <Files size={16} />
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Count</p>
-                            <p className="text-sm font-bold text-slate-900">{mounted ? documents.length : 0} Files</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-3 px-4 py-2 bg-white border border-slate-200 rounded-lg shadow-sm">
-                        <div className="h-8 w-8 bg-slate-50 rounded-lg flex items-center justify-center text-slate-500">
-                            <HardDrive size={16} />
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Storage</p>
-                            <p className="text-sm font-bold text-slate-900">1.2 GB</p>
-                        </div>
-                    </div>
-                </div>
             </div>
 
-            {/* Main Explorer Component */}
+            {/* KPI cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {kpis.map((stat, i) => (
+                    <div
+                        key={i}
+                        className={`block border shadow-sm overflow-hidden hover:shadow-md transition-all h-[75px] rounded-none ${stat.bg}`}
+                    >
+                        <div className="p-4 flex items-center justify-between w-full h-full">
+                            <div className="flex items-center gap-4">
+                                <div className={`h-10 w-10 bg-white ${stat.color} flex items-center justify-center shrink-0 rounded-none`}>
+                                    {stat.icon}
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-bold text-slate-700 uppercase tracking-tight leading-none">{stat.label}</span>
+                                    <span className="text-xl font-black text-slate-900 leading-none mt-1.5">{stat.value}</span>
+                                </div>
+                            </div>
+                            <ChevronRight size={16} className="text-slate-500/60" />
+                        </div>
+                    </div>
+                ))}
+            </div>
+
             <GlobalFileExplorer />
         </div>
     )

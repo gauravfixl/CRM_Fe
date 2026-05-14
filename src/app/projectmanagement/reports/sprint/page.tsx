@@ -1,162 +1,284 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import {
-    TrendingUp,
     Zap,
     Target,
     Activity,
     LineChart,
-    ChevronDown,
     Calendar,
     Download,
     BarChart3,
     ArrowUpRight,
-    ArrowDownRight
+    ArrowDownRight,
+    PlayCircle
 } from "lucide-react"
-import { Button } from "@/shared/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card"
-import { Badge } from "@/shared/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { useSprintStore } from "@/shared/data/sprint-store"
+import { useIssueStore } from "@/shared/data/issue-store"
+import { useProjectStore } from "@/shared/data/projects-store"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 
-/**
- * 📊 Sprint & Progress Report
- * Focuses on velocity, burn-down, and cycle time.
- */
 export default function SprintProgressReport() {
     const [mounted, setMounted] = useState(false)
+    const { sprints } = useSprintStore()
+    const { issues } = useIssueStore()
+    const { projects } = useProjectStore()
+    const [projectFilter, setProjectFilter] = useState<string>("all")
 
     useEffect(() => {
         setMounted(true)
+        useSprintStore.persist.rehydrate()
+        useIssueStore.persist.rehydrate()
+        useProjectStore.persist.rehydrate()
     }, [])
+
+    const filteredSprints = useMemo(() => {
+        const list = sprints.filter(s => !s.isDeleted)
+        if (projectFilter === "all") return list
+        return list.filter(s => s.projectId === projectFilter)
+    }, [sprints, projectFilter])
+
+    const activeSprint = useMemo(() => filteredSprints.find(s => s.status === "ACTIVE"), [filteredSprints])
+    const completedSprints = useMemo(() =>
+        filteredSprints.filter(s => s.status === "COMPLETED").sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+        [filteredSprints]
+    )
+
+    // Compute real metrics from issues + sprints
+    const sprintMetrics = useMemo(() => {
+        const sprintIssues = (sprintId: string) => issues.filter(i => i.sprintId === sprintId)
+        const sumPoints = (list: typeof issues) => list.reduce((s, i) => s + (i.storyPoints || 0), 0)
+
+        const avgVelocity = completedSprints.length > 0
+            ? Math.round(completedSprints.reduce((s, sp) => s + sumPoints(sprintIssues(sp.id).filter(i => i.status === "DONE")), 0) / completedSprints.length)
+            : 0
+
+        const allCompletion = filteredSprints.map(sp => {
+            const issuesInSprint = sprintIssues(sp.id)
+            if (issuesInSprint.length === 0) return 0
+            return issuesInSprint.filter(i => i.status === "DONE").length / issuesInSprint.length
+        })
+        const completionRate = allCompletion.length > 0
+            ? Math.round((allCompletion.reduce((s, v) => s + v, 0) / allCompletion.length) * 100)
+            : 0
+
+        // Scope creep: issues added to sprint after start (frontend approximation: issues without storyPoints estimate)
+        const scopeCreep = sprintIssues(activeSprint?.id || "").filter(i => !i.storyPoints || i.storyPoints === 0).length
+
+        // Cycle time: avg days from createdAt to updatedAt for DONE issues
+        const doneIssues = issues.filter(i => i.status === "DONE" && i.updatedAt)
+        const avgCycleDays = doneIssues.length > 0
+            ? doneIssues.reduce((s, i) => {
+                const days = (new Date(i.updatedAt!).getTime() - new Date(i.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+                return s + days
+            }, 0) / doneIssues.length
+            : 0
+
+        return {
+            avgVelocity,
+            completionRate,
+            scopeCreep,
+            avgCycleDays: Math.round(avgCycleDays * 10) / 10,
+        }
+    }, [filteredSprints, completedSprints, activeSprint, issues])
+
+    // Active sprint burndown: days vs remaining points
+    const burndown = useMemo(() => {
+        if (!activeSprint || !activeSprint.startDate || !activeSprint.endDate) return []
+        const start = new Date(activeSprint.startDate)
+        const end = new Date(activeSprint.endDate)
+        const totalDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)))
+        const sprintIssues = issues.filter(i => i.sprintId === activeSprint.id)
+        const totalPoints = sprintIssues.reduce((s, i) => s + (i.storyPoints || 0), 0)
+        const today = new Date()
+
+        return Array.from({ length: totalDays + 1 }, (_, dayIdx) => {
+            const date = new Date(start)
+            date.setDate(date.getDate() + dayIdx)
+            const ideal = Math.max(0, totalPoints * (1 - dayIdx / totalDays))
+
+            const isPast = date <= today
+            const completedByDay = isPast
+                ? sprintIssues
+                    .filter(i => i.status === "DONE" && i.updatedAt && new Date(i.updatedAt) <= date)
+                    .reduce((s, i) => s + (i.storyPoints || 0), 0)
+                : null
+            const remaining = completedByDay !== null ? Math.max(0, totalPoints - completedByDay) : null
+
+            return { day: dayIdx, date, ideal: Math.round(ideal), remaining }
+        })
+    }, [activeSprint, issues])
+
+    const maxBurnPoints = useMemo(() => {
+        const vals = burndown.map(b => Math.max(b.ideal, b.remaining ?? 0))
+        return Math.max(1, ...vals)
+    }, [burndown])
+
+    // Velocity history: last 6 completed sprints
+    const velocityHistory = useMemo(() => {
+        return completedSprints.slice(0, 6).reverse().map(sp => {
+            const sprintIssues = issues.filter(i => i.sprintId === sp.id)
+            const completed = sprintIssues.filter(i => i.status === "DONE").reduce((s, i) => s + (i.storyPoints || 0), 0)
+            const planned = sprintIssues.reduce((s, i) => s + (i.storyPoints || 0), 0)
+            return { sprint: sp.name, completed, planned, ratio: planned > 0 ? Math.round((completed / planned) * 100) : 0 }
+        })
+    }, [completedSprints, issues])
 
     if (!mounted) return null
 
+    const handleExport = () => {
+        const data = {
+            sprints: filteredSprints,
+            metrics: sprintMetrics,
+            burndown,
+            velocityHistory,
+        }
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = `sprint-report-${Date.now()}.json`
+        a.click()
+        URL.revokeObjectURL(url)
+    }
+
     return (
-        <div className="w-full h-full p-6 space-y-8 font-outfit" style={{ zoom: "80%" }}>
-            {/* Header Area */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-100 pb-6">
+        <div className="w-full h-full p-6 space-y-5 font-sans">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                 <div className="space-y-1">
                     <div className="flex items-center gap-2 text-indigo-600 font-bold text-xs uppercase tracking-widest">
                         <LineChart size={14} />
-                        Performance Analytics
+                        Sprint Analytics
                     </div>
-                    <h1 className="text-xl font-bold text-slate-900 tracking-tight">Sprint & Progress Report</h1>
-                    <p className="text-sm text-slate-500 font-medium italic">
-                        Real-time visualization of sprint velocity and development throughput.
+                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Sprint & Progress Report</h1>
+                    <p className="text-sm text-slate-500 font-medium">
+                        Real-time visualization of sprint velocity and throughput.
                     </p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <Button variant="outline" size="sm" className="h-10 border-slate-200 text-slate-600 font-bold gap-2">
-                        <Calendar size={16} />
-                        Active Sprint
-                        <ChevronDown size={14} className="text-slate-400" />
-                    </Button>
-                    <Button size="sm" className="h-10 bg-indigo-600 hover:bg-indigo-700 text-white font-bold gap-2 shadow-lg shadow-indigo-100 transition-all hover:scale-105">
-                        <Download size={16} />
-                        Export Insights
+                <div className="flex items-center gap-2">
+                    <Select value={projectFilter} onValueChange={setProjectFilter}>
+                        <SelectTrigger className="h-9 w-44 text-xs rounded-none">
+                            <SelectValue placeholder="All projects" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All projects</SelectItem>
+                            {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                    <Button onClick={handleExport} className="h-9 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold gap-2 rounded-none">
+                        <Download size={14} /> Export
                     </Button>
                 </div>
             </div>
 
-            {/* Core Metrics Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* KPI cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                    { title: "Avg. Velocity", value: "48 pts", trend: "+12%", up: true, icon: <Zap />, color: "text-indigo-600", bg: "bg-indigo-50/50" },
-                    { title: "Completion Rate", value: "94.2%", trend: "+2.4%", up: true, icon: <Target />, color: "text-emerald-600", bg: "bg-emerald-50/50" },
-                    { title: "Scope Creep", value: "8 pts", trend: "-5%", up: false, icon: <Activity />, color: "text-amber-600", bg: "bg-amber-50/50" },
-                    { title: "Cycle Time", value: "3.4d", trend: "+0.2d", up: false, icon: <BarChart3 />, color: "text-rose-600", bg: "bg-rose-50/50" }
-                ].map((metric, i) => (
-                    <Card key={metric.title} className={`border border-slate-100 shadow-sm ${metric.bg} overflow-hidden group`}>
-                        <CardContent className="p-5 flex flex-col gap-3">
-                            <div className="flex items-center justify-between">
-                                <div className={`h-10 w-10 bg-white shadow-sm border border-slate-100 ${metric.color} rounded-xl flex items-center justify-center transition-transform group-hover:scale-110`}>
-                                    {metric.icon}
+                    { title: "Avg. Velocity", value: `${sprintMetrics.avgVelocity} pts`, icon: <Zap size={18} />, color: "text-indigo-800", bg: "bg-indigo-100" },
+                    { title: "Completion Rate", value: `${sprintMetrics.completionRate}%`, icon: <Target size={18} />, color: "text-emerald-800", bg: "bg-emerald-100" },
+                    { title: "Active Sprint Tasks", value: activeSprint ? issues.filter(i => i.sprintId === activeSprint.id).length : 0, icon: <Activity size={18} />, color: "text-amber-800", bg: "bg-amber-100" },
+                    { title: "Cycle Time (days)", value: `${sprintMetrics.avgCycleDays}d`, icon: <BarChart3 size={18} />, color: "text-rose-800", bg: "bg-rose-100" }
+                ].map((stat, i) => (
+                    <div key={i} className={`block border shadow-sm h-[75px] rounded-none ${stat.bg}`}>
+                        <div className="p-4 flex items-center justify-between w-full h-full">
+                            <div className="flex items-center gap-4">
+                                <div className={`h-10 w-10 bg-white ${stat.color} flex items-center justify-center shrink-0 rounded-none`}>
+                                    {stat.icon}
                                 </div>
-                                <div className={`flex items-center gap-1 text-[11px] font-bold ${metric.up ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                    {metric.trend}
-                                    {metric.up ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-bold text-slate-700 uppercase tracking-tight leading-none">{stat.title}</span>
+                                    <span className="text-xl font-black text-slate-900 leading-none mt-1.5">{stat.value}</span>
                                 </div>
                             </div>
-                            <div>
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">{metric.title}</p>
-                                <h3 className="text-xl font-bold text-slate-900 tracking-tight">{metric.value}</h3>
-                            </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Burn-down Visualization */}
-                <Card className="lg:col-span-2 border-slate-100 shadow-sm rounded-3xl overflow-hidden bg-white">
-                    <CardHeader className="bg-slate-50/50 border-b border-slate-50 px-8 py-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle className="text-base font-bold text-slate-800 tracking-tight">Active Burn-down</CardTitle>
-                                <CardDescription className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Sprint-014: Enterprise Core Navigation</CardDescription>
-                            </div>
-                            <Badge className="bg-emerald-50 text-emerald-600 border-none font-black text-[10px]">On Track</Badge>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                {/* Burn-down */}
+                <div className="lg:col-span-2 border border-slate-200 bg-white shadow-sm rounded-none">
+                    <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+                        <div>
+                            <h3 className="text-sm font-bold text-slate-800">Burndown Chart</h3>
+                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide mt-0.5">{activeSprint?.name || "No active sprint"}</p>
                         </div>
-                    </CardHeader>
-                    <CardContent className="p-8">
-                        <div className="relative h-[300px] w-full flex items-end gap-2">
-                            {/* Mock Grid Lines */}
-                            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20">
-                                {[1, 2, 3, 4, 5].map(i => <div key={i} className="w-full border-t border-slate-300 border-dashed" />)}
+                        {activeSprint && <Badge className="bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded-none">ACTIVE</Badge>}
+                    </div>
+                    <div className="p-6">
+                        {!activeSprint ? (
+                            <div className="py-12 text-center text-slate-400">
+                                <PlayCircle size={32} className="mx-auto mb-2 text-slate-300" />
+                                <p className="text-sm font-medium">No active sprint to chart.</p>
                             </div>
-
-                            {/* Visual Representation of Burn-down */}
-                            {Array.from({ length: 14 }).map((_, i) => (
-                                <div key={i} className="flex-1 flex flex-col justify-end gap-1 group cursor-pointer h-full relative z-10">
-                                    <div
-                                        className="w-full bg-slate-100 group-hover:bg-indigo-600 transition-all rounded-t-lg relative"
-                                        style={{ height: `${Math.max(10, 100 - (i * 7) + Math.sin(i) * 10)}%` }}
-                                    >
-                                        <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
-                                            {Math.round(100 - (i * 7) + Math.sin(i) * 10)} pts
+                        ) : burndown.length === 0 ? (
+                            <p className="text-xs text-slate-400 text-center py-8">Sprint has no start/end dates.</p>
+                        ) : (
+                            <div className="relative h-[260px] w-full flex items-end gap-1">
+                                {burndown.map((b, i) => {
+                                    const idealH = (b.ideal / maxBurnPoints) * 100
+                                    const remH = b.remaining !== null ? (b.remaining / maxBurnPoints) * 100 : null
+                                    return (
+                                        <div key={i} className="flex-1 flex flex-col justify-end gap-1 group cursor-pointer h-full relative">
+                                            {/* Ideal line dot */}
+                                            <div className="absolute w-full" style={{ bottom: `${idealH}%` }}>
+                                                <div className="h-px w-full bg-slate-300 border-dashed" />
+                                            </div>
+                                            {remH !== null && (
+                                                <div
+                                                    className="w-full bg-indigo-600 group-hover:bg-indigo-700 transition-all relative"
+                                                    style={{ height: `${remH}%`, minHeight: '2px' }}
+                                                >
+                                                    <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded-none opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                                        Day {b.day}: {b.remaining} pts
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <span className="text-[9px] font-bold text-slate-400 text-center uppercase tracking-tighter">{b.day}</span>
                                         </div>
-                                    </div>
-                                    <span className="text-[9px] font-bold text-slate-400 text-center uppercase tracking-tighter">Day {i + 1}</span>
-                                </div>
-                            ))}
-
-                            {/* Ideal Burn Line (Visual Trick) */}
-                            <div className="absolute inset-x-8 top-0 bottom-10 pointer-events-none border-b-2 border-slate-200 border-dashed transform rotate-[13deg] origin-top-left opacity-30" />
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Velocity History */}
-                <Card className="border-slate-100 shadow-sm rounded-3xl overflow-hidden bg-white">
-                    <CardHeader className="bg-slate-50/50 border-b border-slate-50 px-8 py-6">
-                        <CardTitle className="text-[14px] font-black text-slate-800 uppercase tracking-widest">Velocity History</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-8 space-y-6">
-                        {[
-                            { sprint: "Sprint 13", points: "42 pts", target: "45 pts", status: "80%" },
-                            { sprint: "Sprint 12", points: "45 pts", target: "45 pts", status: "100%" },
-                            { sprint: "Sprint 11", points: "38 pts", target: "40 pts", status: "95%" },
-                            { sprint: "Sprint 10", points: "52 pts", target: "45 pts", status: "115%" },
-                        ].map((s, i) => (
-                            <div key={i} className="space-y-2">
-                                <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-widest">
-                                    <span className="text-slate-500">{s.sprint}</span>
-                                    <span className="text-slate-800">{s.points} / {s.target}</span>
-                                </div>
-                                <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
-                                    <div
-                                        className={`h-full ${parseInt(s.status) >= 100 ? 'bg-emerald-500' : 'bg-indigo-600'} rounded-full transition-all duration-1000`}
-                                        style={{
-                                            width: mounted ? (parseInt(s.status) > 100 ? "100%" : s.status) : "0%",
-                                            transitionDelay: `${i * 100}ms`
-                                        }}
-                                    />
-                                </div>
+                                    )
+                                })}
                             </div>
-                        ))}
-                        <Button variant="ghost" className="w-full text-indigo-600 font-bold text-xs uppercase tracking-widest hover:bg-indigo-50">View Older Sprints</Button>
-                    </CardContent>
-                </Card>
+                        )}
+                    </div>
+                </div>
+
+                {/* Velocity history */}
+                <div className="border border-slate-200 bg-white shadow-sm rounded-none">
+                    <div className="bg-slate-50 border-b border-slate-200 px-6 py-4">
+                        <h3 className="text-sm font-bold text-slate-800">Velocity History</h3>
+                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide mt-0.5">Last {velocityHistory.length} sprints</p>
+                    </div>
+                    <div className="p-6 space-y-5">
+                        {velocityHistory.length === 0 ? (
+                            <p className="text-xs text-slate-400 text-center py-8">No completed sprints.</p>
+                        ) : (
+                            velocityHistory.map((v, i) => (
+                                <div key={i} className="space-y-1.5">
+                                    <div className="flex items-center justify-between text-[11px] font-bold">
+                                        <span className="text-slate-600 truncate">{v.sprint}</span>
+                                        <span className="text-slate-800">{v.completed}/{v.planned} pts</span>
+                                    </div>
+                                    <div className="h-2 w-full bg-slate-100 rounded-none">
+                                        <div
+                                            className={`h-full ${v.ratio >= 100 ? 'bg-emerald-500' : v.ratio >= 80 ? 'bg-indigo-500' : 'bg-amber-500'} transition-all duration-500`}
+                                            style={{ width: `${Math.min(v.ratio, 100)}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     )
