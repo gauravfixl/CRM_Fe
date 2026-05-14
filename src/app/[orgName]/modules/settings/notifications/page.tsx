@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { useRouter, useParams } from "next/navigation";
 import {
     Bell,
     Plus,
@@ -77,6 +78,10 @@ type FormErrors = {
 };
 
 export default function NotificationRulesPage() {
+    const router = useRouter();
+    const params = useParams();
+    const orgName = (params?.orgName as string) || "";
+
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -300,29 +305,45 @@ export default function NotificationRulesPage() {
 
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
+                <button
+                    type="button"
+                    onClick={() => setStatusFilter("Active")}
+                    className={`bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl cursor-pointer ${statusFilter === "Active" ? "ring-2 ring-primary/60 ring-offset-2" : ""}`}
+                >
                     <p className="text-white text-xs opacity-80">Active Rules</p>
                     <p className="text-white text-xl font-semibold mt-1">{notificationRules.filter(r => r.status === "Active").length}</p>
                     <p className="text-white text-[10px] mt-1 opacity-80">Currently running</p>
-                </div>
+                </button>
 
-                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/usage-analytics`)}
+                    className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer"
+                >
                     <p className="text-gray-600 text-xs">Notifications Sent</p>
                     <p className="text-xl font-semibold text-gray-900 mt-1">12,450</p>
                     <p className="text-primary text-[10px] mt-1">Last 30 days</p>
-                </div>
+                </button>
 
-                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/system-health`)}
+                    className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer"
+                >
                     <p className="text-gray-600 text-xs">Delivery Rate</p>
                     <p className="text-xl font-semibold text-gray-900 mt-1">99.2%</p>
                     <p className="text-green-600 text-[10px] mt-1">Excellent</p>
-                </div>
+                </button>
 
-                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/usage-analytics`)}
+                    className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer"
+                >
                     <p className="text-gray-600 text-xs">Open Rate</p>
                     <p className="text-xl font-semibold text-gray-900 mt-1">68.5%</p>
                     <p className="text-primary text-[10px] mt-1">Above average</p>
-                </div>
+                </button>
             </div>
 
             {/* Rules List */}

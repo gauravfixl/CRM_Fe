@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
 import {
     HardDrive,
     Download,
@@ -45,6 +46,10 @@ interface BackupItem {
 }
 
 export default function BackupRestorePage() {
+    const router = useRouter();
+    const params = useParams();
+    const orgName = (params?.orgName as string) || "";
+
     const [showBackupModal, setShowBackupModal] = useState(false);
     const [showRestoreModal, setShowRestoreModal] = useState(false);
     const [backing, setBacking] = useState(false);
@@ -163,29 +168,45 @@ export default function BackupRestorePage() {
 
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-gradient-to-r from-primary/70 to-primary text-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/audit-logs`)}
+                    className="bg-gradient-to-r from-primary/70 to-primary text-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 text-left cursor-pointer"
+                >
                     <p className="text-xs font-semibold text-white">Total Backups</p>
                     <h2 className="text-xl font-semibold text-white">{backups.length}</h2>
                     <p className="text-[10px] mt-1 opacity-80">Last 30 days</p>
-                </div>
+                </button>
 
-                <div className="border bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <button
+                    type="button"
+                    onClick={() => setShowBackupModal(true)}
+                    className="border bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 text-left cursor-pointer"
+                >
                     <p className="text-xs text-gray-500">Latest Backup</p>
                     <h3 className="text-xl font-semibold text-gray-900">2 hours ago</h3>
                     <p className="text-[10px] text-green-600 mt-1">Successful</p>
-                </div>
+                </button>
 
-                <div className="border bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/system-health`)}
+                    className="border bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 text-left cursor-pointer"
+                >
                     <p className="text-xs text-gray-500">Total Storage</p>
                     <h3 className="text-xl font-semibold text-gray-900">8.6 GB</h3>
                     <p className="text-[10px] text-blue-600 mt-1">Across all backups</p>
-                </div>
+                </button>
 
-                <div className="border bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/usage-analytics`)}
+                    className="border bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 text-left cursor-pointer"
+                >
                     <p className="text-xs text-gray-500">Success Rate</p>
                     <h3 className="text-xl font-semibold text-gray-900">100%</h3>
                     <p className="text-[10px] text-green-600 mt-1">All backups completed</p>
-                </div>
+                </button>
             </div>
 
             {/* Backup Schedule */}

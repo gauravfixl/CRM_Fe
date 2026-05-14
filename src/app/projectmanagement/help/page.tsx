@@ -41,7 +41,7 @@ export default function HelpHubPage() {
             <div className="flex flex-col items-center text-center space-y-6 pb-12 border-b border-slate-200">
                 <div className="space-y-3">
                     <div className="flex items-center justify-center gap-3">
-                        <div className="h-9 w-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
+                        <div className="h-9 w-9 bg-indigo-600 rounded-none flex items-center justify-center text-white shadow-lg shadow-indigo-100">
                             <HelpCircle size={18} className="fill-white" />
                         </div>
                         <h4 className="text-[12px] font-bold text-indigo-600">Resource Center</h4>
@@ -51,14 +51,14 @@ export default function HelpHubPage() {
                     </h1>
                 </div>
 
-                <div className="relative w-full max-w-xl bg-white p-1.5 rounded-[24px] border-2 border-slate-100 shadow-xl shadow-indigo-50/50">
+                <div className="relative w-full max-w-xl bg-white p-1.5 rounded-none border-2 border-slate-100 shadow-xl shadow-indigo-50/50">
                     <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
                     <input
                         placeholder="Search for documentation, guides, or support tickets..."
                         className="w-full h-11 pl-14 pr-8 bg-transparent outline-none text-sm font-semibold text-slate-700 placeholder:text-slate-400"
                     />
                     <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                        <Button className="h-8 px-5 bg-slate-900 text-white rounded-lg font-bold text-[11px] hover:bg-indigo-600 transition-colors">Search</Button>
+                        <Button className="h-8 px-5 bg-slate-900 text-white rounded-none font-bold text-[11px] hover:bg-indigo-600 transition-colors">Search</Button>
                     </div>
                 </div>
             </div>
@@ -66,16 +66,16 @@ export default function HelpHubPage() {
             {/* Quick Link Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {resources.map((res, i) => (
-                    <Card key={i} className="group border border-slate-200 hover:border-indigo-300 hover:shadow-xl hover:shadow-indigo-50/50 transition-all duration-500 rounded-3xl overflow-hidden bg-white">
+                    <Card key={i} className="group border border-slate-200 hover:border-indigo-300 hover:shadow-xl hover:shadow-indigo-50/50 transition-all duration-500 rounded-none overflow-hidden bg-white">
                         <CardContent className="p-6 space-y-4">
-                            <div className={`h-11 w-11 ${res.bg} ${res.color} rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform`}>
+                            <div className={`h-11 w-11 ${res.bg} ${res.color} rounded-none flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform`}>
                                 {res.icon}
                             </div>
                             <div className="space-y-1.5">
                                 <h4 className="text-[15px] font-bold text-slate-800 group-hover:text-indigo-600 transition-colors leading-none">{res.title}</h4>
                                 <p className="text-[12px] font-medium text-slate-500 leading-relaxed">{res.desc}</p>
                             </div>
-                            <Button variant="ghost" className="w-full h-8 border border-slate-100 rounded-lg hover:bg-slate-100 font-bold text-[11px] text-slate-600 gap-2">
+                            <Button variant="ghost" className="w-full h-8 border border-slate-100 rounded-none hover:bg-slate-100 font-bold text-[11px] text-slate-600 gap-2">
                                 Explore <ExternalLink size={12} />
                             </Button>
                         </CardContent>
@@ -85,10 +85,10 @@ export default function HelpHubPage() {
 
             {/* Support Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-12">
-                <div className="bg-indigo-600 rounded-[32px] p-8 text-white space-y-6 relative overflow-hidden">
+                <div className="bg-indigo-600 rounded-none p-8 text-white space-y-6 relative overflow-hidden">
                     <div className="absolute -bottom-10 -right-10 h-64 w-64 bg-white/10 rounded-full blur-3xl" />
                     <div className="space-y-3">
-                        <div className="h-12 w-12 bg-white/10 rounded-xl flex items-center justify-center text-white">
+                        <div className="h-12 w-12 bg-white/10 rounded-none flex items-center justify-center text-white">
                             <LifeBuoy size={28} />
                         </div>
                         <h2 className="text-2xl font-bold leading-none">
@@ -98,14 +98,14 @@ export default function HelpHubPage() {
                             Our enterprise support engineers are available 24/7 to assist with critical infrastructure issues.
                         </p>
                     </div>
-                    <Button className="h-10 px-8 bg-white text-indigo-600 hover:bg-slate-50 rounded-xl font-bold text-[12px] shadow-lg shadow-indigo-900/20">
+                    <Button className="h-10 px-8 bg-white text-indigo-600 hover:bg-slate-50 rounded-none font-bold text-[12px] shadow-lg shadow-indigo-900/20">
                         Start Live Chat
                     </Button>
                 </div>
 
-                <div className="bg-slate-900 rounded-[32px] p-8 text-white space-y-6 relative overflow-hidden">
+                <div className="bg-slate-900 rounded-none p-8 text-white space-y-6 relative overflow-hidden">
                     <div className="space-y-3">
-                        <div className="h-12 w-12 bg-white/10 rounded-xl flex items-center justify-center">
+                        <div className="h-12 w-12 bg-white/10 rounded-none flex items-center justify-center">
                             <Mail size={28} className="text-amber-400" />
                         </div>
                         <h2 className="text-2xl font-bold leading-none">
@@ -116,7 +116,7 @@ export default function HelpHubPage() {
                         </p>
                     </div>
                     <div className="flex items-center gap-4">
-                        <Button className="h-10 px-8 bg-slate-800 text-white hover:bg-slate-700 rounded-xl font-bold text-[12px] border border-slate-700">
+                        <Button className="h-10 px-8 bg-slate-800 text-white hover:bg-slate-700 rounded-none font-bold text-[12px] border border-slate-700">
                             Send Feedback
                         </Button>
                         <Button variant="ghost" className="text-white hover:text-white/80 font-bold text-[12px] group">
@@ -141,7 +141,7 @@ export default function HelpHubPage() {
                         "Integrating with Slack and Microsoft Teams",
                         "Understanding velocity and burnup metrics"
                     ].map((topic, i) => (
-                        <div key={i} className="p-4 bg-white border border-slate-100 rounded-2xl flex items-center justify-between group hover:border-indigo-100 transition-all cursor-pointer">
+                        <div key={i} className="p-4 bg-white border border-slate-100 rounded-none flex items-center justify-between group hover:border-indigo-100 transition-all cursor-pointer">
                             <span className="text-[13.5px] font-medium text-slate-700 group-hover:text-indigo-600 transition-colors">
                                 {topic}
                             </span>

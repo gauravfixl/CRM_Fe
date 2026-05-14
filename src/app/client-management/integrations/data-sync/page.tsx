@@ -1,266 +1,538 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import * as React from "react"
+import { useRouter } from "next/navigation"
 import {
     Plus, Search, RefreshCw, Download, ArrowLeftRight,
-    Clock, Trash2, Edit, Loader2, X, Save,
-    CheckCircle2, AlertCircle, Activity, Database,
-    ArrowRight, Play
+    Trash2, PencilLine, Filter, MoreVertical, Eye,
+    Activity, CheckCircle2, AlertCircle, Database, Zap,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { Button } from "@/shared/components/ui/button"
 import { Badge } from "@/shared/components/ui/badge"
 import { Input } from "@/shared/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/shared/components/ui/dialog"
 import { Label } from "@/shared/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
 import { Switch } from "@/shared/components/ui/switch"
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/shared/components/ui/sheet"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu"
+import { Progress } from "@/shared/components/ui/progress"
 import { toast } from "@/shared/utils/toast"
 
-type SyncMapping = {
+type Mapping = {
     id: string
     name: string
     sourceSystem: string
     targetSystem: string
     sourceField: string
     targetField: string
-    transform: string
-    status: string
+    transform: 'None' | 'Uppercase' | 'Lowercase' | 'Trim' | 'Date Format'
+    direction: 'Bidirectional' | 'Source to Target' | 'Target to Source'
+    status: 'Active' | 'Paused' | 'Error'
     enabled: boolean
-    lastRun: string
-    recordsMapped: number
+    syncedRecords: number
     errors: number
+    lastSync: string
 }
 
-const SYSTEMS = ["Salesforce", "HubSpot", "Internal CRM", "Zendesk", "Stripe", "QuickBooks", "Pipedrive", "Zoho"]
-const TRANSFORM_TYPES = ["Direct copy", "Format date", "Uppercase", "Lowercase", "Concatenate", "Trim whitespace", "Map values"]
+const SYSTEMS = ["Salesforce", "HubSpot", "Stripe", "Intercom", "MailChimp", "Zoho", "Internal CRM"]
 
-const INITIAL_MAPPINGS: SyncMapping[] = [
-    { id: "SM-001", name: "Contact email sync", sourceSystem: "Salesforce", targetSystem: "Internal CRM", sourceField: "Email__c", targetField: "email", transform: "Lowercase", status: "Active", enabled: true, lastRun: "5 min ago", recordsMapped: 4820, errors: 0 },
-    { id: "SM-002", name: "Company name mapping", sourceSystem: "HubSpot", targetSystem: "Internal CRM", sourceField: "company", targetField: "organization_name", transform: "Direct copy", status: "Active", enabled: true, lastRun: "10 min ago", recordsMapped: 2310, errors: 3 },
-    { id: "SM-003", name: "Invoice amount field", sourceSystem: "Stripe", targetSystem: "QuickBooks", sourceField: "amount_due", targetField: "InvoiceTotal", transform: "Direct copy", status: "Active", enabled: true, lastRun: "1 hr ago", recordsMapped: 880, errors: 0 },
-    { id: "SM-004", name: "Ticket subject clean", sourceSystem: "Zendesk", targetSystem: "Internal CRM", sourceField: "subject", targetField: "ticket_title", transform: "Trim whitespace", status: "Active", enabled: true, lastRun: "30 min ago", recordsMapped: 620, errors: 1 },
-    { id: "SM-005", name: "Deal date formatter", sourceSystem: "Pipedrive", targetSystem: "Salesforce", sourceField: "close_time", targetField: "CloseDate", transform: "Format date", status: "Paused", enabled: false, lastRun: "2 days ago", recordsMapped: 340, errors: 0 },
-    { id: "SM-006", name: "Lead status map", sourceSystem: "Zoho", targetSystem: "Internal CRM", sourceField: "Lead_Status", targetField: "stage", transform: "Map values", status: "Active", enabled: true, lastRun: "2 hr ago", recordsMapped: 1540, errors: 8 },
+const INITIAL: Mapping[] = [
+    { id: "DM-001", name: "Contact Email Sync", sourceSystem: "Salesforce", targetSystem: "Internal CRM", sourceField: "Email", targetField: "email", transform: "Lowercase", direction: "Bidirectional", status: "Active", enabled: true, syncedRecords: 4820, errors: 0, lastSync: "5 min ago" },
+    { id: "DM-002", name: "Company Name", sourceSystem: "HubSpot", targetSystem: "Internal CRM", sourceField: "company", targetField: "organization", transform: "Trim", direction: "Source to Target", status: "Active", enabled: true, syncedRecords: 2310, errors: 2, lastSync: "12 min ago" },
+    { id: "DM-003", name: "Deal Amount", sourceSystem: "Internal CRM", targetSystem: "Stripe", sourceField: "deal.value", targetField: "amount_total", transform: "None", direction: "Source to Target", status: "Error", enabled: true, syncedRecords: 880, errors: 14, lastSync: "2 hr ago" },
+    { id: "DM-004", name: "Subscriber Status", sourceSystem: "MailChimp", targetSystem: "Internal CRM", sourceField: "status", targetField: "newsletter_status", transform: "Uppercase", direction: "Source to Target", status: "Active", enabled: true, syncedRecords: 1540, errors: 0, lastSync: "1 hr ago" },
+    { id: "DM-005", name: "Created Date", sourceSystem: "Intercom", targetSystem: "Internal CRM", sourceField: "created_at", targetField: "createdAt", transform: "Date Format", direction: "Source to Target", status: "Paused", enabled: false, syncedRecords: 680, errors: 0, lastSync: "2 days ago" },
 ]
 
-const SYSTEM_COLORS: Record<string, string> = {
-    Salesforce: "bg-blue-50 text-blue-600",
-    HubSpot: "bg-orange-50 text-orange-600",
-    "Internal CRM": "bg-indigo-50 text-indigo-600",
-    Zendesk: "bg-emerald-50 text-emerald-600",
-    Stripe: "bg-violet-50 text-violet-600",
-    QuickBooks: "bg-green-50 text-green-600",
-    Pipedrive: "bg-teal-50 text-teal-600",
-    Zoho: "bg-red-50 text-red-600",
+const validators = {
+    required: (v: string) => !v || !v.toString().trim() ? "This field is required" : "",
+    minLen: (n: number) => (v: string) => v && v.trim().length < n ? `Must be at least ${n} characters` : "",
 }
 
-export default function DataSyncMappingPage() {
-    const [mappings, setMappings] = useState<SyncMapping[]>(INITIAL_MAPPINGS)
-    const [searchQuery, setSearchQuery] = useState("")
-    const [filterSource, setFilterSource] = useState("all")
-    const [isCreateOpen, setIsCreateOpen] = useState(false)
-    const [editTarget, setEditTarget] = useState<SyncMapping | null>(null)
-    const [deleteTarget, setDeleteTarget] = useState<SyncMapping | null>(null)
-    const [isSyncing, setIsSyncing] = useState(false)
-    const [newMapping, setNewMapping] = useState({ name: "", sourceSystem: "Salesforce", targetSystem: "Internal CRM", sourceField: "", targetField: "", transform: "Direct copy" })
+export default function DataSyncPage() {
+    const router = useRouter()
+    const [mappings, setMappings] = React.useState<Mapping[]>(INITIAL)
+    const [search, setSearch] = React.useState("")
+    const [statusFilter, setStatusFilter] = React.useState("all")
 
-    const stats = useMemo(() => ({
+    const [isFormOpen, setIsFormOpen] = React.useState(false)
+    const [isDetailOpen, setIsDetailOpen] = React.useState(false)
+    const [isFilterOpen, setIsFilterOpen] = React.useState(false)
+    const [editingId, setEditingId] = React.useState<string | null>(null)
+    const [selected, setSelected] = React.useState<Mapping | null>(null)
+
+    const [form, setForm] = React.useState({
+        name: "", sourceSystem: "Salesforce", targetSystem: "Internal CRM",
+        sourceField: "", targetField: "", transform: "None" as Mapping['transform'],
+        direction: "Bidirectional" as Mapping['direction'],
+    })
+    const [errors, setErrors] = React.useState<Record<string, string>>({})
+
+    const stats = React.useMemo(() => ({
         active: mappings.filter(m => m.enabled).length,
-        totalRecords: mappings.reduce((a, m) => a + m.recordsMapped, 0),
-        totalErrors: mappings.reduce((a, m) => a + m.errors, 0),
+        records: mappings.reduce((a, m) => a + m.syncedRecords, 0),
+        errors: mappings.reduce((a, m) => a + m.errors, 0),
         systems: new Set([...mappings.map(m => m.sourceSystem), ...mappings.map(m => m.targetSystem)]).size,
     }), [mappings])
 
-    const filtered = useMemo(() => mappings.filter(m => {
-        const matchSearch = m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            m.sourceField.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            m.targetField.toLowerCase().includes(searchQuery.toLowerCase())
-        const matchSource = filterSource === "all" || m.sourceSystem === filterSource
-        return matchSearch && matchSource
-    }), [mappings, searchQuery, filterSource])
+    const filtered = React.useMemo(() => mappings.filter(m => {
+        const matchSearch = m.name.toLowerCase().includes(search.toLowerCase()) || m.sourceField.toLowerCase().includes(search.toLowerCase()) || m.targetField.toLowerCase().includes(search.toLowerCase())
+        const matchStatus = statusFilter === "all" || m.status === statusFilter
+        return matchSearch && matchStatus
+    }), [mappings, search, statusFilter])
 
-    const handleCreate = () => {
-        if (!newMapping.name.trim() || !newMapping.sourceField.trim() || !newMapping.targetField.trim()) { toast.error("Name, source field, and target field are required"); return }
-        if (newMapping.sourceSystem === newMapping.targetSystem) { toast.error("Source and target systems cannot be the same"); return }
-        const m: SyncMapping = { id: `SM-${String(mappings.length + 1).padStart(3, "0")}`, name: newMapping.name.trim(), sourceSystem: newMapping.sourceSystem, targetSystem: newMapping.targetSystem, sourceField: newMapping.sourceField.trim(), targetField: newMapping.targetField.trim(), transform: newMapping.transform, status: "Active", enabled: true, lastRun: "Never", recordsMapped: 0, errors: 0 }
-        setMappings(prev => [m, ...prev])
-        setNewMapping({ name: "", sourceSystem: "Salesforce", targetSystem: "Internal CRM", sourceField: "", targetField: "", transform: "Direct copy" })
-        setIsCreateOpen(false)
-        toast.success(`Mapping "${m.name}" created successfully`)
+    const setField = (field: string, value: any) => {
+        setForm(prev => ({ ...prev, [field]: value }))
+        if (errors[field]) setErrors(prev => { const c = { ...prev }; delete c[field]; return c })
     }
 
-    const handleEditSave = () => {
-        if (!editTarget?.name.trim()) { toast.error("Name is required"); return }
-        setMappings(prev => prev.map(m => m.id === editTarget.id ? { ...editTarget } : m))
-        setEditTarget(null)
-        toast.success("Mapping updated successfully")
+    const validate = (): boolean => {
+        const errs: Record<string, string> = {}
+        errs.name = validators.required(form.name) || validators.minLen(3)(form.name)
+        errs.sourceField = validators.required(form.sourceField)
+        errs.targetField = validators.required(form.targetField)
+        if (form.sourceSystem === form.targetSystem) errs.targetSystem = "Source and target must differ"
+        Object.keys(errs).forEach(k => { if (!errs[k]) delete errs[k] })
+        setErrors(errs)
+        return Object.keys(errs).length === 0
     }
 
-    const handleDelete = () => {
-        if (!deleteTarget) return
-        setMappings(prev => prev.filter(m => m.id !== deleteTarget.id))
-        setDeleteTarget(null)
+    const openCreate = () => {
+        setEditingId(null)
+        setForm({ name: "", sourceSystem: "Salesforce", targetSystem: "Internal CRM", sourceField: "", targetField: "", transform: "None", direction: "Bidirectional" })
+        setErrors({})
+        setIsFormOpen(true)
+    }
+
+    const openEdit = (m: Mapping) => {
+        setEditingId(m.id)
+        setForm({ name: m.name, sourceSystem: m.sourceSystem, targetSystem: m.targetSystem, sourceField: m.sourceField, targetField: m.targetField, transform: m.transform, direction: m.direction })
+        setErrors({})
+        setIsFormOpen(true)
+    }
+
+    const handleSave = () => {
+        if (!validate()) { toast.error("Please correct the highlighted fields"); return }
+        if (editingId) {
+            setMappings(mappings.map(m => m.id === editingId ? { ...m, ...form, name: form.name.trim() } : m))
+            toast.success("Mapping rule updated")
+        } else {
+            const m: Mapping = {
+                id: `DM-${String(mappings.length + 1).padStart(3, "0")}`,
+                name: form.name.trim(), sourceSystem: form.sourceSystem, targetSystem: form.targetSystem,
+                sourceField: form.sourceField, targetField: form.targetField,
+                transform: form.transform, direction: form.direction,
+                status: "Active", enabled: true, syncedRecords: 0, errors: 0, lastSync: "Never",
+            }
+            setMappings([m, ...mappings])
+            toast.success("Mapping rule created")
+        }
+        setIsFormOpen(false)
+    }
+
+    const handleDelete = (id: string) => {
+        setMappings(mappings.filter(m => m.id !== id))
         toast.success("Mapping removed")
     }
 
     const handleToggle = (id: string, current: boolean) => {
-        setMappings(prev => prev.map(m => m.id === id ? { ...m, enabled: !current, status: !current ? "Active" : "Paused" } : m))
+        setMappings(mappings.map(m => m.id === id ? { ...m, enabled: !current, status: !current ? "Active" : "Paused" } : m))
         toast.success(current ? "Mapping paused" : "Mapping activated")
     }
 
-    const handleRunMapping = (id: string, name: string) => {
-        setMappings(prev => prev.map(m => m.id === id ? { ...m, lastRun: "Just now", errors: 0 } : m))
-        toast.promise(new Promise(r => setTimeout(r, 1500)), { loading: `Running mapping: ${name}...`, success: "Mapping completed successfully", error: "Mapping failed" })
-    }
-
-    const handleSyncAll = () => {
-        setIsSyncing(true)
-        toast.promise(new Promise(r => setTimeout(r, 2000)), { loading: "Running all active mappings...", success: "All mappings synced", error: "Sync failed" })
-        setTimeout(() => { setIsSyncing(false); setMappings(prev => prev.map(m => m.enabled ? { ...m, lastRun: "Just now", errors: 0 } : m)) }, 2000)
+    const handleRunSync = (m: Mapping) => {
+        toast.success(`Running sync: ${m.name}...`)
+        setTimeout(() => {
+            setMappings(prev => prev.map(x => x.id === m.id ? { ...x, lastSync: "Just now", errors: 0 } : x))
+            toast.success(`${m.name} sync complete`)
+        }, 1200)
     }
 
     const handleExport = () => {
-        const csv = [["ID", "Name", "Source System", "Target System", "Source Field", "Target Field", "Transform", "Status", "Records", "Errors"], ...mappings.map(m => [m.id, m.name, m.sourceSystem, m.targetSystem, m.sourceField, m.targetField, m.transform, m.status, m.recordsMapped, m.errors])].map(r => r.join(",")).join("\n")
-        const blob = new Blob([csv], { type: "text/csv" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "data-mappings.csv"; a.click(); URL.revokeObjectURL(url)
-        toast.success("Data mappings exported")
+        const csv = [["ID", "Name", "Source System", "Source Field", "Target System", "Target Field", "Transform", "Direction", "Status"], ...mappings.map(m => [m.id, m.name, m.sourceSystem, m.sourceField, m.targetSystem, m.targetField, m.transform, m.direction, m.status])].map(r => r.join(",")).join("\n")
+        const blob = new Blob([csv], { type: "text/csv" })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement("a"); a.href = url; a.download = "data-mappings.csv"; a.click(); URL.revokeObjectURL(url)
+        toast.success("Mappings exported")
+    }
+
+    const openDetail = (m: Mapping) => { setSelected(m); setIsDetailOpen(true) }
+
+    const kpiCards = [
+        { title: "Active Mappings", value: String(stats.active), subtitle: `${mappings.length} total rules`, icon: ArrowLeftRight, color: "indigo", trend: `+${stats.active}`, path: "/client-management/integrations/data-sync" },
+        { title: "Records Synced", value: stats.records.toLocaleString(), subtitle: "Last 30 days", icon: Database, color: "emerald", trend: "+22%", path: "/client-management/integrations/crm" },
+        { title: "Sync Errors", value: String(stats.errors), subtitle: "Needs review", icon: AlertCircle, color: stats.errors > 0 ? "rose" : "violet", trend: stats.errors > 0 ? "Alert" : "Clean", path: "/client-management/integrations/data-sync" },
+        { title: "Connected Systems", value: String(stats.systems), subtitle: "Source + target", icon: CheckCircle2, color: "violet", trend: "+1", path: "/client-management/integrations/marketplace" },
+    ]
+    const colorMap: Record<string, { bg: string; border: string; text: string; iconBg: string }> = {
+        indigo: { bg: "bg-gradient-to-br from-indigo-50 to-indigo-100/50", border: "border-indigo-200/50", text: "text-indigo-600", iconBg: "bg-indigo-100" },
+        violet: { bg: "bg-gradient-to-br from-violet-50 to-violet-100/50", border: "border-violet-200/50", text: "text-violet-600", iconBg: "bg-violet-100" },
+        emerald: { bg: "bg-gradient-to-br from-emerald-50 to-emerald-100/50", border: "border-emerald-200/50", text: "text-emerald-600", iconBg: "bg-emerald-100" },
+        rose: { bg: "bg-gradient-to-br from-rose-50 to-rose-100/50", border: "border-rose-200/50", text: "text-rose-600", iconBg: "bg-rose-100" },
     }
 
     return (
-        <div className="px-8 py-8 space-y-8 bg-slate-50/50 min-h-screen font-outfit">
-            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-                <div>
-                    <h1 className="text-[28px] font-semibold text-slate-900 tracking-tight">Data sync <span className="text-indigo-600">mapping</span></h1>
-                    <p className="text-[15px] font-medium text-slate-500 mt-1">Define field-level mappings between connected systems for accurate data sync</p>
+        <div className="px-8 py-6 space-y-6 bg-slate-50 min-h-screen">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+                <div className="flex flex-col gap-1">
+                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+                        Data Sync <span className="text-indigo-600">Mapping</span>
+                    </h1>
+                    <p className="text-[14px] font-medium text-slate-500">Define how data flows and transforms between connected systems.</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <Button variant="outline" className="h-11 px-5 rounded-xl border-slate-200 bg-white font-semibold shadow-sm gap-2 text-slate-700 hover:bg-slate-50" onClick={handleSyncAll}>{isSyncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4 text-slate-400" />} Sync all</Button>
-                    <Button variant="outline" className="h-11 px-5 rounded-xl border-slate-200 bg-white font-semibold shadow-sm gap-2 text-slate-700 hover:bg-slate-50" onClick={handleExport}><Download className="w-4 h-4 text-slate-400" /> Export</Button>
-                    <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                        <DialogTrigger asChild><Button className="h-11 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold gap-2"><Plus className="w-4 h-4" /> New mapping</Button></DialogTrigger>
-                        <DialogContent className="sm:max-w-[520px] rounded-3xl border-slate-100 bg-white shadow-2xl p-8 font-outfit">
-                            <DialogHeader><DialogTitle className="text-2xl font-semibold text-slate-900">Create <span className="text-indigo-600">field mapping</span></DialogTitle></DialogHeader>
-                            <div className="grid gap-5 py-6">
-                                <div className="space-y-2"><Label className="text-sm font-semibold text-slate-700">Mapping name *</Label><Input value={newMapping.name} onChange={e => setNewMapping({ ...newMapping, name: e.target.value })} placeholder="e.g. Contact email sync" className="h-11 rounded-xl bg-slate-50 border-slate-100 font-medium text-slate-900" /></div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2"><Label className="text-sm font-semibold text-slate-700">Source system</Label><Select value={newMapping.sourceSystem} onValueChange={v => setNewMapping({ ...newMapping, sourceSystem: v })}><SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100 font-semibold text-slate-900 shadow-none"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl">{SYSTEMS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
-                                    <div className="space-y-2"><Label className="text-sm font-semibold text-slate-700">Target system</Label><Select value={newMapping.targetSystem} onValueChange={v => setNewMapping({ ...newMapping, targetSystem: v })}><SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100 font-semibold text-slate-900 shadow-none"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl">{SYSTEMS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2"><Label className="text-sm font-semibold text-slate-700">Source field *</Label><Input value={newMapping.sourceField} onChange={e => setNewMapping({ ...newMapping, sourceField: e.target.value })} placeholder="e.g. Email__c" className="h-11 rounded-xl bg-slate-50 border-slate-100 font-mono text-sm text-slate-900" /></div>
-                                    <div className="space-y-2"><Label className="text-sm font-semibold text-slate-700">Target field *</Label><Input value={newMapping.targetField} onChange={e => setNewMapping({ ...newMapping, targetField: e.target.value })} placeholder="e.g. email" className="h-11 rounded-xl bg-slate-50 border-slate-100 font-mono text-sm text-slate-900" /></div>
-                                </div>
-                                <div className="space-y-2"><Label className="text-sm font-semibold text-slate-700">Transform type</Label><Select value={newMapping.transform} onValueChange={v => setNewMapping({ ...newMapping, transform: v })}><SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100 font-semibold text-slate-900 shadow-none"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl">{TRANSFORM_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></div>
-                            </div>
-                            <DialogFooter className="gap-2"><Button variant="ghost" className="rounded-xl font-semibold" onClick={() => setIsCreateOpen(false)}>Cancel</Button><Button className="rounded-xl bg-indigo-600 hover:bg-indigo-700 font-semibold px-8 text-white" onClick={handleCreate}>Create mapping</Button></DialogFooter>
-                        </DialogContent>
-                    </Dialog>
+                <div className="flex gap-3">
+                    <Button variant="outline" className="rounded-none h-10" onClick={() => setIsFilterOpen(true)}>
+                        <Filter className="h-4 w-4 mr-2" />Filter
+                    </Button>
+                    <Button variant="outline" className="rounded-none h-10" onClick={handleExport}>
+                        <Download className="h-4 w-4 mr-2" />Export
+                    </Button>
+                    <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-none h-10 px-5" onClick={openCreate}>
+                        <Plus className="h-4 w-4 mr-2" />Add Rule
+                    </Button>
                 </div>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                {[
-                    { label: "Active mappings", value: stats.active, icon: ArrowLeftRight, bg: "bg-gradient-to-br from-indigo-50 to-indigo-100/50", iconBg: "bg-indigo-100", iconColor: "text-indigo-600", border: "border-indigo-100/50" },
-                    { label: "Records mapped", value: stats.totalRecords.toLocaleString(), icon: Database, bg: "bg-gradient-to-br from-emerald-50 to-emerald-100/50", iconBg: "bg-emerald-100", iconColor: "text-emerald-600", border: "border-emerald-100/50" },
-                    { label: "Connected systems", value: stats.systems, icon: Activity, bg: "bg-gradient-to-br from-violet-50 to-violet-100/50", iconBg: "bg-violet-100", iconColor: "text-violet-600", border: "border-violet-100/50" },
-                    { label: "Total errors", value: stats.totalErrors, icon: AlertCircle, bg: `bg-gradient-to-br ${stats.totalErrors > 0 ? "from-rose-50 to-rose-100/50" : "from-amber-50 to-amber-100/50"}`, iconBg: `${stats.totalErrors > 0 ? "bg-rose-100" : "bg-amber-100"}`, iconColor: `${stats.totalErrors > 0 ? "text-rose-600" : "text-amber-600"}`, border: "border-amber-100/50" },
-                ].map((stat, i) => (
-                    <Card key={i} className={`${stat.bg} ${stat.border} border shadow-sm hover:shadow-md transition-all rounded-[22px] overflow-hidden`}>
-                        <CardContent className="p-5">
-                            <div className="flex items-center justify-between mb-3">
-                                <div className={`h-10 w-10 rounded-[14px] flex items-center justify-center ${stat.iconBg}`}><stat.icon className={`w-5 h-5 ${stat.iconColor}`} /></div>
-                                <span className="text-[11px] font-semibold text-slate-400 bg-white/70 px-2 py-1 rounded-full border border-slate-100">{mappings.length} total</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {kpiCards.map((kpi, i) => {
+                    const cc = colorMap[kpi.color]
+                    const Icon = kpi.icon
+                    return (
+                        <Card key={i} className={`rounded-none cursor-pointer hover:shadow-md transition ${cc.bg} ${cc.border} border`} onClick={() => router.push(kpi.path)}>
+                            <CardContent className="p-5">
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <p className="text-xs font-semibold text-slate-500 tracking-wide mb-1">{kpi.title}</p>
+                                        <div className="flex items-baseline gap-2">
+                                            <h3 className="text-2xl font-bold text-slate-900">{kpi.value}</h3>
+                                            <span className={`text-xs font-bold ${cc.text}`}>{kpi.trend}</span>
+                                        </div>
+                                        <p className="mt-2 text-xs text-slate-400">{kpi.subtitle}</p>
+                                    </div>
+                                    <div className={`h-10 w-10 rounded-none flex items-center justify-center ${cc.iconBg}`}>
+                                        <Icon className={`h-5 w-5 ${cc.text}`} />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )
+                })}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-6">
+                    <Card className="rounded-none">
+                        <CardHeader className="border-b border-slate-100 flex flex-row items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                                <CardTitle className="text-base font-semibold">Field Mappings</CardTitle>
+                                <Badge className="rounded-none bg-slate-100 text-slate-600">{filtered.length}</Badge>
                             </div>
-                            <p className="text-sm font-medium text-slate-500 mb-1">{stat.label}</p>
-                            <h3 className="text-2xl font-semibold text-slate-900 tracking-tight">{stat.value}</h3>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                <Input placeholder="Search mappings..." value={search} onChange={e => setSearch(e.target.value)}
+                                    className="pl-10 rounded-none w-64 h-9" />
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="text-[11px] font-bold text-slate-400 tracking-wider border-b border-slate-50 bg-slate-50/30">
+                                            <th className="px-6 py-3">Mapping</th>
+                                            <th className="px-6 py-3">Flow</th>
+                                            <th className="px-6 py-3">Records</th>
+                                            <th className="px-6 py-3">Status</th>
+                                            <th className="px-6 py-3">Enabled</th>
+                                            <th className="px-6 py-3"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50">
+                                        {filtered.length > 0 ? filtered.map(m => (
+                                            <tr key={m.id} className="group hover:bg-slate-50/80 transition cursor-pointer" onClick={() => openDetail(m)}>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="h-9 w-9 rounded-none bg-indigo-50 border border-indigo-100 flex items-center justify-center">
+                                                            <ArrowLeftRight className="h-4 w-4 text-indigo-600" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-slate-800">{m.name}</p>
+                                                            <p className="text-[11px] font-mono text-slate-500">{m.sourceField} → {m.targetField}</p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-1 text-[11px] font-semibold">
+                                                        <Badge className="rounded-none bg-slate-100 text-slate-700">{m.sourceSystem}</Badge>
+                                                        <span className="text-slate-400">→</span>
+                                                        <Badge className="rounded-none bg-slate-100 text-slate-700">{m.targetSystem}</Badge>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm font-bold text-slate-900">{m.syncedRecords.toLocaleString()}</td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`px-2 py-0.5 rounded-none text-[11px] font-semibold border ${m.status === "Active" ? "bg-emerald-50 text-emerald-600 border-emerald-100" : m.status === "Error" ? "bg-rose-50 text-rose-600 border-rose-100" : "bg-amber-50 text-amber-600 border-amber-100"}`}>{m.status}</span>
+                                                </td>
+                                                <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                                                    <Switch checked={m.enabled} onCheckedChange={() => handleToggle(m.id, m.enabled)} className="data-[state=checked]:bg-indigo-600" />
+                                                </td>
+                                                <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="rounded-none">
+                                                                <MoreVertical className="h-4 w-4" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end" className="w-44 rounded-none">
+                                                            <DropdownMenuItem className="flex items-center gap-2" onClick={() => handleRunSync(m)}>
+                                                                <RefreshCw className="h-4 w-4" /> Run Sync
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem className="flex items-center gap-2" onClick={() => openEdit(m)}>
+                                                                <PencilLine className="h-4 w-4" /> Edit
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem className="flex items-center gap-2" onClick={() => openDetail(m)}>
+                                                                <Eye className="h-4 w-4" /> View Details
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem className="flex items-center gap-2 text-rose-500 border-t mt-1" onClick={() => handleDelete(m.id)}>
+                                                                <Trash2 className="h-4 w-4" /> Remove
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </td>
+                                            </tr>
+                                        )) : (
+                                            <tr><td colSpan={6} className="px-6 py-12 text-center text-sm text-slate-500">No mappings match your filters.</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
                         </CardContent>
                     </Card>
-                ))}
-            </div>
 
-            {/* Filters */}
-            <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative flex-1 group"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" /><Input placeholder="Search mappings or field names..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-12 h-11 bg-white border-slate-200 rounded-xl text-sm font-medium" /></div>
-                <Select value={filterSource} onValueChange={setFilterSource}><SelectTrigger className="w-48 h-11 rounded-xl border-slate-200 bg-white font-semibold text-slate-700 shadow-sm"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl"><SelectItem value="all">All source systems</SelectItem>{SYSTEMS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select>
-            </div>
+                    <Card className="rounded-none">
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle className="text-base font-semibold">System Volume</CardTitle>
+                                <p className="text-sm text-slate-500 mt-1">Records synced per source system</p>
+                            </div>
+                            <Database className="h-5 w-5 text-slate-400" />
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {SYSTEMS.slice(0, 6).map((s, idx) => {
+                                const list = mappings.filter(m => m.sourceSystem === s)
+                                const total = list.reduce((sum, m) => sum + m.syncedRecords, 0)
+                                const max = Math.max(...mappings.map(m => m.syncedRecords), 1)
+                                const progress = Math.min(100, total / max * 100)
+                                return (
+                                    <div key={idx} className="space-y-2">
+                                        <div className="flex justify-between items-center text-[11px] font-bold">
+                                            <span className="text-slate-700">{s} <span className="text-slate-400 font-medium ml-2">{list.length} Rules</span></span>
+                                            <span className="text-slate-900">{total.toLocaleString()}</span>
+                                        </div>
+                                        <Progress value={progress} className="h-1.5 bg-slate-50" />
+                                    </div>
+                                )
+                            })}
+                        </CardContent>
+                    </Card>
+                </div>
 
-            {/* List */}
-            <Card className="rounded-3xl border-0 shadow-xl shadow-slate-200/50 bg-white overflow-hidden">
-                <CardHeader className="px-8 py-6 border-b border-slate-100"><CardTitle className="text-lg font-semibold text-slate-900">Field mappings <span className="text-slate-400 font-medium text-sm ml-2">({filtered.length})</span></CardTitle></CardHeader>
-                <CardContent className="p-0">
-                    <div className="divide-y divide-slate-50">
-                        {filtered.map(m => (
-                            <div key={m.id} className="px-8 py-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5 hover:bg-slate-50/50 transition-colors group">
-                                <div className="flex items-start gap-5 flex-1">
-                                    <div className="h-12 w-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0"><ArrowLeftRight className="w-5 h-5" /></div>
-                                    <div className="space-y-2.5 flex-1">
-                                        <div className="flex items-center gap-3 flex-wrap">
-                                            <h4 className="text-sm font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">{m.name}</h4>
-                                            <Badge className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border-0 ${m.status === "Active" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>{m.status}</Badge>
-                                            <Badge className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border-0">{m.transform}</Badge>
-                                            {m.errors > 0 && <Badge className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border-0">{m.errors} errors</Badge>}
+                <div className="space-y-6">
+                    <Card className="rounded-none">
+                        <CardHeader>
+                            <CardTitle className="text-xs font-bold text-slate-400 tracking-wider uppercase">Recent Sync Activity</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            {mappings.slice(0, 4).map((m, idx) => (
+                                <div key={idx} className="flex items-center justify-between cursor-pointer hover:bg-slate-50 -mx-2 px-2 py-2 transition" onClick={() => openDetail(m)}>
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-9 w-9 rounded-none bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[10px] font-bold text-indigo-600">
+                                            {m.name.charAt(0)}
                                         </div>
-                                        {/* Field mapping visual */}
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold ${SYSTEM_COLORS[m.sourceSystem] || "bg-slate-50 text-slate-500"}`}>
-                                                <span className="opacity-60">{m.sourceSystem}</span>
-                                                <span>·</span>
-                                                <code>{m.sourceField}</code>
-                                            </div>
-                                            <ArrowRight className="w-3.5 h-3.5 text-slate-300" />
-                                            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold ${SYSTEM_COLORS[m.targetSystem] || "bg-slate-50 text-slate-500"}`}>
-                                                <span className="opacity-60">{m.targetSystem}</span>
-                                                <span>·</span>
-                                                <code>{m.targetField}</code>
-                                            </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-800 leading-none">{m.name}</p>
+                                            <p className="text-[10px] text-slate-400 mt-1">{m.lastSync}</p>
                                         </div>
-                                        <div className="flex items-center gap-6 text-[11px] text-slate-400 font-medium">
-                                            <span className="flex items-center gap-1"><Database className="w-3 h-3" /> {m.recordsMapped.toLocaleString()} records</span>
-                                            <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Last run: {m.lastRun}</span>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-xs font-bold text-slate-900">{m.syncedRecords.toLocaleString()}</p>
+                                        <div className="flex items-center gap-1 justify-end mt-1">
+                                            <CheckCircle2 className="h-2.5 w-2.5 text-emerald-500" />
+                                            <span className="text-[9px] font-bold text-emerald-600">{m.status}</span>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                                    <Button variant="ghost" size="sm" className="h-9 px-3 text-indigo-600 hover:bg-indigo-50 rounded-xl font-semibold text-xs gap-1.5" onClick={() => handleRunMapping(m.id, m.name)}><Play className="w-3 h-3" />Run</Button>
-                                    <div className="flex items-center gap-2 border border-slate-100 rounded-xl px-3 py-2 bg-white shadow-sm">
-                                        <Switch checked={m.enabled} onCheckedChange={() => handleToggle(m.id, m.enabled)} className="data-[state=checked]:bg-indigo-600 scale-90" />
-                                        <span className="text-[10px] font-semibold text-slate-400">{m.enabled ? "On" : "Off"}</span>
-                                    </div>
-                                    <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl" onClick={() => setEditTarget({ ...m })}><Edit className="w-4 h-4" /></Button>
-                                    <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl" onClick={() => setDeleteTarget(m)}><Trash2 className="w-4 h-4" /></Button>
+                            ))}
+                        </CardContent>
+                    </Card>
+
+                    <Card className="rounded-none border-indigo-100 bg-indigo-50/10">
+                        <CardHeader>
+                            <CardTitle className="text-xs font-bold text-indigo-600 tracking-wider flex items-center gap-2 uppercase">
+                                <Zap className="h-4 w-4" /> Mapping Tips
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            <div className="p-3 bg-white border border-indigo-100 rounded-none">
+                                <p className="text-[11px] text-slate-600">
+                                    Use <span className="text-indigo-600 font-bold">Trim</span> transforms to clean leading/trailing whitespace.
+                                </p>
+                            </div>
+                            <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-none" onClick={() => router.push('/client-management/integrations/crm')}>
+                                Manage CRM Connections
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+
+            {/* Form Sheet */}
+            <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <SheetContent side="right" className="sm:max-w-md w-full p-0 rounded-none flex flex-col">
+                    <SheetHeader className="p-6 border-b bg-gradient-to-br from-indigo-50 to-violet-50">
+                        <SheetTitle className="text-[18px] font-semibold text-slate-900">{editingId ? "Edit Mapping" : "Create Field Mapping"}</SheetTitle>
+                        <p className="text-[12px] text-slate-500">Define how data flows between systems.</p>
+                    </SheetHeader>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Mapping Name <span className="text-rose-500">*</span></Label>
+                            <Input value={form.name} onChange={e => setField("name", e.target.value)} placeholder="e.g., Contact Email Sync" className={`h-10 rounded-none ${errors.name ? "border-rose-500" : ""}`} />
+                            {errors.name && <p className="text-[11px] text-rose-500">{errors.name}</p>}
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-[12px] font-semibold">Source System</Label>
+                                <Select value={form.sourceSystem} onValueChange={v => setField("sourceSystem", v)}>
+                                    <SelectTrigger className="h-10 rounded-none"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-none">
+                                        {SYSTEMS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[12px] font-semibold">Target System</Label>
+                                <Select value={form.targetSystem} onValueChange={v => setField("targetSystem", v)}>
+                                    <SelectTrigger className={`h-10 rounded-none ${errors.targetSystem ? "border-rose-500" : ""}`}><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-none">
+                                        {SYSTEMS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                {errors.targetSystem && <p className="text-[11px] text-rose-500">{errors.targetSystem}</p>}
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-[12px] font-semibold">Source Field <span className="text-rose-500">*</span></Label>
+                                <Input value={form.sourceField} onChange={e => setField("sourceField", e.target.value)} placeholder="e.g., Email" className={`h-10 rounded-none font-mono text-xs ${errors.sourceField ? "border-rose-500" : ""}`} />
+                                {errors.sourceField && <p className="text-[11px] text-rose-500">{errors.sourceField}</p>}
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[12px] font-semibold">Target Field <span className="text-rose-500">*</span></Label>
+                                <Input value={form.targetField} onChange={e => setField("targetField", e.target.value)} placeholder="e.g., email" className={`h-10 rounded-none font-mono text-xs ${errors.targetField ? "border-rose-500" : ""}`} />
+                                {errors.targetField && <p className="text-[11px] text-rose-500">{errors.targetField}</p>}
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-[12px] font-semibold">Transform</Label>
+                                <Select value={form.transform} onValueChange={(v: any) => setField("transform", v)}>
+                                    <SelectTrigger className="h-10 rounded-none"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-none">
+                                        <SelectItem value="None">None</SelectItem>
+                                        <SelectItem value="Uppercase">Uppercase</SelectItem>
+                                        <SelectItem value="Lowercase">Lowercase</SelectItem>
+                                        <SelectItem value="Trim">Trim</SelectItem>
+                                        <SelectItem value="Date Format">Date Format</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[12px] font-semibold">Direction</Label>
+                                <Select value={form.direction} onValueChange={(v: any) => setField("direction", v)}>
+                                    <SelectTrigger className="h-10 rounded-none"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-none">
+                                        <SelectItem value="Bidirectional">Bidirectional</SelectItem>
+                                        <SelectItem value="Source to Target">Source → Target</SelectItem>
+                                        <SelectItem value="Target to Source">Target → Source</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="p-5 border-t flex gap-3 bg-white">
+                        <Button variant="outline" className="flex-1 h-10 rounded-none" onClick={() => setIsFormOpen(false)}>Cancel</Button>
+                        <Button className="flex-1 h-10 bg-indigo-600 hover:bg-indigo-700 text-white rounded-none" onClick={handleSave}>
+                            {editingId ? "Save Changes" : "Create Mapping"}
+                        </Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* Filter Sheet */}
+            <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <SheetContent side="right" className="sm:max-w-md w-full p-0 rounded-none flex flex-col">
+                    <SheetHeader className="p-6 border-b bg-gradient-to-br from-slate-50 to-indigo-50">
+                        <SheetTitle className="text-[18px] font-semibold">Filter Mappings</SheetTitle>
+                    </SheetHeader>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Status</Label>
+                            <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                <SelectTrigger className="h-10 rounded-none"><SelectValue /></SelectTrigger>
+                                <SelectContent className="rounded-none">
+                                    <SelectItem value="all">All Statuses</SelectItem>
+                                    <SelectItem value="Active">Active</SelectItem>
+                                    <SelectItem value="Paused">Paused</SelectItem>
+                                    <SelectItem value="Error">Error</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div className="p-5 border-t flex gap-3 bg-white">
+                        <Button variant="outline" className="flex-1 h-10 rounded-none" onClick={() => { setStatusFilter("all"); toast.success("Filters reset") }}>Reset</Button>
+                        <Button className="flex-1 h-10 bg-indigo-600 hover:bg-indigo-700 rounded-none" onClick={() => { setIsFilterOpen(false); toast.success("Filters applied") }}>Apply</Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* Detail Sheet */}
+            <Sheet open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+                <SheetContent side="right" className="sm:max-w-md w-full p-0 rounded-none flex flex-col">
+                    <SheetHeader className="p-6 border-b bg-gradient-to-br from-slate-50 to-indigo-50">
+                        <SheetTitle className="text-[18px] font-semibold">Mapping Details</SheetTitle>
+                    </SheetHeader>
+                    {selected && (
+                        <>
+                            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                                <div>
+                                    <p className="text-[11px] text-slate-400 uppercase tracking-wider">Mapping</p>
+                                    <p className="text-lg font-semibold text-slate-900">{selected.name}</p>
+                                    <p className="text-xs font-mono text-slate-500 mt-1">{selected.sourceField} → {selected.targetField}</p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 pt-3 border-t">
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Source</p><p className="font-semibold text-slate-900">{selected.sourceSystem}</p></div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Target</p><p className="font-semibold text-slate-900">{selected.targetSystem}</p></div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Direction</p><Badge className="rounded-none">{selected.direction}</Badge></div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Transform</p><Badge className="rounded-none">{selected.transform}</Badge></div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Records</p><p className="font-semibold text-slate-900">{selected.syncedRecords.toLocaleString()}</p></div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Errors</p><p className="font-semibold text-slate-900">{selected.errors}</p></div>
+                                    <div className="col-span-2"><p className="text-[11px] text-slate-400 uppercase">Last Sync</p><p className="font-semibold text-slate-900">{selected.lastSync}</p></div>
                                 </div>
                             </div>
-                        ))}
-                        {filtered.length === 0 && <div className="px-8 py-16 text-center"><p className="text-slate-400 font-medium">No mappings found.</p><Button variant="ghost" className="mt-3 text-indigo-600 font-semibold text-sm" onClick={() => { setSearchQuery(""); setFilterSource("all") }}>Clear filters</Button></div>}
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Edit Dialog */}
-            <Dialog open={!!editTarget} onOpenChange={() => setEditTarget(null)}>
-                <DialogContent className="sm:max-w-[520px] rounded-3xl border-slate-100 bg-white shadow-2xl p-8 font-outfit">
-                    <DialogHeader><DialogTitle className="text-2xl font-semibold text-slate-900">Edit <span className="text-indigo-600">mapping</span></DialogTitle></DialogHeader>
-                    {editTarget && <div className="grid gap-5 py-6">
-                        <div className="space-y-2"><Label className="text-sm font-semibold text-slate-700">Name *</Label><Input value={editTarget.name} onChange={e => setEditTarget({ ...editTarget, name: e.target.value })} className="h-11 rounded-xl bg-slate-50 border-slate-100 font-medium text-slate-900" /></div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2"><Label className="text-sm font-semibold text-slate-700">Source field</Label><Input value={editTarget.sourceField} onChange={e => setEditTarget({ ...editTarget, sourceField: e.target.value })} className="h-11 rounded-xl bg-slate-50 border-slate-100 font-mono text-sm text-slate-900" /></div>
-                            <div className="space-y-2"><Label className="text-sm font-semibold text-slate-700">Target field</Label><Input value={editTarget.targetField} onChange={e => setEditTarget({ ...editTarget, targetField: e.target.value })} className="h-11 rounded-xl bg-slate-50 border-slate-100 font-mono text-sm text-slate-900" /></div>
-                        </div>
-                        <div className="space-y-2"><Label className="text-sm font-semibold text-slate-700">Transform</Label><Select value={editTarget.transform} onValueChange={v => setEditTarget({ ...editTarget, transform: v })}><SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100 font-semibold text-slate-900 shadow-none"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl">{TRANSFORM_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></div>
-                    </div>}
-                    <DialogFooter className="gap-2"><Button variant="ghost" className="rounded-xl font-semibold gap-2" onClick={() => setEditTarget(null)}><X className="w-4 h-4" />Cancel</Button><Button className="rounded-xl bg-indigo-600 hover:bg-indigo-700 font-semibold px-8 text-white gap-2" onClick={handleEditSave}><Save className="w-4 h-4" />Save</Button></DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Delete Dialog */}
-            <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
-                <DialogContent className="sm:max-w-[400px] rounded-3xl border-slate-100 bg-white shadow-2xl p-8 font-outfit">
-                    <DialogHeader><DialogTitle className="text-xl font-semibold text-slate-900">Remove mapping</DialogTitle></DialogHeader>
-                    <p className="text-sm font-medium text-slate-500 py-4">Are you sure you want to remove <span className="text-slate-900 font-semibold">"{deleteTarget?.name}"</span>? Data sync for these fields will stop immediately.</p>
-                    <DialogFooter className="gap-2"><Button variant="ghost" className="rounded-xl font-semibold" onClick={() => setDeleteTarget(null)}>Cancel</Button><Button className="rounded-xl bg-rose-600 hover:bg-rose-700 font-semibold px-6 text-white gap-2" onClick={handleDelete}><Trash2 className="w-4 h-4" />Remove</Button></DialogFooter>
-                </DialogContent>
-            </Dialog>
+                            <div className="p-5 border-t flex gap-3 bg-white">
+                                <Button variant="outline" className="flex-1 h-10 rounded-none" onClick={() => handleRunSync(selected)}>
+                                    <RefreshCw className="h-4 w-4 mr-2" />Sync
+                                </Button>
+                                <Button variant="outline" className="flex-1 h-10 rounded-none" onClick={() => { setIsDetailOpen(false); openEdit(selected) }}>
+                                    <PencilLine className="h-4 w-4 mr-2" />Edit
+                                </Button>
+                                <Button variant="outline" className="flex-1 h-10 rounded-none text-rose-500 border-rose-200 hover:bg-rose-50" onClick={() => { handleDelete(selected.id); setIsDetailOpen(false) }}>
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </>
+                    )}
+                </SheetContent>
+            </Sheet>
         </div>
     )
 }

@@ -216,7 +216,10 @@ export default function HRMGovernancePage() {
 
             {/* Top Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard
+                    onClick={() => router.push(`/${params.orgName}/modules/settings/entitlements/hrm/permission-matrix`)}
+                    className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                >
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
@@ -229,7 +232,10 @@ export default function HRMGovernancePage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard
+                    onClick={() => router.push(`/${params.orgName}/modules/settings/entitlements/hrm/approval-chains`)}
+                    className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                >
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
@@ -242,7 +248,10 @@ export default function HRMGovernancePage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard
+                    onClick={() => router.push(`/${params.orgName}/modules/settings/entitlements/hrm/leaves`)}
+                    className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                >
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
@@ -255,7 +264,10 @@ export default function HRMGovernancePage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard
+                    onClick={() => router.push(`/${params.orgName}/modules/settings/entitlements/hrm/permissions`)}
+                    className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                >
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>

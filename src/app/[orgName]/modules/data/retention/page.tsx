@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter, useParams } from "next/navigation";
 import {
     Clock,
     Plus,
@@ -58,6 +59,10 @@ const defaultFormState = {
 };
 
 export default function RetentionRulesPage() {
+    const router = useRouter();
+    const params = useParams();
+    const orgName = (params?.orgName as string) || "";
+
     const [searchQuery, setSearchQuery] = useState("");
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
@@ -246,29 +251,45 @@ export default function RetentionRulesPage() {
 
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl">
+                <button
+                    type="button"
+                    onClick={() => setIsCreateOpen(true)}
+                    className="bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl text-left cursor-pointer"
+                >
                     <p className="text-xs font-semibold text-white">Active Rules</p>
                     <h2 className="text-xl font-semibold text-white">{retentionRules.filter((r) => r.status === "Active").length}</h2>
                     <p className="text-[10px] mt-1 opacity-80">Currently running</p>
-                </div>
+                </button>
 
-                <div className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/modules/data/backup`)}
+                    className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl text-left cursor-pointer"
+                >
                     <p className="text-xs text-gray-600">Records Archived</p>
                     <h3 className="text-xl font-semibold text-gray-900">8,420</h3>
                     <p className="text-[10px] text-blue-600 mt-1">Last 30 days</p>
-                </div>
+                </button>
 
-                <div className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/audit-logs`)}
+                    className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl text-left cursor-pointer"
+                >
                     <p className="text-xs text-gray-600">Records Deleted</p>
                     <h3 className="text-xl font-semibold text-gray-900">1,250</h3>
                     <p className="text-[10px] text-amber-600 mt-1">Last 30 days</p>
-                </div>
+                </button>
 
-                <div className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/usage-analytics`)}
+                    className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl text-left cursor-pointer"
+                >
                     <p className="text-xs text-gray-600">Storage Saved</p>
                     <h3 className="text-xl font-semibold text-gray-900">2.4 GB</h3>
                     <p className="text-[10px] text-green-600 mt-1">This month</p>
-                </div>
+                </button>
             </div>
 
             {/* Rules List */}

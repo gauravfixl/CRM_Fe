@@ -1,7 +1,8 @@
 ﻿"use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -136,7 +137,7 @@ export default function ClientsPage() {
     const total = clients.length
     const active = clients.filter(c => !c.deleted).length
     const newThisMonth = clients.filter(c => {
-      const created = new Date(c.createdAt)
+      const created = new Date(c.createdAt || Date.now())
       const monthStart = new Date()
       monthStart.setDate(1)
       return created >= monthStart
@@ -279,7 +280,7 @@ export default function ClientsPage() {
       <div className="p-6 space-y-6">
         {/* 2. SUPER VIBRANT STATS SECTION */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {stats.map((stat, i) => (
+          {stats.map((stat: any, i: number) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, scale: 0.9 }}

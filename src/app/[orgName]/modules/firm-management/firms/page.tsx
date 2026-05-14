@@ -46,6 +46,7 @@ export default function FirmsPage() {
   const { firms, setFirms } = useAppStore()
   const { showLoader, hideLoader } = useLoaderStore() // <-- use loader store
   const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState<"" | "Active" | "Inactive">("")
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
   const params_url = useParams() as { orgName?: string };
@@ -68,17 +69,26 @@ export default function FirmsPage() {
 
 
   // Filter firms by multiple fields
-  const filteredFirms = activeFirms.filter(firm =>
-    (firm.FirmName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (firm.add.address1 || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (firm.add.address2 || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (firm.add.city || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (firm.add.state || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (firm.add.country || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (firm.email || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (firm.gst_no || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (firm._id || "").toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredFirms = activeFirms.filter(firm => {
+    const matchesStatus = !statusFilter
+      ? true
+      : statusFilter === "Active"
+        ? (!firm.status || firm.status === "Active")
+        : firm.status === statusFilter
+    if (!matchesStatus) return false
+    const q = searchTerm.toLowerCase()
+    return (
+      (firm.FirmName || "").toLowerCase().includes(q) ||
+      (firm.add?.address1 || "").toLowerCase().includes(q) ||
+      (firm.add?.address2 || "").toLowerCase().includes(q) ||
+      (firm.add?.city || "").toLowerCase().includes(q) ||
+      (firm.add?.state || "").toLowerCase().includes(q) ||
+      (firm.add?.country || "").toLowerCase().includes(q) ||
+      (firm.email || "").toLowerCase().includes(q) ||
+      (firm.gst_no || "").toLowerCase().includes(q) ||
+      (firm._id || "").toLowerCase().includes(q)
+    )
+  })
 
   const totalPages = Math.ceil(filteredFirms.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
@@ -194,7 +204,10 @@ export default function FirmsPage() {
 
         {/* Dashboard cards */}
         <div className="grid gap-4 md:grid-cols-4 add-firm-dashboard-cards">
-          <SmallCard>
+          <SmallCard
+            onClick={() => { setStatusFilter(""); setCurrentPage(1); }}
+            className={`cursor-pointer hover:shadow-md transition-all ${statusFilter === "" ? "ring-2 ring-primary" : ""}`}
+          >
             <SmallCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <SmallCardTitle className="text-sm font-medium">Total Firms</SmallCardTitle>
               <Building2 className="h-4 w-4 text-muted-foreground" />
@@ -204,7 +217,10 @@ export default function FirmsPage() {
               <p className="text-xs text-muted-foreground">Registered firms</p>
             </SmallCardContent>
           </SmallCard>
-          <SmallCard>
+          <SmallCard
+            onClick={() => { setStatusFilter("Active"); setCurrentPage(1); }}
+            className={`cursor-pointer hover:shadow-md transition-all ${statusFilter === "Active" ? "ring-2 ring-emerald-500" : ""}`}
+          >
             <SmallCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <SmallCardTitle className="text-sm font-medium">Active Firms</SmallCardTitle>
             </SmallCardHeader>
@@ -213,7 +229,10 @@ export default function FirmsPage() {
               <p className="text-xs text-muted-foreground">Currently operating</p>
             </SmallCardContent>
           </SmallCard>
-          <SmallCard>
+          <SmallCard
+            onClick={() => { setStatusFilter("Inactive"); setCurrentPage(1); }}
+            className={`cursor-pointer hover:shadow-md transition-all ${statusFilter === "Inactive" ? "ring-2 ring-red-500" : ""}`}
+          >
             <SmallCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <SmallCardTitle className="text-sm font-medium">Inactive Firms</SmallCardTitle>
             </SmallCardHeader>
@@ -222,7 +241,10 @@ export default function FirmsPage() {
               <p className="text-xs text-muted-foreground">Not operating</p>
             </SmallCardContent>
           </SmallCard>
-          <SmallCard>
+          <SmallCard
+            onClick={() => router.push(`/${orgName}/modules/organization/users`)}
+            className="cursor-pointer hover:shadow-md transition-all"
+          >
             <SmallCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <SmallCardTitle className="text-sm font-medium">Total Employees</SmallCardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />

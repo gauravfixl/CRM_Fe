@@ -28,14 +28,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog"
+import SidePanel from "@/shared/components/projectmanagement/side-panel"
 import { useProjectTemplateStore, TemplateCategory, BoardType } from "@/shared/data/project-template-store"
 
 interface TemplateGalleryProps {
@@ -102,11 +95,27 @@ export default function TemplateGallery({
         }
     }
 
+    const [nameError, setNameError] = useState("")
+
     const handleCreateTemplate = () => {
-        if (!newTemplate.name.trim()) {
-            alert("Please enter a template name")
+        const trimmedName = newTemplate.name.trim()
+        if (!trimmedName) {
+            setNameError("Template name is required")
             return
         }
+        if (trimmedName.length < 2) {
+            setNameError("Template name must be at least 2 characters")
+            return
+        }
+        if (newTemplate.columns.length < 2) {
+            alert("Template must have at least 2 columns")
+            return
+        }
+        if (newTemplate.columns.some(c => !c.name.trim() || !c.key.trim())) {
+            alert("All columns must have a name and a key")
+            return
+        }
+        setNameError("")
 
         // Generate workflow states and transitions from columns
         const workflowStates = newTemplate.columns.map(col => ({
@@ -212,32 +221,56 @@ export default function TemplateGallery({
                     </Badge>
                 </div>
 
-                {/* Create Template Dialog */}
-                <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button className="h-8 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[11px] font-semibold shadow-md shadow-indigo-100">
-                            <Plus size={14} className="mr-2" />
-                            Create Template
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-                            <DialogTitle className="text-[16px] font-bold">Create New Template</DialogTitle>
-                            <DialogDescription className="text-[12px]">
-                                Design a custom project template with workflow columns
-                            </DialogDescription>
-                        </DialogHeader>
+                {/* Create Template Trigger */}
+                <Button
+                    onClick={() => setCreateDialogOpen(true)}
+                    className="h-8 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-semibold shadow-md shadow-indigo-100 rounded-none"
+                >
+                    <Plus size={14} className="mr-2" />
+                    Create Template
+                </Button>
 
-                        <div className="space-y-4 py-4">
+                {/* Create Template SidePanel */}
+                <SidePanel
+                    open={createDialogOpen}
+                    onClose={() => setCreateDialogOpen(false)}
+                    title="Create New Template"
+                    description="Design a custom project template with workflow columns."
+                    width="xl"
+                    footer={
+                        <div className="flex items-center justify-end gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => setCreateDialogOpen(false)}
+                                className="h-9 px-4 text-[12px] font-semibold rounded-none"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleCreateTemplate}
+                                className="h-9 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-[12px] font-semibold shadow-md shadow-indigo-100 rounded-none"
+                            >
+                                Create Template
+                            </Button>
+                        </div>
+                    }
+                >
+                    <div className="space-y-4">
                             {/* Basic Info */}
                             <div className="space-y-2">
                                 <Label className="text-[11px] font-bold">Template Name *</Label>
                                 <Input
                                     value={newTemplate.name}
-                                    onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
+                                    onChange={(e) => {
+                                        setNewTemplate({ ...newTemplate, name: e.target.value })
+                                        if (nameError) setNameError("")
+                                    }}
                                     placeholder="e.g., Marketing Campaign"
-                                    className="text-[13px] font-medium"
+                                    className="text-[13px] font-medium rounded-none"
                                 />
+                                {nameError && (
+                                    <p className="text-[11px] font-semibold text-rose-600">{nameError}</p>
+                                )}
                             </div>
 
                             <div className="space-y-2">
@@ -246,7 +279,7 @@ export default function TemplateGallery({
                                     value={newTemplate.description}
                                     onChange={(e) => setNewTemplate({ ...newTemplate, description: e.target.value })}
                                     placeholder="Describe this template..."
-                                    className="text-[13px] font-medium resize-none"
+                                    className="text-[13px] font-medium resize-none rounded-none"
                                     rows={3}
                                 />
                             </div>
@@ -308,7 +341,7 @@ export default function TemplateGallery({
 
                                 <div className="space-y-2">
                                     {newTemplate.columns.map((col, index) => (
-                                        <div key={index} className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                                        <div key={index} className="flex items-center gap-2 p-3 bg-slate-50 rounded-none border border-slate-200">
                                             <div className="flex-1 grid grid-cols-2 gap-2">
                                                 <Input
                                                     value={col.name}
@@ -348,7 +381,7 @@ export default function TemplateGallery({
                             </div>
 
                             {/* Recommended */}
-                            <div className="flex items-center gap-2 p-3 bg-amber-50 rounded-xl border border-amber-200">
+                            <div className="flex items-center gap-2 p-3 bg-amber-50 rounded-none border border-amber-200">
                                 <input
                                     type="checkbox"
                                     id="recommended"
@@ -361,25 +394,9 @@ export default function TemplateGallery({
                                     Mark as recommended template
                                 </Label>
                             </div>
-                        </div>
 
-                        <div className="flex items-center justify-end gap-2 pt-4 border-t">
-                            <Button
-                                variant="outline"
-                                onClick={() => setCreateDialogOpen(false)}
-                                className="h-9 px-4 rounded-xl text-[12px] font-semibold"
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                onClick={handleCreateTemplate}
-                                className="h-9 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[12px] font-semibold shadow-md shadow-indigo-100"
-                            >
-                                Create Template
-                            </Button>
-                        </div>
-                    </DialogContent>
-                </Dialog>
+                    </div>
+                </SidePanel>
             </div>
 
             {/* Filters and Search */}
@@ -390,15 +407,15 @@ export default function TemplateGallery({
                         placeholder="Search templates..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-9 h-9 rounded-xl text-[12px] font-medium"
+                        className="pl-9 h-9 rounded-none text-[12px] font-medium"
                     />
                 </div>
 
                 <Select value={filterCategory} onValueChange={(v) => setFilterCategory(v as any)}>
-                    <SelectTrigger className="h-9 w-36 rounded-lg text-[11px] font-semibold">
+                    <SelectTrigger className="h-9 w-36 rounded-none text-[11px] font-semibold">
                         <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl">
+                    <SelectContent className="rounded-none">
                         <SelectItem value="ALL" className="text-[12px] font-medium">All Categories</SelectItem>
                         <SelectItem value="software" className="text-[12px] font-medium">Software</SelectItem>
                         <SelectItem value="marketing" className="text-[12px] font-medium">Marketing</SelectItem>
@@ -413,7 +430,7 @@ export default function TemplateGallery({
                     variant={showRecommended ? "default" : "outline"}
                     size="sm"
                     onClick={() => setShowRecommended(!showRecommended)}
-                    className={`h-9 px-3 rounded-xl text-[11px] font-semibold ${showRecommended
+                    className={`h-9 px-3 rounded-none text-[11px] font-semibold ${showRecommended
                             ? 'bg-amber-600 hover:bg-amber-700 text-white'
                             : 'border-slate-200'
                         }`}
@@ -434,7 +451,7 @@ export default function TemplateGallery({
                         {system.map((template) => (
                             <Card
                                 key={template.id}
-                                className={`border-2 rounded-2xl transition-all cursor-pointer hover:shadow-md ${selectedId === template.id
+                                className={`border-2 rounded-none transition-all cursor-pointer hover:shadow-md ${selectedId === template.id
                                         ? 'border-indigo-600 bg-indigo-50'
                                         : 'border-slate-200 hover:border-indigo-300'
                                     }`}
@@ -443,7 +460,7 @@ export default function TemplateGallery({
                                 <CardContent className="p-4">
                                     <div className="flex items-start gap-3">
                                         {/* Icon */}
-                                        <div className="p-3 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl text-white shadow-lg shadow-indigo-100 shrink-0">
+                                        <div className="p-3 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-none text-white shadow-lg shadow-indigo-100 shrink-0">
                                             <span className="text-xl">{getBoardTypeIcon(template.boardType)}</span>
                                         </div>
 
@@ -512,7 +529,7 @@ export default function TemplateGallery({
                         {orgTemplates.map((template) => (
                             <Card
                                 key={template.id}
-                                className={`border-2 rounded-2xl transition-all cursor-pointer hover:shadow-md ${selectedId === template.id
+                                className={`border-2 rounded-none transition-all cursor-pointer hover:shadow-md ${selectedId === template.id
                                         ? 'border-indigo-600 bg-indigo-50'
                                         : 'border-slate-200 hover:border-indigo-300'
                                     }`}
@@ -520,7 +537,7 @@ export default function TemplateGallery({
                             >
                                 <CardContent className="p-4">
                                     <div className="flex items-start gap-3">
-                                        <div className="p-3 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-xl text-white shadow-lg shadow-blue-100 shrink-0">
+                                        <div className="p-3 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-none text-white shadow-lg shadow-blue-100 shrink-0">
                                             <span className="text-xl">{getBoardTypeIcon(template.boardType)}</span>
                                         </div>
 
@@ -585,7 +602,7 @@ export default function TemplateGallery({
 
             {/* Empty State */}
             {allTemplates.length === 0 && (
-                <Card className="border-none shadow-sm rounded-2xl bg-slate-50">
+                <Card className="border-none shadow-sm rounded-none bg-slate-50">
                     <CardContent className="p-8 text-center">
                         <Layout size={32} className="mx-auto text-slate-300 mb-3" />
                         <p className="text-[13px] font-semibold text-slate-500">No templates found</p>
@@ -600,13 +617,13 @@ export default function TemplateGallery({
                     <Button
                         variant="outline"
                         onClick={onClose}
-                        className="h-9 px-4 rounded-xl text-[12px] font-semibold"
+                        className="h-9 px-4 rounded-none text-[12px] font-semibold"
                     >
                         Cancel
                     </Button>
                     <Button
                         onClick={() => onSelectTemplate(selectedId)}
-                        className="h-9 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[12px] font-semibold shadow-md shadow-indigo-100"
+                        className="h-9 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-none text-[12px] font-semibold shadow-md shadow-indigo-100"
                     >
                         Use Template
                     </Button>

@@ -267,29 +267,45 @@ export default function RolesAndPermissionsPage() {
       <div className="flex-1 p-6 space-y-6">
         {/* Stats Cards — compact density */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="bg-gradient-to-br from-primary/80 to-primary px-4 py-3 rounded-none shadow-md shadow-primary/20 text-white">
+          <button
+            type="button"
+            onClick={() => { setActiveTab("roles"); setSearchQuery(""); }}
+            className="bg-gradient-to-br from-primary/80 to-primary px-4 py-3 rounded-none shadow-md shadow-primary/20 text-white text-left hover:shadow-lg transition-all cursor-pointer"
+          >
             <p className="text-white text-[11px] opacity-80">Total Identity Roles</p>
             <p className="text-white text-lg font-semibold mt-0.5 leading-tight">{stats.total}</p>
             <p className="text-white text-[10px] mt-0.5 opacity-70">Active in directory</p>
-          </div>
+          </button>
 
-          <div className="bg-white border border-zinc-200 px-4 py-3 rounded-none shadow-sm">
+          <button
+            type="button"
+            onClick={() => { setActiveTab("roles"); setSearchQuery("Custom"); }}
+            className="bg-white border border-zinc-200 px-4 py-3 rounded-none shadow-sm text-left hover:shadow-md transition-all cursor-pointer"
+          >
             <p className="text-zinc-500 text-[11px]">Custom Extensions</p>
             <p className="text-lg font-semibold text-zinc-900 mt-0.5 leading-tight">{stats.custom}</p>
             <p className="text-emerald-600 text-[10px] mt-0.5">Organization specific</p>
-          </div>
+          </button>
 
-          <div className="bg-white border border-zinc-200 px-4 py-3 rounded-none shadow-sm">
+          <button
+            type="button"
+            onClick={() => setActiveTab("assignments")}
+            className="bg-white border border-zinc-200 px-4 py-3 rounded-none shadow-sm text-left hover:shadow-md transition-all cursor-pointer"
+          >
             <p className="text-zinc-500 text-[11px]">Scoped Users</p>
             <p className="text-lg font-semibold text-zinc-900 mt-0.5 leading-tight">{stats.users}</p>
             <p className="text-primary text-[10px] mt-0.5">Assigned identities</p>
-          </div>
+          </button>
 
-          <div className="bg-white border border-zinc-200 px-4 py-3 rounded-none shadow-sm">
+          <button
+            type="button"
+            onClick={() => router.push(`/${orgName}/audit-logs`)}
+            className="bg-white border border-zinc-200 px-4 py-3 rounded-none shadow-sm text-left hover:shadow-md transition-all cursor-pointer"
+          >
             <p className="text-zinc-500 text-[11px]">Global Audit</p>
             <p className="text-lg font-semibold text-zinc-900 mt-0.5 leading-tight">Active</p>
             <p className="text-emerald-600 text-[10px] mt-0.5">Clean directory logs</p>
-          </div>
+          </button>
         </div>
 
         {/* Tabs + search */}

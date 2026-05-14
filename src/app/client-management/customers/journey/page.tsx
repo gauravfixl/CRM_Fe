@@ -1,65 +1,28 @@
 "use client"
 
 import * as React from "react"
-import { useState, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import {
-    Map,
-    Compass,
-    Flag,
-    Wind,
-    Search,
-    Filter,
-    MoreVertical,
-    Plus,
-    Trash2,
-    PencilLine,
-    Eye,
-    Save,
-    Building2,
-    ChevronRight,
-    ArrowRight,
-    Award,
-    HeartHandshake,
-    Lightbulb,
-    Zap,
-    Users
+    Map, Compass, Flag, Wind, Search, Filter, MoreVertical, Plus,
+    Trash2, PencilLine, Eye, Building2, ChevronRight, ArrowRight, Award, HeartHandshake, Lightbulb, Zap,
 } from "lucide-react"
-
-import { Card, CardContent } from "@/shared/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter,
-    DialogTrigger,
-} from "@/shared/components/ui/dialog"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/shared/components/ui/select"
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/shared/components/ui/dropdown-menu"
-import { useToast } from "@/shared/components/ui/use-toast"
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/shared/components/ui/sheet"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu"
+import { Badge } from "@/shared/components/ui/badge"
+import { toast } from "@/shared/utils/toast"
 
-// Types
 interface RoadmapStage {
-    id: number;
-    account: string;
-    lifecycle: 'Discovery' | 'Onboarding' | 'Adoption' | 'Value Realization' | 'Advocacy';
-    duration: string;
-    nextMilestone: string;
-    lastTouchpoint: string;
+    id: number
+    account: string
+    lifecycle: 'Discovery' | 'Onboarding' | 'Adoption' | 'Value Realization' | 'Advocacy'
+    duration: string
+    nextMilestone: string
+    lastTouchpoint: string
 }
 
 const initialRoadmap: RoadmapStage[] = [
@@ -70,262 +33,261 @@ const initialRoadmap: RoadmapStage[] = [
     { id: 5, account: "Horizon Media", lifecycle: "Value Realization", duration: "1.2 years", nextMilestone: "Quarterly Review", lastTouchpoint: "2 days ago" },
 ]
 
-const cn = (...classes: any[]) => classes.filter(Boolean).join(' ')
+const validators = {
+    required: (v: any) => !v || !v.toString().trim() ? "This field is required" : "",
+    minLen: (n: number) => (v: string) => v && v.trim().length < n ? `Must be at least ${n} characters` : "",
+}
 
-const MetricBox = ({ title, value, icon: Icon, color, subValue }: any) => {
-    const colorClasses: any = {
-        blue: "from-blue-50 to-blue-100/50 border-blue-200/50 text-blue-600",
-        indigo: "from-indigo-50 to-indigo-100/50 border-indigo-200/50 text-indigo-600",
-        violet: "from-violet-50 to-violet-100/50 border-violet-200/50 text-violet-600",
-        emerald: "from-emerald-50 to-emerald-100/50 border-emerald-200/50 text-emerald-600",
+const getLifecycleProps = (stage: string) => {
+    switch (stage) {
+        case 'Discovery': return { color: 'bg-slate-50 text-slate-600 border-slate-100', icon: <Compass className="h-4 w-4" /> }
+        case 'Onboarding': return { color: 'bg-blue-50 text-blue-600 border-blue-100', icon: <Wind className="h-4 w-4" /> }
+        case 'Adoption': return { color: 'bg-indigo-50 text-indigo-600 border-indigo-100', icon: <Zap className="h-4 w-4" /> }
+        case 'Value Realization': return { color: 'bg-emerald-50 text-emerald-600 border-emerald-100', icon: <HeartHandshake className="h-4 w-4" /> }
+        case 'Advocacy': return { color: 'bg-violet-50 text-violet-600 border-violet-100', icon: <Award className="h-4 w-4" /> }
+        default: return { color: 'bg-slate-50 text-slate-600 border-slate-100', icon: <Flag className="h-4 w-4" /> }
     }
-    const currentClasses = colorClasses[color] || colorClasses.blue
-    return (
-        <Card className={cn("bg-gradient-to-br border shadow-none transition-all hover:shadow-md", currentClasses.split(' ').slice(0, 3).join(' '))}>
-            <CardContent className="p-5">
-                <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                        <p className="text-xs font-semibold text-slate-500 tracking-wide font-outfit mb-2">{title}</p>
-                        <h3 className="text-2xl font-bold text-slate-900 font-outfit tracking-tight leading-none">{value}</h3>
-                        <p className="mt-2 text-xs font-medium text-slate-400 font-outfit">{subValue}</p>
-                    </div>
-                    <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center bg-white/60 shadow-sm border border-white/50", currentClasses.split(' ').pop())}>
-                        <Icon className="h-5 w-5" />
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-    )
 }
 
 export default function CustomerJourneyPage() {
-    const [roadmap, setRoadmap] = useState<RoadmapStage[]>(initialRoadmap)
-    const [search, setSearch] = useState("")
-    const [isDialogOpen, setIsDialogOpen] = useState(false)
-    const [editingStage, setEditingStage] = useState<RoadmapStage | null>(null)
-    const { toast } = useToast()
+    const router = useRouter()
+    const [roadmap, setRoadmap] = React.useState<RoadmapStage[]>(initialRoadmap)
+    const [search, setSearch] = React.useState("")
+    const [lifecycleFilter, setLifecycleFilter] = React.useState("all")
 
-    const [formData, setFormData] = useState<Partial<RoadmapStage>>({
-        account: '',
-        lifecycle: 'Discovery',
-        duration: '0 months',
-        nextMilestone: '',
-        lastTouchpoint: 'Just now'
+    const [isFormOpen, setIsFormOpen] = React.useState(false)
+    const [isDetailOpen, setIsDetailOpen] = React.useState(false)
+    const [isFilterOpen, setIsFilterOpen] = React.useState(false)
+    const [editingId, setEditingId] = React.useState<number | null>(null)
+    const [selected, setSelected] = React.useState<RoadmapStage | null>(null)
+
+    const [form, setForm] = React.useState({
+        account: "", lifecycle: "Discovery" as RoadmapStage['lifecycle'],
+        duration: "0 months", nextMilestone: "", lastTouchpoint: "Just now",
     })
+    const [errors, setErrors] = React.useState<Record<string, string>>({})
 
-    const metrics = useMemo(() => {
+    const metrics = React.useMemo(() => {
         const total = roadmap.length
         const advocates = roadmap.filter(r => r.lifecycle === 'Advocacy').length
         const maturing = roadmap.filter(r => r.lifecycle === 'Value Realization').length
-
-        return { total, advocates, maturing, avgAge: "11.4mo" }
+        const onboarding = roadmap.filter(r => r.lifecycle === 'Onboarding').length
+        return { total, advocates, maturing, onboarding, avgAge: "11.4mo" }
     }, [roadmap])
 
-    const filteredRoadmap = useMemo(() => {
-        return roadmap.filter(r => r.account.toLowerCase().includes(search.toLowerCase()))
-    }, [roadmap, search])
+    const filtered = React.useMemo(() => {
+        return roadmap.filter(r => {
+            const matchSearch = !search || r.account.toLowerCase().includes(search.toLowerCase()) || r.nextMilestone.toLowerCase().includes(search.toLowerCase())
+            const matchLifecycle = lifecycleFilter === "all" || r.lifecycle === lifecycleFilter
+            return matchSearch && matchLifecycle
+        })
+    }, [roadmap, search, lifecycleFilter])
 
-    const handleDelete = (id: number) => {
-        setRoadmap(prev => prev.filter(r => r.id !== id))
-        toast({ title: "Journey Ceased", description: "Record removed from lifecycle tracking." })
+    const setField = (field: string, value: any) => {
+        setForm(prev => ({ ...prev, [field]: value }))
+        if (errors[field]) setErrors(prev => { const c = { ...prev }; delete c[field]; return c })
+    }
+
+    const validate = (): boolean => {
+        const errs: Record<string, string> = {}
+        errs.account = validators.required(form.account) || validators.minLen(2)(form.account)
+        errs.duration = validators.required(form.duration)
+        errs.nextMilestone = validators.required(form.nextMilestone) || validators.minLen(3)(form.nextMilestone)
+        Object.keys(errs).forEach(k => { if (!errs[k]) delete errs[k] })
+        setErrors(errs)
+        return Object.keys(errs).length === 0
+    }
+
+    const openCreate = () => {
+        setEditingId(null)
+        setForm({ account: "", lifecycle: "Discovery", duration: "0 months", nextMilestone: "", lastTouchpoint: "Just now" })
+        setErrors({})
+        setIsFormOpen(true)
+    }
+
+    const openEdit = (r: RoadmapStage) => {
+        setEditingId(r.id)
+        setForm({ account: r.account, lifecycle: r.lifecycle, duration: r.duration, nextMilestone: r.nextMilestone, lastTouchpoint: r.lastTouchpoint })
+        setErrors({})
+        setIsFormOpen(true)
     }
 
     const handleSave = () => {
-        if (!formData.account || !formData.nextMilestone) return
-
-        if (editingStage) {
-            setRoadmap(prev => prev.map(r => r.id === editingStage.id ? { ...r, ...formData } as RoadmapStage : r))
-            toast({ title: "Lifecycle Updated", description: "Customer journey phase recorded." })
-        } else {
-            const newId = roadmap.length > 0 ? Math.max(...roadmap.map(r => r.id)) + 1 : 1
-            setRoadmap(prev => [...prev, { ...formData, id: newId } as RoadmapStage])
-            toast({ title: "Journey Started", description: "New client lifecycle initialized." })
+        if (!validate()) { toast.error("Please correct the highlighted fields"); return }
+        const data: RoadmapStage = {
+            id: editingId || Date.now(),
+            account: form.account.trim(),
+            lifecycle: form.lifecycle,
+            duration: form.duration.trim(),
+            nextMilestone: form.nextMilestone.trim(),
+            lastTouchpoint: form.lastTouchpoint,
         }
-        setIsDialogOpen(false)
-        setEditingStage(null)
-        setFormData({ account: '', lifecycle: 'Discovery', duration: '0 months', nextMilestone: '', lastTouchpoint: 'Just now' })
+        if (editingId) {
+            setRoadmap(roadmap.map(r => r.id === editingId ? data : r))
+            toast.success("Lifecycle updated")
+        } else {
+            setRoadmap([data, ...roadmap])
+            toast.success("Journey started")
+        }
+        setIsFormOpen(false)
     }
 
-    const getLifecycleProps = (stage: string) => {
-        switch (stage) {
-            case 'Discovery': return { color: 'bg-slate-50 text-slate-600 border-slate-100', icon: <Compass className="h-4 w-4" /> }
-            case 'Onboarding': return { color: 'bg-blue-50 text-blue-600 border-blue-100', icon: <Wind className="h-4 w-4" /> }
-            case 'Adoption': return { color: 'bg-indigo-50 text-indigo-600 border-indigo-100', icon: <Zap className="h-4 w-4" /> }
-            case 'Value Realization': return { color: 'bg-emerald-50 text-emerald-600 border-emerald-100', icon: <HeartHandshake className="h-4 w-4" /> }
-            case 'Advocacy': return { color: 'bg-violet-50 text-violet-600 border-violet-100', icon: <Award className="h-4 w-4" /> }
-            default: return { color: 'bg-slate-50 text-slate-600 border-slate-100', icon: <Flag className="h-4 w-4" /> }
-        }
+    const handleDelete = (id: number) => {
+        setRoadmap(roadmap.filter(r => r.id !== id))
+        toast.success("Journey removed")
+    }
+
+    const openDetail = (r: RoadmapStage) => { setSelected(r); setIsDetailOpen(true) }
+
+    const kpis = [
+        { title: "Total Accounts", value: String(metrics.total), subtitle: "Journey Participants", icon: Map, color: "blue", path: "/client-management/customers" },
+        { title: "Advocates", value: String(metrics.advocates), subtitle: "Net Promoter Potential", icon: Award, color: "violet", path: "/client-management/customers/feedback" },
+        { title: "Stabilized", value: String(metrics.maturing), subtitle: "Value Realized Phase", icon: HeartHandshake, color: "emerald", path: "/client-management/customers/health" },
+        { title: "Avg. Lifecycle", value: metrics.avgAge, subtitle: "Customer Tenure", icon: ChevronRight, color: "indigo", path: "/client-management/analytics/retention" },
+    ]
+    const cm: Record<string, { bg: string; border: string; text: string; iconBg: string }> = {
+        blue: { bg: "bg-gradient-to-br from-blue-50 to-blue-100/50", border: "border-blue-200/50", text: "text-blue-600", iconBg: "bg-blue-100" },
+        violet: { bg: "bg-gradient-to-br from-violet-50 to-violet-100/50", border: "border-violet-200/50", text: "text-violet-600", iconBg: "bg-violet-100" },
+        emerald: { bg: "bg-gradient-to-br from-emerald-50 to-emerald-100/50", border: "border-emerald-200/50", text: "text-emerald-600", iconBg: "bg-emerald-100" },
+        indigo: { bg: "bg-gradient-to-br from-indigo-50 to-indigo-100/50", border: "border-indigo-200/50", text: "text-indigo-600", iconBg: "bg-indigo-100" },
     }
 
     return (
-        <div className="px-8 py-8 space-y-8 bg-slate-50 min-h-screen font-outfit">
+        <div className="px-8 py-6 space-y-6 bg-slate-50 min-h-screen">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
                 <div className="flex flex-col gap-1">
-                    <h1 className="text-2xl font-bold text-slate-900 font-outfit tracking-tight">
+                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
                         Customer <span className="text-indigo-600">Journey Map</span>
                     </h1>
-                    <p className="text-[15px] font-medium text-slate-500 font-outfit">
-                        End-to-end lifecycle orchestration from initial discovery to brand advocacy.
-                    </p>
+                    <p className="text-[14px] font-medium text-slate-500">End-to-end lifecycle orchestration from initial discovery to brand advocacy.</p>
                 </div>
-                <Dialog open={isDialogOpen} onOpenChange={(open) => {
-                    setIsDialogOpen(open)
-                    if (!open) { setEditingStage(null); setFormData({ account: '', lifecycle: 'Discovery', duration: '0 months', nextMilestone: '', lastTouchpoint: 'Just now' }) }
-                }}>
-                    <DialogTrigger asChild>
-                        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl py-6 px-6 font-bold font-outfit shadow-lg shadow-indigo-600/20 gap-2">
-                            <Plus className="h-5 w-5" /> Log Transition
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[550px] font-outfit rounded-2xl">
-                        <DialogHeader>
-                            <DialogTitle className="text-xl font-bold">{editingStage ? 'Transition customer' : 'Initialize journey'}</DialogTitle>
-                        </DialogHeader>
-                        <div className="grid gap-6 py-4">
-                            <div className="space-y-2">
-                                <Label className="font-bold text-slate-700">Account Portfolio</Label>
-                                <Input value={formData.account} onChange={e => setFormData({ ...formData, account: e.target.value })} placeholder="e.g. Globex Corp" />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label className="font-bold text-slate-700">Lifecycle Phase</Label>
-                                    <Select value={formData.lifecycle} onValueChange={(v: any) => setFormData({ ...formData, lifecycle: v })}>
-                                        <SelectTrigger><SelectValue placeholder="Phase" /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Discovery">Discovery</SelectItem>
-                                            <SelectItem value="Onboarding">Onboarding</SelectItem>
-                                            <SelectItem value="Adoption">Adoption</SelectItem>
-                                            <SelectItem value="Value Realization">Value Realization</SelectItem>
-                                            <SelectItem value="Advocacy">Advocacy</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="font-bold text-slate-700">Duration in System</Label>
-                                    <Input value={formData.duration} onChange={e => setFormData({ ...formData, duration: e.target.value })} placeholder="e.g. 1.2 years" />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="font-bold text-slate-700">Next Critical Milestone</Label>
-                                <Input value={formData.nextMilestone} onChange={e => setFormData({ ...formData, nextMilestone: e.target.value })} placeholder="e.g. Executive Business Review" />
-                            </div>
-                        </div>
-                        <DialogFooter className="gap-2">
-                            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={handleSave}>
-                                <Save className="h-4 w-4 mr-2" /> Save Roadmap
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                <div className="flex gap-3">
+                    <Button variant="outline" className="rounded-none h-10" onClick={() => setIsFilterOpen(true)}>
+                        <Filter className="h-4 w-4 mr-2" />Filter
+                    </Button>
+                    <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-none h-10 px-5" onClick={openCreate}>
+                        <Plus className="h-4 w-4 mr-2" />Log Transition
+                    </Button>
+                </div>
             </div>
 
+            {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <MetricBox title="Total Accounts" value={metrics.total} subValue="Journey Participants" icon={Map} color="blue" />
-                <MetricBox title="Advocates" value={metrics.advocates} subValue="Net Promoter Potential" icon={Award} color="violet" />
-                <MetricBox title="Stabilized" value={metrics.maturing} subValue="Value Realized Phase" icon={HeartHandshake} color="emerald" />
-                <MetricBox title="Avg. Lifecycle" value={metrics.avgAge} subValue="Customer Tenure" icon={ChevronRight} color="indigo" />
+                {kpis.map((kpi, i) => {
+                    const cc = cm[kpi.color]
+                    const Icon = kpi.icon
+                    return (
+                        <Card key={i} className={`rounded-none cursor-pointer hover:shadow-md transition ${cc.bg} ${cc.border} border`} onClick={() => router.push(kpi.path)}>
+                            <CardContent className="p-5">
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <p className="text-xs font-semibold text-slate-500 tracking-wide mb-1">{kpi.title}</p>
+                                        <h3 className="text-2xl font-bold text-slate-900">{kpi.value}</h3>
+                                        <p className="mt-2 text-xs text-slate-400">{kpi.subtitle}</p>
+                                    </div>
+                                    <div className={`h-10 w-10 rounded-none flex items-center justify-center ${cc.iconBg}`}>
+                                        <Icon className={`h-5 w-5 ${cc.text}`} />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )
+                })}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
-                    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden text-sm font-outfit">
-                        <div className="px-6 py-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white">
-                            <h2 className="text-base font-bold text-slate-900 tracking-tight font-outfit">Client Lifecycle Matrix</h2>
+                    <Card className="rounded-none">
+                        <CardHeader className="border-b border-slate-100 flex flex-row items-center justify-between gap-3">
                             <div className="flex items-center gap-3">
-                                <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                    <Input
-                                        placeholder="Search by client..."
-                                        value={search}
-                                        onChange={e => setSearch(e.target.value)}
-                                        className="pl-10 pr-4 py-2 bg-slate-50/50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/10 w-full md:w-64 font-outfit"
-                                    />
-                                </div>
+                                <CardTitle className="text-base font-semibold">Client Lifecycle Matrix</CardTitle>
+                                <Badge className="rounded-none bg-slate-100 text-slate-600">{filtered.length} accounts</Badge>
                             </div>
-                        </div>
-
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left">
-                                <thead>
-                                    <tr className="text-[12px] font-bold text-slate-400 tracking-wider border-b border-slate-50 bg-slate-50/30">
-                                        <th className="px-6 py-4">Account Portfolio</th>
-                                        <th className="px-6 py-4">Current Phase</th>
-                                        <th className="px-6 py-4">Tenure</th>
-                                        <th className="px-6 py-4">Next Milestone</th>
-                                        <th className="px-6 py-4"></th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-50">
-                                    {filteredRoadmap.map((item) => {
-                                        const props = getLifecycleProps(item.lifecycle)
-                                        return (
-                                            <tr key={item.id} className="group hover:bg-slate-50/80 transition-all border-b border-slate-50/50">
-                                                <td className="px-6 py-5">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center border border-indigo-100 shadow-sm">
-                                                            <Building2 className="h-5 w-5 text-indigo-600" />
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                <Input placeholder="Search by client..." value={search} onChange={e => setSearch(e.target.value)}
+                                    className="pl-10 rounded-none w-64 h-9" />
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="text-[11px] font-bold text-slate-400 tracking-wider border-b border-slate-50 bg-slate-50/30">
+                                            <th className="px-6 py-3">Account Portfolio</th>
+                                            <th className="px-6 py-3">Current Phase</th>
+                                            <th className="px-6 py-3">Tenure</th>
+                                            <th className="px-6 py-3">Next Milestone</th>
+                                            <th className="px-6 py-3"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50">
+                                        {filtered.length > 0 ? filtered.map((item) => {
+                                            const props = getLifecycleProps(item.lifecycle)
+                                            return (
+                                                <tr key={item.id} className="group hover:bg-slate-50/80 transition cursor-pointer" onClick={() => openDetail(item)}>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="h-10 w-10 rounded-none bg-indigo-50 flex items-center justify-center border border-indigo-100">
+                                                                <Building2 className="h-5 w-5 text-indigo-600" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-sm font-bold text-slate-800">{item.account}</p>
+                                                                <p className="text-[10px] font-medium text-slate-400 mt-0.5">Last Sync: {item.lastTouchpoint}</p>
+                                                            </div>
                                                         </div>
-                                                        <div>
-                                                            <p className="text-sm font-bold text-slate-800 font-outfit">{item.account}</p>
-                                                            <p className="text-[10px] font-medium text-slate-400 font-outfit mt-0.5">Last Sync: {item.lastTouchpoint}</p>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className={`inline-flex items-center gap-2 px-2 py-1 rounded-none text-[11px] font-bold border whitespace-nowrap ${props.color}`}>
+                                                            {props.icon}
+                                                            {item.lifecycle}
                                                         </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-5">
-                                                    <div className={cn(
-                                                        "inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-bold font-outfit border whitespace-nowrap shadow-sm",
-                                                        props.color
-                                                    )}>
-                                                        {props.icon}
-                                                        {item.lifecycle}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-5 text-[11px] font-bold text-slate-900 font-outfit italic">{item.duration}</td>
-                                                <td className="px-6 py-5">
-                                                    <div className="flex items-center gap-2">
-                                                        <ArrowRight className="h-3 w-3 text-slate-300" />
-                                                        <span className="text-[11px] font-bold text-slate-500 font-outfit">{item.nextMilestone}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-5 text-right">
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="text-slate-300 hover:text-indigo-600 transition-colors">
-                                                                <MoreVertical className="h-5 w-5" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end" className="w-44 font-outfit rounded-xl">
-                                                            <DropdownMenuItem className="flex items-center gap-2 cursor-pointer" onClick={() => {
-                                                                setEditingStage(item)
-                                                                setFormData(item)
-                                                                setIsDialogOpen(true)
-                                                            }}>
-                                                                <PencilLine className="h-4 w-4" /> Move to Phase
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
-                                                                <Lightbulb className="h-4 w-4" /> Success Playbook
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem className="flex items-center gap-2 text-rose-500 cursor-pointer border-t mt-1" onClick={() => handleDelete(item.id)}>
-                                                                <Trash2 className="h-4 w-4" /> Remove Tracking
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </td>
-                                            </tr>
-                                        )
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-[11px] font-bold text-slate-900 italic">{item.duration}</td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <ArrowRight className="h-3 w-3 text-slate-300" />
+                                                            <span className="text-[11px] font-bold text-slate-500">{item.nextMilestone}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button variant="ghost" size="icon" className="rounded-none">
+                                                                    <MoreVertical className="h-4 w-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end" className="w-44 rounded-none">
+                                                                <DropdownMenuItem className="flex items-center gap-2" onClick={() => openEdit(item)}>
+                                                                    <PencilLine className="h-4 w-4" /> Move to Phase
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem className="flex items-center gap-2" onClick={() => toast.success("Playbook opened")}>
+                                                                    <Lightbulb className="h-4 w-4" /> Success Playbook
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem className="flex items-center gap-2 text-rose-500 border-t mt-1" onClick={() => handleDelete(item.id)}>
+                                                                    <Trash2 className="h-4 w-4" /> Remove Tracking
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </td>
+                                                </tr>
+                                            )
+                                        }) : (
+                                            <tr><td colSpan={5} className="px-6 py-12 text-center text-sm text-slate-500">No journeys match your filters.</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
 
                 <div className="space-y-6">
-                    <Card className="rounded-2xl border-slate-200 bg-white p-6 shadow-sm overflow-hidden relative">
-                        <div className="absolute top-0 right-0 h-16 w-16 bg-slate-50 rounded-bl-full -z-0" />
-                        <h3 className="text-xs font-bold text-slate-400 tracking-wider font-outfit mb-6 relative z-10">Lifecycle Funnel</h3>
-                        <div className="space-y-5 relative z-10">
+                    <Card className="rounded-none">
+                        <CardHeader>
+                            <CardTitle className="text-xs font-bold text-slate-400 tracking-wider uppercase">Lifecycle Funnel</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
                             {[
                                 { stage: 'Discovery', count: 4, color: 'bg-slate-400', progress: 100 },
                                 { stage: 'Onboarding', count: 6, color: 'bg-blue-500', progress: 85 },
@@ -333,58 +295,183 @@ export default function CustomerJourneyPage() {
                                 { stage: 'Value Realization', count: 18, color: 'bg-emerald-500', progress: 45 },
                                 { stage: 'Advocacy', count: 8, color: 'bg-violet-500', progress: 25 },
                             ].map((f, i) => (
-                                <div key={i} className="space-y-1.5">
-                                    <div className="flex justify-between items-center text-[10px] font-bold font-outfit">
+                                <div key={i} className="space-y-1.5 cursor-pointer hover:bg-slate-50 -mx-2 px-2 py-1" onClick={() => setLifecycleFilter(f.stage)}>
+                                    <div className="flex justify-between items-center text-[10px] font-bold">
                                         <span className="text-slate-600">{f.stage}</span>
                                         <span className="text-slate-900">{f.count}</span>
                                     </div>
-                                    <div className="h-2 w-full bg-slate-50 rounded-full overflow-hidden">
-                                        <div className={cn("h-full rounded-full opacity-80", f.color)} style={{ width: `${f.progress}%` }} />
+                                    <div className="h-2 w-full bg-slate-50 overflow-hidden">
+                                        <div className={`h-full opacity-80 ${f.color}`} style={{ width: `${f.progress}%` }} />
                                     </div>
                                 </div>
                             ))}
-                        </div>
+                        </CardContent>
                     </Card>
 
-                    <Card className="rounded-2xl border-violet-100 bg-violet-50/10 p-6 shadow-sm">
-                        <div className="flex items-center gap-2 mb-6 text-violet-600">
-                            <Plus className="h-4 w-4" />
-                            <h3 className="text-xs font-bold tracking-wider font-outfit">Advocacy Candidates</h3>
-                        </div>
-                        <div className="space-y-4">
-                            <div className="p-4 bg-white border border-violet-100 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer">
-                                <p className="text-sm font-bold text-slate-800 font-outfit">DataScale Inc</p>
-                                <p className="text-[11px] font-medium text-slate-500 font-outfit">Met all success milestones. High NPS (9/10).</p>
-                                <Button className="w-full mt-3 py-4 bg-violet-600 text-white rounded-lg text-[10px] font-bold">
+                    <Card className="rounded-none border-violet-100 bg-violet-50/10">
+                        <CardHeader>
+                            <CardTitle className="text-xs font-bold text-violet-600 tracking-wider flex items-center gap-2 uppercase">
+                                <Plus className="h-4 w-4" /> Advocacy Candidates
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            <div className="p-3 bg-white border border-violet-100 rounded-none">
+                                <p className="text-sm font-bold text-slate-800">DataScale Inc</p>
+                                <p className="text-[11px] font-medium text-slate-500">Met all success milestones. High NPS (9/10).</p>
+                                <Button className="w-full mt-3 bg-violet-600 hover:bg-violet-700 text-white rounded-none text-[11px] h-8" onClick={() => toast.success("Invite sent to DataScale")}>
                                     Invite to Advisory Board
                                 </Button>
                             </div>
-                        </div>
+                        </CardContent>
                     </Card>
 
-                    <Card className="rounded-2xl border-slate-200 bg-white p-6 shadow-sm">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-xs font-bold text-slate-400 tracking-wider font-outfit">Phase Velocity</h3>
+                    <Card className="rounded-none">
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <CardTitle className="text-xs font-bold text-slate-400 tracking-wider uppercase">Phase Velocity</CardTitle>
                             <ChevronRight className="h-4 w-4 text-slate-300" />
-                        </div>
-                        <div className="space-y-4">
+                        </CardHeader>
+                        <CardContent className="space-y-3">
                             {[
                                 { name: 'Avg. Onboarding', value: '28d', icon: <Wind className="h-3 w-3 text-blue-500" /> },
                                 { name: 'Trial to Value', value: '42d', icon: <HeartHandshake className="h-3 w-3 text-emerald-500" /> },
                                 { name: 'Value to Advocacy', value: '180d', icon: <Award className="h-3 w-3 text-violet-500" /> },
                             ].map((stat, i) => (
-                                <div key={i} className="flex items-center justify-between pb-3 border-b border-slate-50 last:border-0 last:pb-0">
+                                <div key={i} className="flex items-center justify-between pb-3 border-b border-slate-50 last:border-0 last:pb-0 cursor-pointer hover:bg-slate-50 -mx-2 px-2 py-1" onClick={() => toast.success(`${stat.name} report opened`)}>
                                     <div className="flex items-center gap-2">
                                         {stat.icon}
-                                        <span className="text-[12px] font-bold text-slate-500 font-outfit">{stat.name}</span>
+                                        <span className="text-[12px] font-bold text-slate-500">{stat.name}</span>
                                     </div>
-                                    <span className="text-[13px] font-bold text-slate-900 font-outfit">{stat.value}</span>
+                                    <span className="text-[13px] font-bold text-slate-900">{stat.value}</span>
                                 </div>
                             ))}
-                        </div>
+                        </CardContent>
                     </Card>
                 </div>
             </div>
+
+            {/* Form Sheet */}
+            <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <SheetContent side="right" className="sm:max-w-md w-full p-0 rounded-none flex flex-col">
+                    <SheetHeader className="p-6 border-b bg-gradient-to-br from-indigo-50 to-violet-50">
+                        <SheetTitle className="text-[18px] font-semibold text-slate-900">{editingId ? "Transition Customer" : "Initialize Journey"}</SheetTitle>
+                        <p className="text-[12px] text-slate-500">Track customer lifecycle phase.</p>
+                    </SheetHeader>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Account Portfolio <span className="text-rose-500">*</span></Label>
+                            <Input value={form.account} onChange={e => setField("account", e.target.value)} placeholder="e.g. Globex Corp" className={`h-10 rounded-none ${errors.account ? "border-rose-500" : ""}`} />
+                            {errors.account && <p className="text-[11px] text-rose-500">{errors.account}</p>}
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-[12px] font-semibold">Lifecycle Phase</Label>
+                                <Select value={form.lifecycle} onValueChange={(v: any) => setField("lifecycle", v)}>
+                                    <SelectTrigger className="h-10 rounded-none"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-none">
+                                        <SelectItem value="Discovery">Discovery</SelectItem>
+                                        <SelectItem value="Onboarding">Onboarding</SelectItem>
+                                        <SelectItem value="Adoption">Adoption</SelectItem>
+                                        <SelectItem value="Value Realization">Value Realization</SelectItem>
+                                        <SelectItem value="Advocacy">Advocacy</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[12px] font-semibold">Duration <span className="text-rose-500">*</span></Label>
+                                <Input value={form.duration} onChange={e => setField("duration", e.target.value)} placeholder="e.g. 1.2 years" className={`h-10 rounded-none ${errors.duration ? "border-rose-500" : ""}`} />
+                                {errors.duration && <p className="text-[11px] text-rose-500">{errors.duration}</p>}
+                            </div>
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Next Critical Milestone <span className="text-rose-500">*</span></Label>
+                            <Input value={form.nextMilestone} onChange={e => setField("nextMilestone", e.target.value)} placeholder="e.g. Executive Business Review" className={`h-10 rounded-none ${errors.nextMilestone ? "border-rose-500" : ""}`} />
+                            {errors.nextMilestone && <p className="text-[11px] text-rose-500">{errors.nextMilestone}</p>}
+                        </div>
+                    </div>
+                    <div className="p-5 border-t flex gap-3 bg-white">
+                        <Button variant="outline" className="flex-1 h-10 rounded-none" onClick={() => setIsFormOpen(false)}>Cancel</Button>
+                        <Button className="flex-1 h-10 bg-indigo-600 hover:bg-indigo-700 text-white rounded-none" onClick={handleSave}>
+                            {editingId ? "Save Changes" : "Save Roadmap"}
+                        </Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* Filter Sheet */}
+            <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <SheetContent side="right" className="sm:max-w-md w-full p-0 rounded-none flex flex-col">
+                    <SheetHeader className="p-6 border-b bg-gradient-to-br from-slate-50 to-indigo-50">
+                        <SheetTitle className="text-[18px] font-semibold">Filter Journeys</SheetTitle>
+                    </SheetHeader>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Lifecycle Phase</Label>
+                            <Select value={lifecycleFilter} onValueChange={setLifecycleFilter}>
+                                <SelectTrigger className="h-10 rounded-none"><SelectValue /></SelectTrigger>
+                                <SelectContent className="rounded-none">
+                                    <SelectItem value="all">All Phases</SelectItem>
+                                    <SelectItem value="Discovery">Discovery</SelectItem>
+                                    <SelectItem value="Onboarding">Onboarding</SelectItem>
+                                    <SelectItem value="Adoption">Adoption</SelectItem>
+                                    <SelectItem value="Value Realization">Value Realization</SelectItem>
+                                    <SelectItem value="Advocacy">Advocacy</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div className="p-5 border-t flex gap-3 bg-white">
+                        <Button variant="outline" className="flex-1 h-10 rounded-none" onClick={() => { setLifecycleFilter("all"); toast.success("Filters reset") }}>Reset</Button>
+                        <Button className="flex-1 h-10 bg-indigo-600 hover:bg-indigo-700 rounded-none" onClick={() => { setIsFilterOpen(false); toast.success("Filters applied") }}>Apply</Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* Detail Sheet */}
+            <Sheet open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+                <SheetContent side="right" className="sm:max-w-md w-full p-0 rounded-none flex flex-col">
+                    <SheetHeader className="p-6 border-b bg-gradient-to-br from-slate-50 to-indigo-50">
+                        <SheetTitle className="text-[18px] font-semibold">Journey Details</SheetTitle>
+                    </SheetHeader>
+                    {selected && (
+                        <>
+                            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                                <div>
+                                    <p className="text-[11px] text-slate-400 uppercase tracking-wider">Account</p>
+                                    <p className="text-lg font-semibold text-slate-900">{selected.account}</p>
+                                    <div className={`inline-flex mt-2 items-center gap-2 px-2 py-1 rounded-none text-[11px] font-bold border ${getLifecycleProps(selected.lifecycle).color}`}>
+                                        {getLifecycleProps(selected.lifecycle).icon}
+                                        {selected.lifecycle}
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 pt-3 border-t">
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Tenure</p><p className="font-semibold text-slate-900 italic">{selected.duration}</p></div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Last Sync</p><p className="font-semibold text-slate-900">{selected.lastTouchpoint}</p></div>
+                                    <div className="col-span-2">
+                                        <p className="text-[11px] text-slate-400 uppercase">Next Milestone</p>
+                                        <p className="font-semibold text-slate-900">{selected.nextMilestone}</p>
+                                    </div>
+                                </div>
+                                <div className="pt-3 border-t space-y-2">
+                                    <Button variant="outline" className="w-full h-10 rounded-none justify-start" onClick={() => { setIsDetailOpen(false); router.push('/client-management/customers/health') }}>
+                                        <HeartHandshake className="h-4 w-4 mr-2" />View Health
+                                    </Button>
+                                    <Button variant="outline" className="w-full h-10 rounded-none justify-start" onClick={() => toast.success("Playbook started")}>
+                                        <Lightbulb className="h-4 w-4 mr-2" />Success Playbook
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="p-5 border-t flex gap-3 bg-white">
+                                <Button variant="outline" className="flex-1 h-10 rounded-none" onClick={() => { setIsDetailOpen(false); openEdit(selected) }}>
+                                    <PencilLine className="h-4 w-4 mr-2" />Edit
+                                </Button>
+                                <Button variant="outline" className="flex-1 h-10 rounded-none text-rose-500 border-rose-200 hover:bg-rose-50" onClick={() => { handleDelete(selected.id); setIsDetailOpen(false) }}>
+                                    <Trash2 className="h-4 w-4 mr-2" />Delete
+                                </Button>
+                            </div>
+                        </>
+                    )}
+                </SheetContent>
+            </Sheet>
         </div>
     )
 }

@@ -82,6 +82,7 @@ export default function CreateProjectWizard() {
         const newId = `p-${Date.now()}`
 
         // 1. Create Project Entry
+        const tmpl = selectedTemplate ? TEMPLATE_DEFINITIONS[selectedTemplate] : null
         addProject({
             id: newId,
             workspaceId: activeWorkspaceId || 'ws-1',
@@ -92,10 +93,11 @@ export default function CreateProjectWizard() {
             memberIds: [leadId],
             members: 1,
             due: "TBD",
-            category: selectedTemplate ? TEMPLATE_DEFINITIONS[selectedTemplate].type : "Business",
+            category: tmpl ? tmpl.type : "Business",
             icon: "🚀",
             type: projectType,
-            starred: true
+            methodology: selectedTemplate === "scrum" ? "scrum" : "kanban",
+            starred: true,
         })
 
         // 2. Seed Workflow & Board Configuration (The "Real" Implementation)

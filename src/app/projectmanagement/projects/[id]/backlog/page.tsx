@@ -33,14 +33,26 @@ import { useSprintStore, Sprint } from "@/shared/data/sprint-store"
 import { useIssueStore, Issue, IssuePriority } from "@/shared/data/issue-store"
 import { useProjectStore } from "@/shared/data/projects-store"
 import TaskDetailDrawer from "@/shared/components/projectmanagement/task-detail-drawer"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+    DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
+import { MoreHorizontal, ArrowRight, CheckSquare, X } from "lucide-react"
 
 export default function BacklogPage() {
     const params = useParams()
     const projectId = params?.id as string
 
     const { getProjectById } = useProjectStore()
-    const { getSprints, createSprint, deleteSprint } = useSprintStore()
+    const { getSprints, createSprint, deleteSprint, startSprint, completeSprint } = useSprintStore()
     const { getIssuesByProject, updateIssue, addIssue, loadIssuesByProject } = useIssueStore()
+
+    const [startSprintDialog, setStartSprintDialog] = useState<Sprint | null>(null)
+    const [sprintStartDate, setSprintStartDate] = useState("")
+    const [sprintEndDate, setSprintEndDate] = useState("")
 
     const project = getProjectById(projectId)
     const sprints = getSprints({ projectId })
@@ -147,11 +159,13 @@ export default function BacklogPage() {
     }
 
     const getPriorityColor = (priority: IssuePriority) => {
-        const colors = {
+        const colors: Record<IssuePriority, string> = {
+            HIGHEST: "bg-rose-200 text-rose-800 border-rose-300",
             URGENT: "bg-red-100 text-red-700 border-red-200",
             HIGH: "bg-orange-100 text-orange-700 border-orange-200",
             MEDIUM: "bg-yellow-100 text-yellow-700 border-yellow-200",
-            LOW: "bg-blue-100 text-blue-700 border-blue-200"
+            LOW: "bg-blue-100 text-blue-700 border-blue-200",
+            LOWEST: "bg-slate-100 text-slate-600 border-slate-200",
         }
         return colors[priority]
     }
@@ -165,52 +179,121 @@ export default function BacklogPage() {
         return colors[status]
     }
 
-    const TaskCard = ({ task }: { task: Issue }) => (
-        <Card
-            className="border-2 border-slate-200 hover:border-indigo-300 rounded-xl cursor-pointer transition-all group"
-            onClick={() => setSelectedTaskId(task.id)}
-        >
-            <CardContent className="p-3">
-                <div className="flex items-start gap-3">
-                    <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <GripVertical size={16} className="text-slate-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                            <div className="flex-1 min-w-0">
-                                <p className="text-[13px] font-bold text-slate-900 truncate">
-                                    {task.title}
-                                </p>
-                                <p className="text-[11px] text-slate-500 font-medium mt-0.5 line-clamp-1">
-                                    {task.description || "No description"}
-                                </p>
+    const TaskCard = ({ task }: { task: Issue }) => {
+        const nonCompletedSprints = sprints.filter(s => s.status !== "COMPLETED")
+        return (
+            <Card
+                className="border-2 border-slate-200 hover:border-indigo-300 rounded-xl cursor-pointer transition-all group"
+                onClick={() => setSelectedTaskId(task.id)}
+            >
+                <CardContent className="p-3">
+                    <div className="flex items-start gap-3">
+                        <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <GripVertical size={16} className="text-slate-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-[13px] font-bold text-slate-900 truncate">
+                                        {task.title}
+                                    </p>
+                                    <p className="text-[11px] text-slate-500 font-medium mt-0.5 line-clamp-1">
+                                        {task.description || "No description"}
+                                    </p>
+                                </div>
+                                <Badge className="bg-indigo-100 text-indigo-700 text-[9px] font-bold border-none shrink-0">
+                                    {task.id}
+                                </Badge>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <MoreHorizontal size={14} className="text-slate-400" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-52" onClick={(e) => e.stopPropagation()}>
+                                        <div className="px-2 py-1 text-[9px] font-bold text-slate-400 uppercase tracking-wider">Move to</div>
+                                        {nonCompletedSprints.length === 0 && (
+                                            <DropdownMenuItem disabled className="text-[11px] text-slate-400 italic">No sprints available</DropdownMenuItem>
+                                        )}
+                                        {nonCompletedSprints.map(s => (
+                                            <DropdownMenuItem
+                                                key={s.id}
+                                                disabled={task.sprintId === s.id}
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    moveTaskToSprint(task.id, s.id)
+                                                }}
+                                                className="gap-2"
+                                            >
+                                                <ArrowRight size={12} />
+                                                <span className="text-xs">{s.name}</span>
+                                                {s.status === "ACTIVE" && <Badge className="ml-auto text-[8px] bg-green-100 text-green-700 border-none">Active</Badge>}
+                                            </DropdownMenuItem>
+                                        ))}
+                                        {task.sprintId && (
+                                            <>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        moveTaskToSprint(task.id, null)
+                                                    }}
+                                                    className="gap-2"
+                                                >
+                                                    <X size={12} />
+                                                    <span className="text-xs">Remove from sprint</span>
+                                                </DropdownMenuItem>
+                                            </>
+                                        )}
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                if (confirm("Delete this task?")) {
+                                                    useIssueStore.getState().deleteIssue(task.id)
+                                                }
+                                            }}
+                                            className="gap-2 text-rose-600 focus:text-rose-600"
+                                        >
+                                            <Trash2 size={12} />
+                                            <span className="text-xs">Delete</span>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
-                            <Badge className="bg-indigo-100 text-indigo-700 text-[9px] font-bold border-none shrink-0">
-                                {task.id}
-                            </Badge>
-                        </div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <Badge className={`text-[9px] font-bold border ${getPriorityColor(task.priority)}`}>
-                                <Flag size={8} className="mr-1" />
-                                {task.priority}
-                            </Badge>
-                            {task.storyPoints && task.storyPoints > 0 && (
-                                <Badge className="bg-purple-100 text-purple-700 text-[9px] font-bold border-purple-200 border">
-                                    {task.storyPoints} pts
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <Badge className={`text-[9px] font-bold border ${getPriorityColor(task.priority)}`}>
+                                    <Flag size={8} className="mr-1" />
+                                    {task.priority}
                                 </Badge>
-                            )}
-                            {task.assignee && (
-                                <Badge className="bg-slate-100 text-slate-600 text-[9px] font-bold border-none">
-                                    <User size={8} className="mr-1" />
-                                    {task.assignee.name}
-                                </Badge>
-                            )}
+                                {task.storyPoints && task.storyPoints > 0 && (
+                                    <Badge className="bg-purple-100 text-purple-700 text-[9px] font-bold border-purple-200 border">
+                                        {task.storyPoints} pts
+                                    </Badge>
+                                )}
+                                {task.assignee && (
+                                    <Badge className="bg-slate-100 text-slate-600 text-[9px] font-bold border-none">
+                                        <User size={8} className="mr-1" />
+                                        {task.assignee.name}
+                                    </Badge>
+                                )}
+                                {task.status && task.status !== "TODO" && (
+                                    <Badge className="bg-blue-50 text-blue-700 text-[9px] font-bold border border-blue-200">
+                                        {task.status.replace("_", " ")}
+                                    </Badge>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            </CardContent>
-        </Card>
-    )
+                </CardContent>
+            </Card>
+        )
+    }
 
     const SprintSection = ({ sprint }: { sprint: Sprint }) => {
         const tasks = sprintTasks(sprint.id)
@@ -262,18 +345,52 @@ export default function BacklogPage() {
                             )}
                         </div>
                         {sprint.status === "PLANNED" && (
+                            <>
+                                <Button
+                                    size="sm"
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        const today = new Date()
+                                        const twoWeeks = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+                                        setSprintStartDate(today.toISOString().slice(0, 10))
+                                        setSprintEndDate(twoWeeks.toISOString().slice(0, 10))
+                                        setStartSprintDialog(sprint)
+                                    }}
+                                    className="h-7 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-none gap-1"
+                                >
+                                    <Play size={12} /> Start Sprint
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        if (confirm("Delete this sprint?")) {
+                                            deleteSprint(sprint.id)
+                                        }
+                                    }}
+                                    className="h-7 w-7 p-0 text-red-600 hover:bg-red-50 rounded-none"
+                                >
+                                    <Trash2 size={14} />
+                                </Button>
+                            </>
+                        )}
+                        {sprint.status === "ACTIVE" && (
                             <Button
                                 size="sm"
-                                variant="ghost"
                                 onClick={(e) => {
                                     e.stopPropagation()
-                                    if (confirm("Delete this sprint?")) {
-                                        deleteSprint(sprint.id)
+                                    const incomplete = tasks.filter(t => t.status !== "DONE")
+                                    if (incomplete.length > 0) {
+                                        if (!confirm(`${incomplete.length} task(s) are not Done yet. They will return to the backlog. Complete sprint anyway?`)) return
+                                        // Move incomplete tasks back to backlog
+                                        incomplete.forEach(t => updateIssue(t.id, { sprintId: undefined }))
                                     }
+                                    completeSprint(sprint.id)
                                 }}
-                                className="h-7 w-7 p-0 text-red-600 hover:bg-red-50"
+                                className="h-7 px-3 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold rounded-none gap-1"
                             >
-                                <Trash2 size={14} />
+                                <CheckSquare size={12} /> Complete Sprint
                             </Button>
                         )}
                     </div>
@@ -487,6 +604,62 @@ export default function BacklogPage() {
                 onClose={() => setSelectedTaskId(null)}
                 projectId={projectId}
             />
+
+            {/* Start Sprint Dialog */}
+            <Dialog open={!!startSprintDialog} onOpenChange={(open) => !open && setStartSprintDialog(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="text-base font-bold">Start Sprint: {startSprintDialog?.name}</DialogTitle>
+                        <DialogDescription className="text-xs">
+                            Set the sprint duration. Tasks in this sprint will become active on the board.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-[11px] font-bold">Start Date <span className="text-rose-500">*</span></Label>
+                                <Input
+                                    type="date"
+                                    value={sprintStartDate}
+                                    onChange={(e) => setSprintStartDate(e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[11px] font-bold">End Date <span className="text-rose-500">*</span></Label>
+                                <Input
+                                    type="date"
+                                    value={sprintEndDate}
+                                    onChange={(e) => setSprintEndDate(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                        <div className="bg-indigo-50 border border-indigo-100 p-3 text-[11px] text-indigo-700">
+                            <strong>Sprint contents:</strong> {startSprintDialog ? sprintTasks(startSprintDialog.id).length : 0} task(s) will become active.
+                        </div>
+                    </div>
+                    <div className="flex items-center justify-end gap-2">
+                        <Button variant="ghost" onClick={() => setStartSprintDialog(null)}>Cancel</Button>
+                        <Button
+                            onClick={() => {
+                                if (!startSprintDialog || !sprintStartDate || !sprintEndDate) return
+                                if (new Date(sprintEndDate) <= new Date(sprintStartDate)) {
+                                    alert("End date must be after start date")
+                                    return
+                                }
+                                const result = startSprint(startSprintDialog.id, new Date(sprintStartDate).toISOString(), new Date(sprintEndDate).toISOString())
+                                if (result) {
+                                    setStartSprintDialog(null)
+                                } else {
+                                    alert("Failed to start sprint — perhaps another sprint is already active in this project?")
+                                }
+                            }}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2"
+                        >
+                            <Play size={14} /> Start Sprint
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

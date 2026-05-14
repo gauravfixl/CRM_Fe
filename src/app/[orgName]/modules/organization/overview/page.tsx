@@ -346,7 +346,10 @@ export default function OrgOverviewPage() {
 
             {/* TOP STATS */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 px-4">
-                <SmallCard className="border rounded-none bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard
+                    onClick={() => router.push(`/${orgName}/modules/organization/users`)}
+                    className="border rounded-none bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                >
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
@@ -363,7 +366,10 @@ export default function OrgOverviewPage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border rounded-none bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard
+                    onClick={() => router.push(`/${orgName}/modules/firm-management/firms`)}
+                    className="border rounded-none bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                >
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
@@ -380,7 +386,10 @@ export default function OrgOverviewPage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border rounded-none bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard
+                    onClick={() => router.push(`/${orgName}/modules/organization/users/invites`)}
+                    className="border rounded-none bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                >
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
@@ -400,7 +409,10 @@ export default function OrgOverviewPage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border rounded-none bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard
+                    onClick={() => router.push(`/${orgName}/modules/organization/subscription`)}
+                    className="border rounded-none bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                >
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>

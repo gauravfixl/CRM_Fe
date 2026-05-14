@@ -148,31 +148,43 @@ export default function ErrorsAlertsPage() {
             {/* Stats Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Total Errors 24h - gradient primary */}
-                <div className="rounded-none bg-gradient-to-br from-primary to-primary/80 p-5 text-white">
+                <button
+                    type="button"
+                    onClick={() => setSeverityFilter("All")}
+                    className={`rounded-none bg-gradient-to-br from-primary to-primary/80 p-5 text-white text-left cursor-pointer transition-all hover:shadow-lg ${severityFilter === "All" ? "ring-2 ring-primary/60 ring-offset-2" : ""}`}
+                >
                     <div className="flex items-center gap-2 mb-1">
                         <AlertOctagon className="h-4 w-4 opacity-80" />
                         <span className="text-white text-xs opacity-80">Total Errors 24h</span>
                     </div>
                     <p className="text-white text-xl font-semibold mt-1">{totalCount}</p>
-                </div>
+                </button>
 
                 {/* Critical */}
-                <div className="rounded-none border bg-white p-5">
+                <button
+                    type="button"
+                    onClick={() => setSeverityFilter("Critical")}
+                    className={`rounded-none border bg-white p-5 text-left cursor-pointer transition-all hover:shadow-md ${severityFilter === "Critical" ? "ring-2 ring-red-500" : ""}`}
+                >
                     <div className="flex items-center gap-2 mb-1">
                         <XCircle className="h-4 w-4 text-red-500" />
                         <span className="text-gray-600 text-xs">Critical</span>
                     </div>
                     <p className="text-xl font-semibold text-gray-900 mt-1">{criticalCount}</p>
-                </div>
+                </button>
 
                 {/* Warnings */}
-                <div className="rounded-none border bg-white p-5">
+                <button
+                    type="button"
+                    onClick={() => setSeverityFilter("Warning")}
+                    className={`rounded-none border bg-white p-5 text-left cursor-pointer transition-all hover:shadow-md ${severityFilter === "Warning" ? "ring-2 ring-amber-500" : ""}`}
+                >
                     <div className="flex items-center gap-2 mb-1">
                         <AlertTriangle className="h-4 w-4 text-amber-500" />
                         <span className="text-gray-600 text-xs">Warnings</span>
                     </div>
                     <p className="text-xl font-semibold text-gray-900 mt-1">{warningCount}</p>
-                </div>
+                </button>
 
                 {/* Resolved */}
                 <div className="rounded-none border bg-white p-5">

@@ -76,6 +76,7 @@ export const useSprintEpicStore = create<SprintEpicStore>()(
                 set(state => ({
                     sprints: state.sprints.map(s => s.id === sprintId ? { ...s, status: "ACTIVE" as const, startDate: new Date().toISOString() } : s)
                 }))
+                import('./event-bridges').then(eb => eb.emitSprintStarted(sprintId, sprint.name, sprint.projectId)).catch(() => {})
                 return { success: true }
             },
             completeSprint: (sprintId) => {
@@ -86,6 +87,7 @@ export const useSprintEpicStore = create<SprintEpicStore>()(
                 set(state => ({
                     sprints: state.sprints.map(s => s.id === sprintId ? { ...s, status: "COMPLETED" as const } : s)
                 }))
+                import('./event-bridges').then(eb => eb.emitSprintCompleted(sprintId, sprint.name, sprint.projectId)).catch(() => {})
                 return { success: true }
             },
             getSprintsByProject: (projectId) => get().sprints.filter(s => s.projectId === projectId),

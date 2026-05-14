@@ -31,7 +31,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pb-8 border-b border-slate-200">
                 <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-xl">
+                        <div className="h-10 w-10 bg-slate-900 rounded-none flex items-center justify-center text-white shadow-xl">
                             <Settings size={20} />
                         </div>
                         <h4 className="text-[12px] font-bold text-slate-400">Administrative Terminal</h4>
@@ -53,7 +53,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
                         return (
                             <Link key={tab.id} href={tab.href}>
                                 <div className={cn(
-                                    "flex items-center justify-between p-4 rounded-2xl transition-all group",
+                                    "flex items-center justify-between p-4 rounded-none transition-all group",
                                     isActive
                                         ? "bg-indigo-600 text-white shadow-xl shadow-indigo-200 shadow-indigo-500/10"
                                         : "bg-white border-2 border-slate-50 text-slate-500 hover:border-indigo-100 hover:text-indigo-600"
@@ -70,7 +70,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
 
                     <div className="pt-8 px-2 space-y-4">
                         <p className="text-[11px] font-bold text-slate-400">Status</p>
-                        <div className="p-4 bg-slate-900 rounded-[32px] space-y-4">
+                        <div className="p-4 bg-slate-900 rounded-none space-y-4">
                             <div className="flex items-center justify-between">
                                 <span className="text-[10px] font-bold text-slate-400">Latency</span>
                                 <span className="text-[10px] font-bold text-emerald-400">Normal</span>

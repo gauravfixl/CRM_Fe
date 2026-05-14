@@ -1,6 +1,12 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+export interface WorkspaceSettings {
+    publicVisibility?: boolean
+    securityHardening?: boolean // 2FA enforced
+    regionalCompliance?: boolean // GDPR/CCPA
+}
+
 export interface Workspace {
     id: string
     name: string
@@ -10,6 +16,7 @@ export interface Workspace {
     description?: string
     industry?: string
     purpose?: string
+    settings?: WorkspaceSettings
 }
 
 interface WorkspaceStore {
@@ -20,6 +27,7 @@ interface WorkspaceStore {
     setActiveWorkspace: (id: string) => void
     getActiveWorkspace: () => Workspace | undefined
     getWorkspaceById: (id: string) => Workspace | undefined
+    updateWorkspace: (id: string, updates: Partial<Workspace>) => void
     deleteWorkspace: (id: string) => void
 }
 
@@ -69,6 +77,10 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
             },
 
             getWorkspaceById: (id) => get().workspaces.find(w => w.id === id),
+
+            updateWorkspace: (id, updates) => set((state) => ({
+                workspaces: state.workspaces.map(w => w.id === id ? { ...w, ...updates, settings: { ...(w.settings || {}), ...(updates.settings || {}) } } : w)
+            })),
 
             deleteWorkspace: (id) => set((state) => {
                 const newWorkspaces = state.workspaces.filter(w => w.id !== id)

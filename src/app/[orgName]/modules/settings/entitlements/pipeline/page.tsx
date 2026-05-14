@@ -42,7 +42,16 @@ export default function PipelineGovernancePage() {
         { stage: "Closed Won", maxDays: "Indefinite", alertTier: "None", action: "None" },
     ];
 
-    const metrics = [
+    const metrics: Array<{
+        label: string;
+        value: string;
+        sub: string;
+        icon: any;
+        color: string;
+        isHighlight: boolean;
+        progress?: number;
+        target: string;
+    }> = [
         {
             label: "Global Workflows",
             value: "124",
@@ -50,6 +59,7 @@ export default function PipelineGovernancePage() {
             icon: Network,
             color: "text-white",
             isHighlight: true,
+            target: "custom-stages",
         },
         {
             label: "Process Velocity",
@@ -59,6 +69,7 @@ export default function PipelineGovernancePage() {
             color: "text-primary",
             isHighlight: false,
             progress: 65,
+            target: "process-automation",
         },
         {
             label: "Health State",
@@ -67,6 +78,7 @@ export default function PipelineGovernancePage() {
             icon: CheckCircle2,
             color: "text-emerald-600",
             isHighlight: false,
+            target: "probability-rules",
         },
         {
             label: "Stagnation Alerts",
@@ -75,6 +87,7 @@ export default function PipelineGovernancePage() {
             icon: AlertCircle,
             color: "text-rose-500",
             isHighlight: false,
+            target: "stagnation-alerts",
         },
     ];
 
@@ -177,9 +190,11 @@ export default function PipelineGovernancePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {metrics.map((m, idx) =>
                         m.isHighlight ? (
-                            <div
+                            <button
                                 key={idx}
-                                className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white"
+                                type="button"
+                                onClick={() => goToSub(m.target)}
+                                className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white text-left hover:shadow-2xl transition-all cursor-pointer"
                             >
                                 <div className="flex items-start justify-between">
                                     <div>
@@ -189,11 +204,13 @@ export default function PipelineGovernancePage() {
                                     </div>
                                     <m.icon className="w-5 h-5 text-white" />
                                 </div>
-                            </div>
+                            </button>
                         ) : (
-                            <div
+                            <button
                                 key={idx}
-                                className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg"
+                                type="button"
+                                onClick={() => goToSub(m.target)}
+                                className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg text-left hover:shadow-xl transition-all cursor-pointer"
                             >
                                 <div className="flex items-start justify-between">
                                     <div>
@@ -209,7 +226,7 @@ export default function PipelineGovernancePage() {
                                     </div>
                                     <m.icon className={`w-5 h-5 ${m.color}`} />
                                 </div>
-                            </div>
+                            </button>
                         )
                     )}
                 </div>

@@ -1,7 +1,7 @@
 "use client"
 
-import React from "react"
-import { Building2, Save, Globe, Lock, Shield, Eye } from "lucide-react"
+import React, { useEffect, useState } from "react"
+import { Building2, Save, Globe, Lock, Shield, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -9,99 +9,165 @@ import { Badge } from "@/components/ui/badge"
 import { useWorkspaceStore } from "@/shared/data/workspace-store"
 
 export default function GeneralSettingsPage() {
-    const { activeWorkspaceId, deleteWorkspace, workspaces } = useWorkspaceStore()
+    const [mounted, setMounted] = useState(false)
+    const { activeWorkspaceId, deleteWorkspace, updateWorkspace, getActiveWorkspace, workspaces } = useWorkspaceStore()
+    const ws = getActiveWorkspace()
+
+    const [name, setName] = useState("")
+    const [slug, setSlug] = useState("")
+    const [icon, setIcon] = useState("")
+    const [publicVisibility, setPublicVisibility] = useState(false)
+    const [securityHardening, setSecurityHardening] = useState(true)
+    const [regionalCompliance, setRegionalCompliance] = useState(true)
+    const [isSaving, setIsSaving] = useState(false)
+    const [savedAt, setSavedAt] = useState<string | null>(null)
+
+    useEffect(() => {
+        setMounted(true)
+        useWorkspaceStore.persist.rehydrate()
+    }, [])
+
+    useEffect(() => {
+        if (ws) {
+            setName(ws.name || "")
+            setSlug(ws.slug || "")
+            setIcon(ws.icon || "")
+            setPublicVisibility(ws.settings?.publicVisibility ?? false)
+            setSecurityHardening(ws.settings?.securityHardening ?? true)
+            setRegionalCompliance(ws.settings?.regionalCompliance ?? true)
+        }
+    }, [ws?.id])
+
+    if (!mounted || !ws) return null
+
+    const isDirty =
+        name !== (ws.name || "") ||
+        slug !== (ws.slug || "") ||
+        icon !== (ws.icon || "") ||
+        publicVisibility !== (ws.settings?.publicVisibility ?? false) ||
+        securityHardening !== (ws.settings?.securityHardening ?? true) ||
+        regionalCompliance !== (ws.settings?.regionalCompliance ?? true)
+
+    const handleSave = async () => {
+        if (!name.trim() || !slug.trim()) {
+            alert("Name and Slug are required.")
+            return
+        }
+        setIsSaving(true)
+        await new Promise(r => setTimeout(r, 200))
+        updateWorkspace(ws.id, {
+            name: name.trim(),
+            slug: slug.trim(),
+            icon: icon.trim() || "🏢",
+            settings: { publicVisibility, securityHardening, regionalCompliance },
+        })
+        setIsSaving(false)
+        setSavedAt(new Date().toLocaleTimeString())
+    }
 
     return (
-        <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-700">
+        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-700">
             <div className="space-y-1">
                 <h3 className="text-xl font-bold text-slate-900 tracking-tight">General Identity</h3>
                 <p className="text-slate-500 font-medium text-[13px]">Define the core branding and identity protocols for this workspace.</p>
             </div>
 
-            <Card className="border-none shadow-sm bg-white rounded-[40px] overflow-hidden">
-                <CardContent className="p-10 space-y-10">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                        <div className="space-y-6">
+            <Card className="border-slate-200 shadow-sm bg-white rounded-none overflow-hidden">
+                <CardContent className="p-8 space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                        <div className="space-y-5">
                             <div className="space-y-2">
-                                <label className="text-[12px] font-bold text-slate-500 ml-1">Workspace Name</label>
-                                <Input defaultValue="Fixl Solutions" className="h-11 bg-slate-50 border-none rounded-xl px-4 font-semibold text-slate-800 focus:ring-4 focus:ring-indigo-500/10 transition-all" />
+                                <label className="text-[12px] font-bold text-slate-500 uppercase tracking-wider">Workspace Name <span className="text-rose-500">*</span></label>
+                                <Input value={name} onChange={(e) => setName(e.target.value)} className="h-10 rounded-none" />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-[12px] font-bold text-slate-500 ml-1">Access URL</label>
+                                <label className="text-[12px] font-bold text-slate-500 uppercase tracking-wider">Access URL Slug <span className="text-rose-500">*</span></label>
                                 <div className="flex items-center gap-2">
-                                    <div className="h-11 flex items-center px-4 bg-slate-100 rounded-xl text-slate-400 font-bold text-xs">fixl.app/</div>
-                                    <Input defaultValue="workspace-alpha" className="h-11 bg-slate-50 border-none rounded-xl px-4 font-semibold text-indigo-600 focus:ring-4 focus:ring-indigo-500/10 transition-all flex-1" />
+                                    <div className="h-10 flex items-center px-3 bg-slate-100 text-slate-500 font-bold text-xs rounded-none">fixl.app/</div>
+                                    <Input value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/\s+/g, "-"))} className="h-10 flex-1 rounded-none" />
                                 </div>
                             </div>
                         </div>
 
-                        <div className="space-y-4">
-                            <label className="text-[12px] font-bold text-slate-500 ml-1">Workspace Brand</label>
-                            <div className="flex items-center gap-6">
-                                <div className="h-28 w-28 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 gap-1.5 hover:bg-white hover:border-indigo-300 transition-all cursor-pointer group">
-                                    <Building2 size={24} className="group-hover:scale-110 transition-transform" />
-                                    <span className="text-[10px] font-bold">Upload Logo</span>
+                        <div className="space-y-3">
+                            <label className="text-[12px] font-bold text-slate-500 uppercase tracking-wider">Workspace Brand</label>
+                            <div className="flex items-center gap-5">
+                                <div className="h-24 w-24 bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 gap-1 rounded-none">
+                                    <span className="text-3xl">{icon || "🏢"}</span>
                                 </div>
                                 <div className="space-y-2 flex-1">
-                                    <p className="text-[11px] font-medium text-slate-500 max-w-[200px]">Recommended: SVG or PNG, at least 512x512px.</p>
-                                    <Button variant="outline" className="h-9 rounded-lg border border-slate-200 font-bold text-[11px] text-slate-600">Change Image</Button>
+                                    <p className="text-[11px] font-medium text-slate-500">Use a single emoji as the workspace icon.</p>
+                                    <Input value={icon} onChange={(e) => setIcon(e.target.value)} placeholder="🏢" className="h-9 w-20 text-center text-xl rounded-none" maxLength={4} />
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="pt-10 border-t border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div className="p-6 bg-slate-50/50 rounded-3xl space-y-4 border border-slate-100">
-                            <Globe size={20} className="text-indigo-600" />
-                            <div className="space-y-1">
-                                <h4 className="text-[14px] font-bold text-slate-800">Public Visibility</h4>
-                                <p className="text-[11px] font-medium text-slate-400">Allow search engines to index your documentation.</p>
+                    <div className="pt-8 border-t border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <button
+                            type="button"
+                            onClick={() => setPublicVisibility(v => !v)}
+                            className="p-5 bg-slate-50 border border-slate-200 hover:bg-white hover:border-indigo-300 transition-colors text-left rounded-none"
+                        >
+                            <Globe size={18} className={publicVisibility ? "text-indigo-600" : "text-slate-400"} />
+                            <h4 className="text-sm font-bold text-slate-800 mt-3">Public Visibility</h4>
+                            <p className="text-[11px] font-medium text-slate-500 mt-1">Allow search engines to index your docs.</p>
+                            <div className={`mt-3 inline-flex h-5 w-9 rounded-full px-0.5 items-center transition-colors ${publicVisibility ? "bg-indigo-600 justify-end" : "bg-slate-200 justify-start"}`}>
+                                <div className="h-4 w-4 bg-white rounded-full shadow-sm" />
                             </div>
-                            <div className="flex h-5 w-9 bg-slate-200 rounded-full cursor-pointer relative items-center px-1">
-                                <div className="h-3 w-3 bg-white rounded-full shadow-sm" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setSecurityHardening(v => !v)}
+                            className="p-5 bg-slate-50 border border-slate-200 hover:bg-white hover:border-amber-300 transition-colors text-left rounded-none"
+                        >
+                            <Lock size={18} className={securityHardening ? "text-amber-600" : "text-slate-400"} />
+                            <h4 className="text-sm font-bold text-slate-800 mt-3">Security Hardening</h4>
+                            <p className="text-[11px] font-medium text-slate-500 mt-1">Force 2FA for all users entering.</p>
+                            <div className={`mt-3 inline-flex h-5 w-9 rounded-full px-0.5 items-center transition-colors ${securityHardening ? "bg-amber-600 justify-end" : "bg-slate-200 justify-start"}`}>
+                                <div className="h-4 w-4 bg-white rounded-full shadow-sm" />
                             </div>
-                        </div>
-                        <div className="p-6 bg-slate-50/50 rounded-3xl space-y-4 border border-slate-100">
-                            <Lock size={20} className="text-amber-600" />
-                            <div className="space-y-1">
-                                <h4 className="text-[14px] font-bold text-slate-800">Security Hardening</h4>
-                                <p className="text-[11px] font-medium text-slate-400">Force all users to utilize 2FA before entering.</p>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setRegionalCompliance(v => !v)}
+                            className="p-5 bg-slate-50 border border-slate-200 hover:bg-white hover:border-emerald-300 transition-colors text-left rounded-none"
+                        >
+                            <Shield size={18} className={regionalCompliance ? "text-emerald-600" : "text-slate-400"} />
+                            <h4 className="text-sm font-bold text-slate-800 mt-3">Regional Compliance</h4>
+                            <p className="text-[11px] font-medium text-slate-500 mt-1">Enforce GDPR/CCPA storage protocols.</p>
+                            <div className={`mt-3 inline-flex h-5 w-9 rounded-full px-0.5 items-center transition-colors ${regionalCompliance ? "bg-emerald-600 justify-end" : "bg-slate-200 justify-start"}`}>
+                                <div className="h-4 w-4 bg-white rounded-full shadow-sm" />
                             </div>
-                            <div className="flex h-5 w-9 bg-indigo-600 rounded-full cursor-pointer relative items-center px-1">
-                                <div className="h-3 w-3 bg-white rounded-full shadow-sm absolute right-1" />
-                            </div>
-                        </div>
-                        <div className="p-6 bg-slate-50/50 rounded-3xl space-y-4 border border-slate-100">
-                            <Shield size={20} className="text-emerald-600" />
-                            <div className="space-y-1">
-                                <h4 className="text-[14px] font-bold text-slate-800">Regional Compliance</h4>
-                                <p className="text-[11px] font-medium text-slate-400">Enforce GDPR and CCPA data storage protocols.</p>
-                            </div>
-                            <div className="flex h-5 w-9 bg-indigo-600 rounded-full cursor-pointer relative items-center px-1">
-                                <div className="h-3 w-3 bg-white rounded-full shadow-sm absolute right-1" />
-                            </div>
-                        </div>
+                        </button>
                     </div>
 
-                    <div className="flex items-center justify-between pt-10 border-t border-slate-100">
+                    <div className="flex items-center justify-between pt-8 border-t border-slate-100">
                         <div className="flex items-center gap-3">
-                            <Badge className="bg-rose-50 text-rose-600 border-none font-bold text-[10px] px-3 h-7">Danger Zone</Badge>
+                            <Badge className="bg-rose-50 text-rose-600 font-bold text-[10px] px-3 h-7 rounded-none">Danger Zone</Badge>
                             <button
+                                type="button"
                                 className="text-[11px] font-bold text-rose-600 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
                                 disabled={workspaces.length <= 1}
                                 onClick={() => {
-                                    if (activeWorkspaceId && confirm("Are you sure you want to delete this workspace? This action cannot be undone.")) {
-                                        deleteWorkspace(activeWorkspaceId);
+                                    if (activeWorkspaceId && confirm("Delete this workspace? Projects/issues remain but unattached.")) {
+                                        deleteWorkspace(activeWorkspaceId)
                                     }
                                 }}
                             >
                                 Delete Workspace
                             </button>
                         </div>
-                        <Button className="h-11 px-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-[13px] shadow-lg shadow-indigo-100 gap-2">
-                            <Save size={16} />
-                            Commit Changes
-                        </Button>
+                        <div className="flex items-center gap-3">
+                            {savedAt && !isDirty && <span className="text-[11px] font-bold text-emerald-600">Saved at {savedAt}</span>}
+                            <Button
+                                onClick={handleSave}
+                                disabled={!isDirty || isSaving || !name.trim() || !slug.trim()}
+                                className="h-10 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs gap-2 rounded-none"
+                            >
+                                {isSaving ? <><Loader2 size={14} className="animate-spin" /> Saving...</> : <><Save size={14} /> Save Changes</>}
+                            </Button>
+                        </div>
                     </div>
                 </CardContent>
             </Card>

@@ -1,7 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { useState, useMemo } from "react"
+import { useRouter } from "next/navigation"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart as RPieChart, Pie } from 'recharts'
 import {
     Zap,
     TrendingUp,
@@ -12,7 +13,6 @@ import {
     Search,
     Filter,
     MoreVertical,
-    ChevronRight,
     Building2,
     Rocket,
     Plus,
@@ -20,54 +20,26 @@ import {
     Trash2,
     PencilLine,
     ExternalLink,
-    PieChart
 } from "lucide-react"
-import {
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer,
-    Cell
-} from 'recharts'
-
-import { Card, CardContent } from "@/shared/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter,
-    DialogTrigger,
-} from "@/shared/components/ui/dialog"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/shared/components/ui/select"
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/shared/components/ui/dropdown-menu"
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/shared/components/ui/sheet"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu"
+import { Progress } from "@/shared/components/ui/progress"
+import { Badge } from "@/shared/components/ui/badge"
+import { toast } from "@/shared/utils/toast"
 
-// Types
 interface Expansion {
-    id: number;
-    client: string;
-    target: string;
-    value: number;
-    type: 'Upsell' | 'Cross-sell' | 'Add-on' | 'Upgrade';
-    probability: number;
-    segment: 'Enterprise' | 'Mid-Market' | 'SMB';
+    id: number
+    client: string
+    target: string
+    value: number
+    type: 'Upsell' | 'Cross-sell' | 'Add-on' | 'Upgrade'
+    probability: number
+    segment: 'Enterprise' | 'Mid-Market' | 'SMB'
 }
 
 const initialExpansions: Expansion[] = [
@@ -78,437 +50,489 @@ const initialExpansions: Expansion[] = [
     { id: 5, client: 'Horizon Media', target: 'SSO & Advanced Governance', value: 4800, type: 'Upsell', probability: 82, segment: 'Mid-Market' },
 ]
 
-const chartData = [
-    { name: 'Upsells', value: 45, color: '#4f46e5' },
-    { name: 'Cross-sells', value: 30, color: '#8b5cf6' },
-    { name: 'Add-ons', value: 25, color: '#d946ef' },
-]
-
-const cn = (...classes: any[]) => classes.filter(Boolean).join(' ')
-
-const MetricBox = ({ title, value, icon: Icon, color, subValue, trend }: any) => {
-    const colorClasses: any = {
-        blue: "from-blue-50 to-blue-100/50 border-blue-200/50 text-blue-600",
-        indigo: "from-indigo-50 to-indigo-100/50 border-indigo-200/50 text-indigo-600",
-        violet: "from-violet-50 to-violet-100/50 border-violet-200/50 text-violet-600",
-        fuchsia: "from-fuchsia-50 to-fuchsia-100/50 border-fuchsia-200/50 text-fuchsia-600",
-        amber: "from-amber-50 to-amber-100/50 border-amber-200/50 text-amber-600",
-    }
-    const currentClasses = colorClasses[color] || colorClasses.indigo
-    return (
-        <Card className={cn("bg-gradient-to-br border shadow-none transition-all hover:shadow-md", currentClasses.split(' ').slice(0, 3).join(' '))}>
-            <CardContent className="p-5">
-                <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                        <p className="text-xs font-semibold text-slate-500 tracking-wide font-outfit mb-2">{title}</p>
-                        <div className="flex items-baseline gap-2">
-                            <h3 className="text-2xl font-bold text-slate-900 font-outfit tracking-tight leading-none">{value}</h3>
-                            {trend && (
-                                <span className={cn("text-xs font-bold font-outfit flex items-center gap-0.5",
-                                    trend.startsWith('+') ? "text-emerald-600" : "text-rose-600"
-                                )}>
-                                    {trend}
-                                </span>
-                            )}
-                        </div>
-                        <p className="mt-2 text-xs font-medium text-slate-400 font-outfit">{subValue}</p>
-                    </div>
-                    <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center bg-white/60 shadow-sm border border-white/50", currentClasses.split(' ').pop())}>
-                        <Icon className="h-5 w-5" />
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-    )
+const segmentColors: Record<string, string> = {
+    'Enterprise': 'bg-violet-50 text-violet-600 border-violet-100',
+    'Mid-Market': 'bg-indigo-50 text-indigo-600 border-indigo-100',
+    'SMB': 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-100',
 }
 
+const validators = {
+    required: (v: string) => !v || !v.toString().trim() ? "This field is required" : "",
+    minLen: (n: number) => (v: string) => v && v.trim().length < n ? `Must be at least ${n} characters` : "",
+    number: (v: any) => v === "" || v == null ? "" : isNaN(Number(v)) ? "Enter a valid number" : Number(v) < 0 ? "Must be positive" : "",
+    percent: (v: any) => v === "" || v == null ? "" : isNaN(Number(v)) ? "Enter a valid number" : Number(v) < 0 || Number(v) > 100 ? "Must be 0–100" : "",
+}
+
+const formatCurrency = (val: number) => val >= 1000 ? `$${(val / 1000).toFixed(0)}k` : `$${val}`
+
 export default function ExpansionPage() {
-    const [expansions, setExpansions] = useState<Expansion[]>(initialExpansions)
-    const [search, setSearch] = useState("")
-    const [isDialogOpen, setIsDialogOpen] = useState(false)
-    const [editingExp, setEditingExp] = useState<Expansion | null>(null)
+    const router = useRouter()
+    const [expansions, setExpansions] = React.useState<Expansion[]>(initialExpansions)
+    const [search, setSearch] = React.useState("")
+    const [segmentFilter, setSegmentFilter] = React.useState("all")
+    const [typeFilter, setTypeFilter] = React.useState("all")
 
-    // Form states
-    const [formData, setFormData] = useState<Partial<Expansion>>({
-        client: '',
-        target: '',
-        value: 0,
-        type: 'Upsell',
-        probability: 50,
-        segment: 'Mid-Market'
+    const [isFormOpen, setIsFormOpen] = React.useState(false)
+    const [isFilterOpen, setIsFilterOpen] = React.useState(false)
+    const [isDetailOpen, setIsDetailOpen] = React.useState(false)
+    const [editingId, setEditingId] = React.useState<number | null>(null)
+    const [selected, setSelected] = React.useState<Expansion | null>(null)
+
+    const [form, setForm] = React.useState({
+        client: "", target: "", value: "", type: "Upsell" as Expansion['type'], probability: "50", segment: "Mid-Market" as Expansion['segment']
     })
+    const [errors, setErrors] = React.useState<Record<string, string>>({})
 
-    const metrics = useMemo(() => {
-        const total = expansions.reduce((sum, item) => sum + item.value, 0)
-        const avg = expansions.length > 0 ? (total / expansions.length).toFixed(0) : 0
+    const metrics = React.useMemo(() => {
+        const total = expansions.reduce((s, e) => s + e.value, 0)
+        const avg = expansions.length ? Math.round(total / expansions.length) : 0
         const highProb = expansions.filter(e => e.probability > 80).length
-
-        const formatCurrency = (val: number) => {
-            if (val >= 1000) return `$${(val / 1000).toFixed(0)}k`
-            return `$${val}`
-        }
-
-        return {
-            total: formatCurrency(total),
-            avg: formatCurrency(Number(avg)),
-            highProbCount: highProb,
-            count: expansions.length
-        }
+        return { total: formatCurrency(total), avg: formatCurrency(avg), highProb, count: expansions.length }
     }, [expansions])
 
-    const filteredExpansions = useMemo(() => {
-        return expansions.filter(e =>
-            e.client.toLowerCase().includes(search.toLowerCase()) ||
-            e.type.toLowerCase().includes(search.toLowerCase()) ||
-            e.target.toLowerCase().includes(search.toLowerCase())
-        )
-    }, [expansions, search])
+    const filtered = React.useMemo(() => {
+        return expansions.filter(e => {
+            const matchSearch = !search || e.client.toLowerCase().includes(search.toLowerCase()) || e.target.toLowerCase().includes(search.toLowerCase())
+            const matchSegment = segmentFilter === "all" || e.segment === segmentFilter
+            const matchType = typeFilter === "all" || e.type === typeFilter
+            return matchSearch && matchSegment && matchType
+        })
+    }, [expansions, search, segmentFilter, typeFilter])
 
-    const handleDelete = (id: number) => {
-        setExpansions(prev => prev.filter(e => e.id !== id))
+    const chartData = React.useMemo(() => {
+        const byType: Record<string, number> = {}
+        expansions.forEach(e => { byType[e.type] = (byType[e.type] || 0) + e.value })
+        const colors: Record<string, string> = { Upsell: '#4f46e5', 'Cross-sell': '#8b5cf6', 'Add-on': '#d946ef', Upgrade: '#06b6d4' }
+        return Object.entries(byType).map(([name, value]) => ({ name, value, color: colors[name] || '#94a3b8' }))
+    }, [expansions])
+
+    const setField = (field: string, value: any) => {
+        setForm(prev => ({ ...prev, [field]: value }))
+        if (errors[field]) setErrors(prev => { const c = { ...prev }; delete c[field]; return c })
+    }
+
+    const validate = () => {
+        const errs: Record<string, string> = {}
+        errs.client = validators.required(form.client) || validators.minLen(2)(form.client)
+        errs.target = validators.required(form.target) || validators.minLen(2)(form.target)
+        errs.value = validators.required(form.value) || validators.number(form.value)
+        errs.probability = validators.percent(form.probability)
+        Object.keys(errs).forEach(k => { if (!errs[k]) delete errs[k] })
+        setErrors(errs)
+        return Object.keys(errs).length === 0
+    }
+
+    const openCreate = () => {
+        setEditingId(null)
+        setForm({ client: "", target: "", value: "", type: "Upsell", probability: "50", segment: "Mid-Market" })
+        setErrors({})
+        setIsFormOpen(true)
+    }
+
+    const openEdit = (e: Expansion) => {
+        setEditingId(e.id)
+        setForm({ client: e.client, target: e.target, value: String(e.value), type: e.type, probability: String(e.probability), segment: e.segment })
+        setErrors({})
+        setIsFormOpen(true)
     }
 
     const handleSave = () => {
-        if (!formData.client || !formData.value || !formData.target) return
-
-        if (editingExp) {
-            setExpansions(prev => prev.map(e => e.id === editingExp.id ? { ...e, ...formData } as Expansion : e))
-        } else {
-            const newId = expansions.length > 0 ? Math.max(...expansions.map(e => e.id)) + 1 : 1
-            setExpansions(prev => [...prev, { ...formData, id: newId } as Expansion])
+        if (!validate()) { toast.error("Please correct the highlighted fields"); return }
+        const data: Expansion = {
+            id: editingId || Date.now(),
+            client: form.client.trim(), target: form.target.trim(),
+            value: Number(form.value), type: form.type, probability: Number(form.probability), segment: form.segment
         }
-        setIsDialogOpen(false)
-        setEditingExp(null)
-        setFormData({ client: '', target: '', value: 0, type: 'Upsell', probability: 50, segment: 'Mid-Market' })
+        if (editingId) { setExpansions(expansions.map(e => e.id === editingId ? data : e)); toast.success("Opportunity updated") }
+        else { setExpansions([data, ...expansions]); toast.success("Opportunity added") }
+        setIsFormOpen(false)
     }
 
-    const openEdit = (exp: Expansion) => {
-        setEditingExp(exp)
-        setFormData(exp)
-        setIsDialogOpen(true)
+    const handleDelete = (id: number) => {
+        setExpansions(expansions.filter(e => e.id !== id))
+        toast.success("Opportunity removed")
+    }
+
+    const openDetail = (e: Expansion) => { setSelected(e); setIsDetailOpen(true) }
+
+    const kpiCards = [
+        { title: "Pipeline Value", value: metrics.total, subtitle: `${metrics.count} Opportunities`, icon: Zap, color: "indigo", trend: "+18%", path: "/client-management/revenue/overview" },
+        { title: "Avg Deal Size", value: metrics.avg, subtitle: "Per Opportunity", icon: TrendingUp, color: "violet", trend: "+5%", path: "/client-management/analytics/revenue" },
+        { title: "High Probability", value: `${metrics.highProb}`, subtitle: "Above 80% confidence", icon: Rocket, color: "fuchsia", trend: `+${metrics.highProb}`, path: "/client-management/analytics/forecasting" },
+        { title: "Win Rate", value: "62%", subtitle: "Last Quarter", icon: Target, color: "amber", trend: "+8%", path: "/client-management/analytics/cohorts" },
+    ]
+    const colorMap: Record<string, { bg: string; border: string; text: string; iconBg: string }> = {
+        indigo: { bg: "bg-gradient-to-br from-indigo-50 to-indigo-100/50", border: "border-indigo-200/50", text: "text-indigo-600", iconBg: "bg-indigo-100" },
+        violet: { bg: "bg-gradient-to-br from-violet-50 to-violet-100/50", border: "border-violet-200/50", text: "text-violet-600", iconBg: "bg-violet-100" },
+        fuchsia: { bg: "bg-gradient-to-br from-fuchsia-50 to-fuchsia-100/50", border: "border-fuchsia-200/50", text: "text-fuchsia-600", iconBg: "bg-fuchsia-100" },
+        amber: { bg: "bg-gradient-to-br from-amber-50 to-amber-100/50", border: "border-amber-200/50", text: "text-amber-600", iconBg: "bg-amber-100" },
     }
 
     return (
-        <div className="px-8 py-8 space-y-8 bg-slate-50 min-h-screen font-outfit">
+        <div className="px-8 py-6 space-y-6 bg-slate-50 min-h-screen">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
                 <div className="flex flex-col gap-1">
-                    <h1 className="text-2xl font-bold text-slate-900 font-outfit tracking-tight">
+                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
                         Revenue <span className="text-violet-600">Expansion Engine</span>
                     </h1>
-                    <p className="text-[15px] font-medium text-slate-500 font-outfit">
-                        Identify upsell paths and cross-sell opportunities to maximize account lifetime value.
-                    </p>
+                    <p className="text-[14px] font-medium text-slate-500">Identify upsell paths and cross-sell opportunities to maximize account lifetime value.</p>
                 </div>
-                <Dialog open={isDialogOpen} onOpenChange={(open) => {
-                    setIsDialogOpen(open)
-                    if (!open) { setEditingExp(null); setFormData({ client: '', target: '', value: 0, type: 'Upsell', probability: 50, segment: 'Mid-Market' }) }
-                }}>
-                    <DialogTrigger asChild>
-                        <Button className="bg-violet-600 hover:bg-violet-700 text-white rounded-xl py-6 px-6 font-bold font-outfit shadow-lg shadow-violet-600/20 gap-2">
-                            <Plus className="h-5 w-5" /> New Opportunity
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[500px] font-outfit rounded-2xl">
-                        <DialogHeader>
-                            <DialogTitle className="text-xl font-bold">{editingExp ? 'Edit Opportunity' : 'Add New Expansion'}</DialogTitle>
-                        </DialogHeader>
-                        <div className="grid gap-6 py-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label className="font-bold text-slate-700">Client Name</Label>
-                                    <Input value={formData.client} onChange={e => setFormData({ ...formData, client: e.target.value })} placeholder="e.g. Acme Corp" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="font-bold text-slate-700">Projected Value ($)</Label>
-                                    <Input type="number" value={formData.value} onChange={e => setFormData({ ...formData, value: Number(e.target.value) })} />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="font-bold text-slate-700">Target Offer</Label>
-                                <Input value={formData.target} onChange={e => setFormData({ ...formData, target: e.target.value })} placeholder="e.g. Enterprise License Upgrade" />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label className="font-bold text-slate-700">Expansion Type</Label>
-                                    <Select value={formData.type} onValueChange={(v: any) => setFormData({ ...formData, type: v })}>
-                                        <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Upsell">Upsell</SelectItem>
-                                            <SelectItem value="Cross-sell">Cross-sell</SelectItem>
-                                            <SelectItem value="Add-on">Add-on</SelectItem>
-                                            <SelectItem value="Upgrade">Upgrade</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="font-bold text-slate-700">Segment</Label>
-                                    <Select value={formData.segment} onValueChange={(v: any) => setFormData({ ...formData, segment: v })}>
-                                        <SelectTrigger><SelectValue placeholder="Segment" /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Enterprise">Enterprise</SelectItem>
-                                            <SelectItem value="Mid-Market">Mid-Market</SelectItem>
-                                            <SelectItem value="SMB">SMB</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="font-bold text-slate-700">Probability ({formData.probability}%)</Label>
-                                <Input type="range" min="0" max="100" value={formData.probability} onChange={e => setFormData({ ...formData, probability: Number(e.target.value) })} />
-                            </div>
-                        </div>
-                        <DialogFooter className="gap-2">
-                            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                            <Button className="bg-violet-600 hover:bg-violet-700 text-white" onClick={handleSave}>Save Record</Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                <div className="flex gap-3">
+                    <Button variant="outline" className="rounded-none h-10" onClick={() => setIsFilterOpen(true)}>
+                        <Filter className="h-4 w-4 mr-2" />Filter
+                    </Button>
+                    <Button className="bg-violet-600 hover:bg-violet-700 text-white rounded-none h-10 px-5" onClick={openCreate}>
+                        <Plus className="h-4 w-4 mr-2" />New Expansion
+                    </Button>
+                </div>
             </div>
 
-            {/* Expansion Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                <MetricBox title="Expansion Pipeline" value={metrics.total} subValue={`${metrics.count} Active Deals`} icon={Zap} color="blue" trend="+18%" />
-                <MetricBox title="Upsell Velocity" value="2.4/mo" subValue="MoM Growth" icon={PackagePlus} color="indigo" trend="+4%" />
-                <MetricBox title="Avg. Expansion" value={metrics.avg} subValue="Per Account" icon={Layers} color="fuchsia" trend="+5%" />
-                <MetricBox title="High Confidence" value={metrics.highProbCount} subValue="Prob. > 80%" icon={Rocket} color="violet" trend="+22%" />
-                <MetricBox title="Growth Signals" value="14 active" subValue="AI Recommendations" icon={Target} color="amber" trend="+3" />
+            {/* KPI */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {kpiCards.map((kpi, i) => {
+                    const cc = colorMap[kpi.color]
+                    const Icon = kpi.icon
+                    return (
+                        <Card key={i} className={`rounded-none cursor-pointer hover:shadow-md transition ${cc.bg} ${cc.border} border`} onClick={() => router.push(kpi.path)}>
+                            <CardContent className="p-5">
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <p className="text-xs font-semibold text-slate-500 tracking-wide mb-1">{kpi.title}</p>
+                                        <div className="flex items-baseline gap-2">
+                                            <h3 className="text-2xl font-bold text-slate-900">{kpi.value}</h3>
+                                            <span className="text-xs font-bold text-emerald-600">{kpi.trend}</span>
+                                        </div>
+                                        <p className="mt-2 text-xs text-slate-400">{kpi.subtitle}</p>
+                                    </div>
+                                    <div className={`h-10 w-10 rounded-none flex items-center justify-center ${cc.iconBg}`}>
+                                        <Icon className={`h-5 w-5 ${cc.text}`} />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )
+                })}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
-                    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                        <div className="px-6 py-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white">
+                    {/* Expansion List */}
+                    <Card className="rounded-none">
+                        <CardHeader className="border-b border-slate-100 flex flex-row items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <h2 className="text-base font-bold text-slate-900 tracking-tight font-outfit">High-Probability Paths</h2>
-                                <div className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-[12px] font-bold font-outfit">{filteredExpansions.length} paths</div>
+                                <CardTitle className="text-base font-semibold">Active Expansion Opportunities</CardTitle>
+                                <Badge className="rounded-none bg-slate-100 text-slate-600">{filtered.length}</Badge>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                    <Input
-                                        placeholder="Search deals..."
-                                        value={search}
-                                        onChange={e => setSearch(e.target.value)}
-                                        className="pl-10 pr-4 py-2 bg-slate-50/50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-violet-500/10 w-full md:w-64 font-outfit"
-                                    />
-                                </div>
-                                <Button variant="outline" size="icon" className="rounded-xl text-slate-400"><Filter className="h-4.5 w-4.5" /></Button>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                <Input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10 rounded-none w-64 h-9" />
                             </div>
-                        </div>
-
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left">
-                                <thead>
-                                    <tr className="text-[12px] font-bold text-slate-400 tracking-wider border-b border-slate-50 bg-slate-50/30">
-                                        <th className="px-6 py-4">Client & Offer</th>
-                                        <th className="px-6 py-4">Type & Segment</th>
-                                        <th className="px-6 py-4">Projected Value</th>
-                                        <th className="px-6 py-4">Probability</th>
-                                        <th className="px-6 py-4"></th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-50">
-                                    {filteredExpansions.length > 0 ? filteredExpansions.map((offer) => (
-                                        <tr key={offer.id} className="group hover:bg-slate-50/80 transition-all border-b border-slate-50/50">
-                                            <td className="px-6 py-5">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="h-10 w-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center shadow-sm group-hover:bg-violet-50 transition-colors">
-                                                        <Building2 className="h-5 w-5 text-violet-600" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-bold text-slate-800 font-outfit">{offer.client}</p>
-                                                        <p className="text-[11px] font-medium text-slate-500 font-outfit">{offer.target}</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5">
-                                                <div className="flex flex-col gap-1">
-                                                    <span className={cn(
-                                                        "inline-flex items-center w-fit px-2.5 py-0.5 rounded-full text-[11px] font-bold font-outfit border",
-                                                        offer.type === 'Upsell' ? "bg-indigo-50 text-indigo-600 border-indigo-100" :
-                                                            offer.type === 'Add-on' ? "bg-fuchsia-50 text-fuchsia-600 border-fuchsia-100" :
-                                                                "bg-violet-50 text-violet-600 border-violet-100"
-                                                    )}>
-                                                        {offer.type}
-                                                    </span>
-                                                    <span className="text-[10px] text-slate-400 font-bold font-outfit ml-1">{offer.segment}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5 text-sm font-bold text-slate-900 font-outfit">${offer.value.toLocaleString()}</td>
-                                            <td className="px-6 py-5">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="h-2 w-20 bg-slate-100 rounded-full overflow-hidden shadow-inner">
-                                                        <div className="h-full bg-violet-500 rounded-full transition-all duration-700 shadow-[0_0_8px_rgba(139,92,246,0.3)]" style={{ width: `${offer.probability}%` }} />
-                                                    </div>
-                                                    <span className="text-xs font-bold text-slate-900 font-outfit">{offer.probability}%</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5 text-right">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="text-slate-300 hover:text-violet-600 transition-colors">
-                                                            <MoreVertical className="h-5 w-5" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end" className="w-40 font-outfit">
-                                                        <DropdownMenuItem className="flex items-center gap-2 cursor-pointer" onClick={() => openEdit(offer)}>
-                                                            <PencilLine className="h-4 w-4" /> Edit Deal
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem className="flex items-center gap-2 text-rose-500 cursor-pointer" onClick={() => handleDelete(offer.id)}>
-                                                            <Trash2 className="h-4 w-4" /> Remove
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem className="flex items-center gap-2 cursor-pointer border-t mt-1">
-                                                            <ExternalLink className="h-4 w-4" /> View Account
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </td>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="text-[11px] font-bold text-slate-400 tracking-wider border-b border-slate-50 bg-slate-50/30">
+                                            <th className="px-6 py-3">Account & Target</th>
+                                            <th className="px-6 py-3">Type</th>
+                                            <th className="px-6 py-3">Segment</th>
+                                            <th className="px-6 py-3">Value</th>
+                                            <th className="px-6 py-3">Probability</th>
+                                            <th className="px-6 py-3"></th>
                                         </tr>
-                                    )) : (
-                                        <tr>
-                                            <td colSpan={5} className="px-6 py-12 text-center">
-                                                <p className="text-sm font-bold text-slate-500 font-outfit">No expansion deals found for this search.</p>
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50">
+                                        {filtered.length > 0 ? filtered.map((exp) => (
+                                            <tr key={exp.id} className="group hover:bg-slate-50/80 transition cursor-pointer" onClick={() => openDetail(exp)}>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="h-9 w-9 rounded-none bg-white border border-slate-100 flex items-center justify-center group-hover:bg-violet-50">
+                                                            <Building2 className="h-4 w-4 text-violet-600" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-slate-800">{exp.client}</p>
+                                                            <p className="text-[11px] text-slate-500">{exp.target}</p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <Badge className="rounded-none bg-violet-50 text-violet-700 hover:bg-violet-50">{exp.type}</Badge>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`inline-flex px-2 py-0.5 rounded-none text-[11px] font-bold border ${segmentColors[exp.segment]}`}>{exp.segment}</span>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm font-bold text-slate-900">{formatCurrency(exp.value)}</td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <Progress value={exp.probability} className="w-20 h-1.5" />
+                                                        <span className="text-xs font-bold text-slate-900">{exp.probability}%</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="rounded-none"><MoreVertical className="h-4 w-4" /></Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end" className="w-40 rounded-none">
+                                                            <DropdownMenuItem className="flex items-center gap-2" onClick={() => openEdit(exp)}>
+                                                                <PencilLine className="h-4 w-4" /> Edit
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem className="flex items-center gap-2" onClick={() => router.push('/client-management/customers')}>
+                                                                <ExternalLink className="h-4 w-4" /> View Client
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem className="flex items-center gap-2 text-rose-500 border-t mt-1" onClick={() => handleDelete(exp.id)}>
+                                                                <Trash2 className="h-4 w-4" /> Delete
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </td>
+                                            </tr>
+                                        )) : (
+                                            <tr><td colSpan={6} className="px-6 py-12 text-center text-sm text-slate-500">No expansion opportunities found.</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <div className="flex items-center justify-between mb-8">
-                            <div>
-                                <h3 className="text-base font-bold text-slate-900 font-outfit">Expansion Contribution</h3>
-                                <p className="text-sm text-slate-500 font-outfit mt-1">Volume by expansion category and account segment</p>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-2">
-                                    <div className="h-3 w-3 rounded-full bg-indigo-600" />
-                                    <span className="text-xs font-bold text-slate-500 font-outfit">Upsells</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="h-3 w-3 rounded-full bg-fuchsia-600" />
-                                    <span className="text-xs font-bold text-slate-500 font-outfit">Add-ons</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="h-[250px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={chartData} layout="vertical" margin={{ left: 0, right: 10 }}>
-                                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
-                                    <XAxis type="number" hide />
-                                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 700, fill: '#64748b' }} />
-                                    <Tooltip
-                                        cursor={{ fill: '#f8fafc' }}
-                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', background: 'white', fontWeight: 'bold' }}
-                                    />
-                                    <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={28}>
-                                        {chartData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
-                                        ))}
+                    {/* Bar Chart */}
+                    <Card className="rounded-none">
+                        <CardHeader>
+                            <CardTitle className="text-base font-semibold">Expansion by Type</CardTitle>
+                            <p className="text-sm text-slate-500">Value distribution across upsell categories</p>
+                        </CardHeader>
+                        <CardContent>
+                            <ResponsiveContainer width="100%" height={250}>
+                                <BarChart data={chartData}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                    <XAxis dataKey="name" />
+                                    <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                                    <Tooltip formatter={(v: any) => `$${v.toLocaleString()}`} />
+                                    <Bar dataKey="value">
+                                        {chartData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
-                        </div>
-                    </div>
+                        </CardContent>
+                    </Card>
                 </div>
 
                 <div className="space-y-6">
-                    {/* Segment Breakdown Card */}
-                    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-xs font-bold text-slate-400 tracking-wider font-outfit">Segment Potential</h3>
-                            <PieChart className="h-4 w-4 text-indigo-400" />
-                        </div>
-                        <div className="space-y-4">
-                            {[
-                                { name: 'Enterprise', value: '$450k', color: 'bg-indigo-600', count: 12 },
-                                { name: 'Mid-Market', value: '$282k', color: 'bg-indigo-400', count: 24 },
-                                { name: 'SMB', value: '$110k', color: 'bg-indigo-200', count: 48 },
-                            ].map((seg) => (
-                                <div key={seg.name} className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-50 hover:bg-slate-50 transition-all">
-                                    <div className="flex items-center gap-3">
-                                        <div className={cn("h-2 w-2 rounded-full", seg.color)} />
-                                        <div>
-                                            <p className="text-[13px] font-bold text-slate-800 font-outfit leading-none">{seg.name}</p>
-                                            <p className="text-[11px] font-medium text-slate-400 font-outfit mt-1">{seg.count} targets</p>
+                    {/* AI Recommendation */}
+                    <Card className="rounded-none border-violet-100 bg-violet-50/10">
+                        <CardHeader>
+                            <CardTitle className="text-xs font-bold text-violet-600 tracking-wider flex items-center gap-2 uppercase">
+                                <Sparkles className="h-4 w-4" /> AI Expansion Insights
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            <div className="p-3 bg-white border border-violet-100 rounded-none">
+                                <p className="text-[11px] text-slate-600">
+                                    <span className="text-violet-600 font-bold">DataScale Inc</span> shows usage patterns matching Enterprise tier - 85% upgrade probability.
+                                </p>
+                            </div>
+                            <div className="p-3 bg-white border border-violet-100 rounded-none">
+                                <p className="text-[11px] text-slate-600">
+                                    Top SMB accounts likely to add <span className="text-violet-600 font-bold">SSO/Governance</span> bundle this quarter.
+                                </p>
+                            </div>
+                            <Button className="w-full bg-violet-600 hover:bg-violet-700 text-white rounded-none" onClick={() => router.push('/client-management/analytics/ai-insights')}>
+                                Run Account Analysis
+                            </Button>
+                        </CardContent>
+                    </Card>
+
+                    {/* Type Distribution */}
+                    <Card className="rounded-none">
+                        <CardHeader>
+                            <CardTitle className="text-xs font-bold text-slate-400 tracking-wider uppercase">Type Distribution</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <ResponsiveContainer width="100%" height={180}>
+                                <RPieChart>
+                                    <Pie data={chartData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} dataKey="value">
+                                        {chartData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                                    </Pie>
+                                    <Tooltip />
+                                </RPieChart>
+                            </ResponsiveContainer>
+                            <div className="space-y-2 mt-3">
+                                {chartData.map((c, i) => (
+                                    <div key={i} className="flex items-center justify-between text-[11px] cursor-pointer hover:bg-slate-50 px-2 py-1 -mx-2" onClick={() => setTypeFilter(c.name)}>
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-2 w-2" style={{ background: c.color }} />
+                                            <span className="font-medium text-slate-700">{c.name}</span>
                                         </div>
+                                        <span className="font-bold text-slate-900">{formatCurrency(c.value)}</span>
                                     </div>
-                                    <span className="text-[14px] font-bold text-slate-900 font-outfit">{seg.value}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-indigo-100 bg-indigo-50/10 p-6 shadow-sm relative overflow-hidden group">
-                        <div className="absolute right-0 top-0 h-16 w-16 bg-indigo-600/5 rounded-bl-full transition-transform group-hover:scale-150" />
-                        <h3 className="text-xs font-bold text-indigo-600 tracking-wider flex items-center gap-2 font-outfit">
-                            <Sparkles className="h-4 w-4" /> AI Growth Triggers
-                        </h3>
-                        <div className="mt-6 space-y-4">
-                            <div className="p-4 bg-white border border-indigo-100 rounded-xl shadow-sm hover:shadow-md transition-all">
-                                <p className="text-sm font-medium text-slate-600 leading-relaxed font-outfit">
-                                    <span className="text-indigo-600 font-bold font-outfit">Tesla</span> users have exceeded seat limits by <span className="text-indigo-600 font-bold font-outfit">15%</span> for 2 months.
-                                </p>
+                                ))}
                             </div>
-                            <div className="p-4 bg-white border border-indigo-100 rounded-xl shadow-sm hover:shadow-md transition-all">
-                                <p className="text-sm font-medium text-slate-600 leading-relaxed font-outfit">
-                                    High adoption of 'Advanced Analytics' in <span className="text-indigo-600 font-bold font-outfit">Globex</span> suggests potential for Enterprise upgrade.
-                                </p>
-                            </div>
-                        </div>
-                        <Button className="w-full mt-6 py-6 bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all font-outfit">
-                            Push Expansion Playbook
-                        </Button>
-                    </div>
+                        </CardContent>
+                    </Card>
 
-                    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-xs font-bold text-slate-400 tracking-wider font-outfit">Growth Channels</h3>
-                            <ChevronRight className="h-4 w-4 text-slate-300" />
-                        </div>
-                        <div className="space-y-4">
-                            {chartData.map((item) => (
-                                <div key={item.name} className="flex items-center justify-between p-3 rounded-xl border border-slate-50 hover:border-slate-200 transition-all cursor-default">
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                                        <span className="text-[13px] font-bold text-slate-700 font-outfit">{item.name}</span>
-                                    </div>
-                                    <span className="text-[13px] font-bold text-slate-900 font-outfit">{item.value}%</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-xs font-bold text-slate-400 tracking-wider font-outfit">Sales Momentum</h3>
-                            <TrendingUp className="h-4 w-4 text-emerald-500" />
-                        </div>
-                        <div className="space-y-6 relative">
-                            <div className="absolute left-[23px] top-2 bottom-0 w-0.5 bg-slate-50" />
+                    {/* Top Wins */}
+                    <Card className="rounded-none">
+                        <CardHeader>
+                            <CardTitle className="text-xs font-bold text-slate-400 tracking-wider uppercase">Recent Expansion Wins</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
                             {[
-                                { user: 'JR', action: 'Closed expansion for', target: 'Acme Corp', time: '2h ago' },
-                                { user: 'SM', action: 'Upgraded license for', target: 'Netflix', time: '5h ago' },
-                                { user: 'AW', action: 'Added security suite to', target: 'Globex', time: '1d ago' },
+                                { user: 'SM', action: 'Closed Cross-sell', target: 'TechFlow', time: '2h ago' },
+                                { user: 'JD', action: 'Upsold Enterprise to', target: 'CloudNine', time: '1d ago' },
+                                { user: 'AW', action: 'Added Pro to', target: 'Globex', time: '3d ago' },
                             ].map((win, i) => (
-                                <div key={i} className="relative flex items-center gap-5 group">
-                                    <div className="h-[46px] w-[46px] rounded-full bg-white border border-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 z-10 shadow-sm group-hover:border-violet-200 transition-colors">
-                                        {win.user}
-                                    </div>
+                                <div key={i} className="flex items-center gap-3">
+                                    <div className="h-9 w-9 rounded-none bg-violet-50 border border-violet-100 flex items-center justify-center text-xs font-bold text-violet-600">{win.user}</div>
                                     <div className="flex-1">
-                                        <p className="text-[13px] font-bold text-slate-700 font-outfit leading-snug">
-                                            {win.action} <span className="text-violet-600 font-extrabold">{win.target}</span>
-                                        </p>
-                                        <p className="text-[12px] font-semibold text-slate-400 font-outfit mt-0.5">{win.time}</p>
+                                        <p className="text-[12px] font-bold text-slate-700">{win.action} <span className="text-violet-600">{win.target}</span></p>
+                                        <p className="text-[11px] text-slate-400 mt-0.5">{win.time}</p>
                                     </div>
                                 </div>
                             ))}
-                        </div>
-                    </div>
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
+
+            {/* Form Sheet */}
+            <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <SheetContent side="right" className="sm:max-w-md w-full p-0 rounded-none flex flex-col">
+                    <SheetHeader className="p-6 border-b bg-gradient-to-br from-violet-50 to-fuchsia-50">
+                        <SheetTitle className="text-[18px] font-semibold text-slate-900">{editingId ? "Edit Expansion" : "New Expansion"}</SheetTitle>
+                        <p className="text-[12px] text-slate-500">Add a new upsell or cross-sell opportunity.</p>
+                    </SheetHeader>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Account <span className="text-rose-500">*</span></Label>
+                            <Input value={form.client} onChange={e => setField("client", e.target.value)} placeholder="e.g., DataScale Inc" className={`h-10 rounded-none ${errors.client ? "border-rose-500" : ""}`} />
+                            {errors.client && <p className="text-[11px] text-rose-500">{errors.client}</p>}
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Target Product / Plan <span className="text-rose-500">*</span></Label>
+                            <Input value={form.target} onChange={e => setField("target", e.target.value)} placeholder="e.g., Professional Upgrade" className={`h-10 rounded-none ${errors.target ? "border-rose-500" : ""}`} />
+                            {errors.target && <p className="text-[11px] text-rose-500">{errors.target}</p>}
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-[12px] font-semibold">Type</Label>
+                                <Select value={form.type} onValueChange={(v: any) => setField("type", v)}>
+                                    <SelectTrigger className="h-10 rounded-none"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-none">
+                                        <SelectItem value="Upsell">Upsell</SelectItem>
+                                        <SelectItem value="Cross-sell">Cross-sell</SelectItem>
+                                        <SelectItem value="Add-on">Add-on</SelectItem>
+                                        <SelectItem value="Upgrade">Upgrade</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[12px] font-semibold">Segment</Label>
+                                <Select value={form.segment} onValueChange={(v: any) => setField("segment", v)}>
+                                    <SelectTrigger className="h-10 rounded-none"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-none">
+                                        <SelectItem value="Enterprise">Enterprise</SelectItem>
+                                        <SelectItem value="Mid-Market">Mid-Market</SelectItem>
+                                        <SelectItem value="SMB">SMB</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-[12px] font-semibold">Value ($) <span className="text-rose-500">*</span></Label>
+                                <Input type="number" value={form.value} onChange={e => setField("value", e.target.value)} placeholder="5000" className={`h-10 rounded-none ${errors.value ? "border-rose-500" : ""}`} />
+                                {errors.value && <p className="text-[11px] text-rose-500">{errors.value}</p>}
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[12px] font-semibold">Probability (%)</Label>
+                                <Input type="number" min="0" max="100" value={form.probability} onChange={e => setField("probability", e.target.value)} className={`h-10 rounded-none ${errors.probability ? "border-rose-500" : ""}`} />
+                                {errors.probability && <p className="text-[11px] text-rose-500">{errors.probability}</p>}
+                            </div>
+                        </div>
+                    </div>
+                    <div className="p-5 border-t flex gap-3 bg-white">
+                        <Button variant="outline" className="flex-1 h-10 rounded-none" onClick={() => setIsFormOpen(false)}>Cancel</Button>
+                        <Button className="flex-1 h-10 bg-violet-600 hover:bg-violet-700 text-white rounded-none" onClick={handleSave}>{editingId ? "Save" : "Add"}</Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* Filter Sheet */}
+            <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <SheetContent side="right" className="sm:max-w-md w-full p-0 rounded-none flex flex-col">
+                    <SheetHeader className="p-6 border-b bg-gradient-to-br from-slate-50 to-violet-50">
+                        <SheetTitle className="text-[18px] font-semibold">Filter Expansions</SheetTitle>
+                    </SheetHeader>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Type</Label>
+                            <Select value={typeFilter} onValueChange={setTypeFilter}>
+                                <SelectTrigger className="h-10 rounded-none"><SelectValue /></SelectTrigger>
+                                <SelectContent className="rounded-none">
+                                    <SelectItem value="all">All Types</SelectItem>
+                                    <SelectItem value="Upsell">Upsell</SelectItem>
+                                    <SelectItem value="Cross-sell">Cross-sell</SelectItem>
+                                    <SelectItem value="Add-on">Add-on</SelectItem>
+                                    <SelectItem value="Upgrade">Upgrade</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold">Segment</Label>
+                            <Select value={segmentFilter} onValueChange={setSegmentFilter}>
+                                <SelectTrigger className="h-10 rounded-none"><SelectValue /></SelectTrigger>
+                                <SelectContent className="rounded-none">
+                                    <SelectItem value="all">All Segments</SelectItem>
+                                    <SelectItem value="Enterprise">Enterprise</SelectItem>
+                                    <SelectItem value="Mid-Market">Mid-Market</SelectItem>
+                                    <SelectItem value="SMB">SMB</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div className="p-5 border-t flex gap-3 bg-white">
+                        <Button variant="outline" className="flex-1 h-10 rounded-none" onClick={() => { setTypeFilter("all"); setSegmentFilter("all"); toast.success("Filters reset") }}>Reset</Button>
+                        <Button className="flex-1 h-10 bg-violet-600 hover:bg-violet-700 rounded-none" onClick={() => { setIsFilterOpen(false); toast.success("Filters applied") }}>Apply</Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* Detail Sheet */}
+            <Sheet open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+                <SheetContent side="right" className="sm:max-w-md w-full p-0 rounded-none flex flex-col">
+                    <SheetHeader className="p-6 border-b bg-gradient-to-br from-slate-50 to-violet-50">
+                        <SheetTitle className="text-[18px] font-semibold">Expansion Details</SheetTitle>
+                    </SheetHeader>
+                    {selected && (
+                        <>
+                            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                                <div>
+                                    <p className="text-[11px] text-slate-400 uppercase tracking-wider">Account</p>
+                                    <p className="text-lg font-semibold text-slate-900">{selected.client}</p>
+                                    <p className="text-sm text-slate-500">{selected.target}</p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 pt-3 border-t">
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Type</p><Badge className="rounded-none">{selected.type}</Badge></div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Segment</p>
+                                        <span className={`inline-flex px-2 py-0.5 rounded-none text-[11px] font-bold border ${segmentColors[selected.segment]}`}>{selected.segment}</span>
+                                    </div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Value</p><p className="font-semibold text-slate-900">{formatCurrency(selected.value)}</p></div>
+                                    <div><p className="text-[11px] text-slate-400 uppercase">Probability</p><p className="font-semibold text-slate-900">{selected.probability}%</p></div>
+                                </div>
+                            </div>
+                            <div className="p-5 border-t flex gap-3 bg-white">
+                                <Button variant="outline" className="flex-1 h-10 rounded-none" onClick={() => { setIsDetailOpen(false); openEdit(selected) }}>
+                                    <PencilLine className="h-4 w-4 mr-2" />Edit
+                                </Button>
+                                <Button variant="outline" className="flex-1 h-10 rounded-none text-rose-500 border-rose-200 hover:bg-rose-50" onClick={() => { handleDelete(selected.id); setIsDetailOpen(false) }}>
+                                    <Trash2 className="h-4 w-4 mr-2" />Delete
+                                </Button>
+                            </div>
+                        </>
+                    )}
+                </SheetContent>
+            </Sheet>
         </div>
     )
 }

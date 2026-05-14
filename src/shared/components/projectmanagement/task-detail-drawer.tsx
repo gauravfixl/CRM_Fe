@@ -101,7 +101,7 @@ export default function TaskDetailDrawer({
     onClose,
     projectId
 }: TaskDetailDrawerProps) {
-    const { getIssueById, updateIssue, deleteIssue } = useIssueStore()
+    const { getIssueById, updateIssue, deleteIssue, addLink, removeLink, addAttachment, removeAttachment, addTimeLog, removeTimeLog, addWatcher, removeWatcher } = useIssueStore()
     const { getEpicsByProject } = useSprintEpicStore()
     const { getAllProjectMembers } = useProjectMemberStore()
 
@@ -110,6 +110,15 @@ export default function TaskDetailDrawer({
     const [drawerWidth, setDrawerWidth] = useState(700)
     const [isResizing, setIsResizing] = useState(false)
     const [isMaximized, setIsMaximized] = useState(false)
+
+    // Link form
+    const [linkTargetId, setLinkTargetId] = useState("")
+    const [linkType, setLinkType] = useState<"BLOCKS" | "BLOCKED_BY" | "RELATES_TO" | "DUPLICATES" | "CLONED_FROM">("RELATES_TO")
+    // Time log form
+    const [timeLogMins, setTimeLogMins] = useState("")
+    const [timeLogNote, setTimeLogNote] = useState("")
+    // Attachment input ref
+    const attachmentInputRef = React.useRef<HTMLInputElement>(null)
 
     const [isAddingSubtask, setIsAddingSubtask] = useState(false)
     const [subtaskTitle, setSubtaskTitle] = useState("")
@@ -188,11 +197,13 @@ export default function TaskDetailDrawer({
     }
 
     const getPriorityColor = (priority: IssuePriority) => {
-        const colors = {
+        const colors: Record<IssuePriority, string> = {
+            HIGHEST: "bg-rose-200 text-rose-800 border-rose-300",
             URGENT: "bg-red-100 text-red-700 border-red-200",
             HIGH: "bg-orange-100 text-orange-700 border-orange-200",
             MEDIUM: "bg-yellow-100 text-yellow-700 border-yellow-200",
-            LOW: "bg-blue-100 text-blue-700 border-blue-200"
+            LOW: "bg-blue-100 text-blue-700 border-blue-200",
+            LOWEST: "bg-slate-100 text-slate-600 border-slate-200",
         }
         return colors[priority]
     }
@@ -572,6 +583,48 @@ export default function TaskDetailDrawer({
                                         </button>
                                     </div>
 
+                                    {/* Watchers Row */}
+                                    <div className="space-y-1.5 flex flex-col border-t border-slate-100 pt-3">
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-[13px] font-semibold text-slate-500">Watchers</Label>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const isWatching = (task.watchers || []).includes("u1")
+                                                    if (isWatching) removeWatcher(task.id, "u1")
+                                                    else addWatcher(task.id, "u1")
+                                                }}
+                                                className={`h-7 px-2.5 text-[10px] font-bold border rounded-none transition-colors ${(task.watchers || []).includes("u1") ? "bg-indigo-50 border-indigo-300 text-indigo-700" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+                                            >
+                                                {(task.watchers || []).includes("u1") ? "✓ Watching" : "+ Watch"}
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center gap-1 flex-wrap pt-1">
+                                            {(task.watchers || []).length === 0 ? (
+                                                <span className="text-[11px] text-slate-400 italic">No watchers yet</span>
+                                            ) : (
+                                                (task.watchers || []).map(uid => {
+                                                    const m = members.find(mm => mm.userId === uid)
+                                                    return (
+                                                        <div key={uid} className="flex items-center gap-1 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-none group">
+                                                            <Avatar className="h-4 w-4">
+                                                                <AvatarImage src={m?.userAvatar || `https://i.pravatar.cc/150?u=${uid}`} />
+                                                                <AvatarFallback className="text-[7px]">{(m?.userName || uid)[0].toUpperCase()}</AvatarFallback>
+                                                            </Avatar>
+                                                            <span className="text-[10px] font-bold text-slate-700">{m?.userName || uid}</span>
+                                                            <button
+                                                                onClick={() => removeWatcher(task.id, uid)}
+                                                                className="text-slate-300 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            >
+                                                                ×
+                                                            </button>
+                                                        </div>
+                                                    )
+                                                })
+                                            )}
+                                        </div>
+                                    </div>
+
                                     {/* Reporter Row */}
                                     <div className="space-y-1.5 flex flex-col border-t border-slate-100 pt-3">
                                         <Label className="text-[13px] font-semibold text-slate-500">Reporter</Label>
@@ -632,9 +685,11 @@ export default function TaskDetailDrawer({
                                                 </div>
                                             </SelectTrigger>
                                             <SelectContent className="font-outfit">
+                                                <SelectItem value="LOWEST">Lowest</SelectItem>
                                                 <SelectItem value="LOW">Low</SelectItem>
                                                 <SelectItem value="MEDIUM">Medium</SelectItem>
                                                 <SelectItem value="HIGH">High</SelectItem>
+                                                <SelectItem value="HIGHEST">Highest</SelectItem>
                                                 <SelectItem value="URGENT">Urgent</SelectItem>
                                             </SelectContent>
                                         </Select>
@@ -852,17 +907,19 @@ export default function TaskDetailDrawer({
                                         <TabsTrigger value="comments" className="px-0 py-2 text-[13px] font-bold rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 transition-all">
                                             Comments
                                         </TabsTrigger>
-                                        <TabsTrigger value="history" className="px-0 py-2 text-[13px] font-bold rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 transition-all">
-                                            History
-                                        </TabsTrigger>
                                         <TabsTrigger value="worklog" className="px-0 py-2 text-[13px] font-bold rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 transition-all">
                                             Work log
                                         </TabsTrigger>
+                                        <TabsTrigger value="links" className="px-0 py-2 text-[13px] font-bold rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 transition-all">
+                                            Links
+                                        </TabsTrigger>
+                                        <TabsTrigger value="attachments" className="px-0 py-2 text-[13px] font-bold rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 transition-all">
+                                            Attachments
+                                        </TabsTrigger>
+                                        <TabsTrigger value="history" className="px-0 py-2 text-[13px] font-bold rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 transition-all">
+                                            History
+                                        </TabsTrigger>
                                     </TabsList>
-                                    <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400">
-                                        SHOW:
-                                        <Button variant="ghost" size="sm" className="h-6 text-[11px] font-bold px-1.5 uppercase tracking-wider text-slate-500 hover:bg-slate-100">All</Button>
-                                    </div>
                                 </div>
 
                                 <TabsContent value="comments" className="mt-0 focus-visible:ring-0">
@@ -873,6 +930,237 @@ export default function TaskDetailDrawer({
                                         currentUserName="Current User"
                                         currentUserAvatar="https://i.pravatar.cc/150?u=current"
                                     />
+                                </TabsContent>
+
+                                <TabsContent value="worklog" className="mt-0 focus-visible:ring-0">
+                                    <div className="space-y-4">
+                                        {/* Estimate vs Logged vs Remaining */}
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <div className="border border-slate-200 p-3 rounded-none bg-white">
+                                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Estimate</p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <Input
+                                                        type="number"
+                                                        min="0"
+                                                        value={task.estimateHours ?? ""}
+                                                        onChange={(e) => {
+                                                            const v = e.target.value === "" ? undefined : Number(e.target.value)
+                                                            updateIssue(task.id, { estimateHours: v })
+                                                        }}
+                                                        placeholder="0"
+                                                        className="h-8 w-16 rounded-none text-sm font-bold"
+                                                    />
+                                                    <span className="text-xs font-bold text-slate-600">h</span>
+                                                </div>
+                                            </div>
+                                            <div className="border border-slate-200 p-3 rounded-none bg-white">
+                                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Logged</p>
+                                                <p className="text-sm font-black text-indigo-600 mt-2">{Math.floor((task.timeSpent || 0) / 60)}h {(task.timeSpent || 0) % 60}m</p>
+                                            </div>
+                                            <div className="border border-slate-200 p-3 rounded-none bg-white">
+                                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Remaining</p>
+                                                <p className={`text-sm font-black mt-2 ${(task.estimateHours || 0) * 60 - (task.timeSpent || 0) < 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                                                    {(() => {
+                                                        const remMin = (task.estimateHours || 0) * 60 - (task.timeSpent || 0)
+                                                        const sign = remMin < 0 ? "-" : ""
+                                                        const a = Math.abs(remMin)
+                                                        return `${sign}${Math.floor(a / 60)}h ${a % 60}m`
+                                                    })()}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="border border-slate-200 bg-slate-50 p-4 rounded-none">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <h4 className="text-[12px] font-bold text-slate-700 uppercase tracking-widest">Log Time</h4>
+                                                <span className="text-[11px] font-bold text-slate-500">Total: {Math.floor((task.timeSpent || 0) / 60)}h {(task.timeSpent || 0) % 60}m</span>
+                                            </div>
+                                            <div className="flex items-end gap-2">
+                                                <div className="flex-1 space-y-1">
+                                                    <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Minutes <span className="text-rose-500">*</span></Label>
+                                                    <Input
+                                                        type="number"
+                                                        min="1"
+                                                        value={timeLogMins}
+                                                        onChange={(e) => setTimeLogMins(e.target.value)}
+                                                        placeholder="60"
+                                                        className="h-9 rounded-none"
+                                                    />
+                                                </div>
+                                                <div className="flex-[2] space-y-1">
+                                                    <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Note</Label>
+                                                    <Input
+                                                        value={timeLogNote}
+                                                        onChange={(e) => setTimeLogNote(e.target.value)}
+                                                        placeholder="What did you do?"
+                                                        className="h-9 rounded-none"
+                                                    />
+                                                </div>
+                                                <Button
+                                                    onClick={() => {
+                                                        const mins = parseInt(timeLogMins)
+                                                        if (isNaN(mins) || mins <= 0) return
+                                                        addTimeLog(task.id, mins, timeLogNote || undefined, "u1")
+                                                        setTimeLogMins("")
+                                                        setTimeLogNote("")
+                                                    }}
+                                                    disabled={!timeLogMins || parseInt(timeLogMins) <= 0}
+                                                    className="h-9 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-none"
+                                                >
+                                                    Log
+                                                </Button>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {(task.timeLogs || []).length === 0 ? (
+                                                <p className="text-xs text-slate-400 text-center py-6">No time logged yet.</p>
+                                            ) : (
+                                                (task.timeLogs || []).slice().reverse().map(log => (
+                                                    <div key={log.id} className="flex items-center gap-3 p-3 border border-slate-100 hover:bg-slate-50 rounded-none">
+                                                        <div className="h-8 w-8 bg-indigo-100 text-indigo-700 flex items-center justify-center rounded-none">
+                                                            <Clock size={14} />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm font-bold text-slate-800">{Math.floor(log.minutes / 60)}h {log.minutes % 60}m</p>
+                                                            <p className="text-[11px] text-slate-500 truncate">{log.note || "No description"}</p>
+                                                            <p className="text-[10px] text-slate-400 mt-0.5">{formatDistanceToNow(new Date(log.loggedAt))} ago by {log.loggedBy}</p>
+                                                        </div>
+                                                        <button onClick={() => removeTimeLog(task.id, log.id)} className="h-7 w-7 flex items-center justify-center text-slate-300 hover:text-rose-600 rounded-none">
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                </TabsContent>
+
+                                <TabsContent value="links" className="mt-0 focus-visible:ring-0">
+                                    <div className="space-y-4">
+                                        <div className="border border-slate-200 bg-slate-50 p-4 rounded-none">
+                                            <h4 className="text-[12px] font-bold text-slate-700 uppercase tracking-widest mb-3">Add Link</h4>
+                                            <div className="flex items-end gap-2">
+                                                <div className="flex-1 space-y-1">
+                                                    <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Relationship</Label>
+                                                    <Select value={linkType} onValueChange={(v) => setLinkType(v as any)}>
+                                                        <SelectTrigger className="h-9 rounded-none"><SelectValue /></SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="BLOCKS">Blocks</SelectItem>
+                                                            <SelectItem value="BLOCKED_BY">Blocked by</SelectItem>
+                                                            <SelectItem value="RELATES_TO">Relates to</SelectItem>
+                                                            <SelectItem value="DUPLICATES">Duplicates</SelectItem>
+                                                            <SelectItem value="CLONED_FROM">Cloned from</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="flex-[2] space-y-1">
+                                                    <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Target Issue</Label>
+                                                    <Select value={linkTargetId} onValueChange={setLinkTargetId}>
+                                                        <SelectTrigger className="h-9 rounded-none"><SelectValue placeholder="Pick an issue..." /></SelectTrigger>
+                                                        <SelectContent>
+                                                            {allProjectTasks.slice(0, 50).map(t => (
+                                                                <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <Button
+                                                    onClick={() => {
+                                                        if (!linkTargetId) return
+                                                        addLink(task.id, linkTargetId, linkType)
+                                                        setLinkTargetId("")
+                                                    }}
+                                                    disabled={!linkTargetId}
+                                                    className="h-9 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-none"
+                                                >
+                                                    Link
+                                                </Button>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {(task.links || []).length === 0 ? (
+                                                <p className="text-xs text-slate-400 text-center py-6">No links yet.</p>
+                                            ) : (
+                                                (task.links || []).map(link => {
+                                                    const target = allProjectTasks.find(t => t.id === link.targetIssueId)
+                                                    return (
+                                                        <div key={link.id} className="flex items-center gap-3 p-3 border border-slate-100 hover:bg-slate-50 rounded-none">
+                                                            <Badge className={`text-[10px] font-bold rounded-none ${link.type === "BLOCKS" || link.type === "BLOCKED_BY" ? "bg-rose-50 text-rose-700" : link.type === "RELATES_TO" ? "bg-indigo-50 text-indigo-700" : "bg-slate-50 text-slate-600"}`}>
+                                                                {link.type.replace("_", " ")}
+                                                            </Badge>
+                                                            <span className="text-sm font-bold text-slate-700 truncate flex-1">{target?.title || "(deleted)"}</span>
+                                                            <button onClick={() => removeLink(task.id, link.id)} className="h-7 w-7 flex items-center justify-center text-slate-300 hover:text-rose-600 rounded-none">
+                                                                <Trash2 size={14} />
+                                                            </button>
+                                                        </div>
+                                                    )
+                                                })
+                                            )}
+                                        </div>
+                                    </div>
+                                </TabsContent>
+
+                                <TabsContent value="attachments" className="mt-0 focus-visible:ring-0">
+                                    <div className="space-y-4">
+                                        <div className="border border-dashed border-slate-300 bg-slate-50 p-6 text-center rounded-none">
+                                            <Paperclip size={28} className="mx-auto text-slate-400 mb-2" />
+                                            <p className="text-sm font-bold text-slate-700 mb-2">Drop files or click to upload</p>
+                                            <p className="text-[11px] text-slate-500 mb-3">Files are stored as base64 in browser (frontend-only)</p>
+                                            <input
+                                                ref={attachmentInputRef}
+                                                type="file"
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0]
+                                                    if (!file) return
+                                                    if (file.size > 2 * 1024 * 1024) {
+                                                        alert("File too large (max 2MB for frontend-only storage)")
+                                                        return
+                                                    }
+                                                    const reader = new FileReader()
+                                                    reader.onload = (ev) => {
+                                                        const dataUrl = ev.target?.result as string
+                                                        addAttachment(task.id, {
+                                                            name: file.name,
+                                                            size: file.size,
+                                                            type: file.type,
+                                                            dataUrl,
+                                                            uploadedBy: "u1",
+                                                            uploadedAt: new Date().toISOString(),
+                                                        })
+                                                    }
+                                                    reader.readAsDataURL(file)
+                                                    if (attachmentInputRef.current) attachmentInputRef.current.value = ""
+                                                }}
+                                            />
+                                            <Button
+                                                onClick={() => attachmentInputRef.current?.click()}
+                                                className="h-9 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-none"
+                                            >
+                                                Choose File
+                                            </Button>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {(task.attachments || []).length === 0 ? (
+                                                <p className="text-xs text-slate-400 text-center py-6">No attachments yet.</p>
+                                            ) : (
+                                                (task.attachments || []).map(att => (
+                                                    <div key={att.id} className="flex items-center gap-3 p-3 border border-slate-100 hover:bg-slate-50 rounded-none">
+                                                        <div className="h-8 w-8 bg-indigo-100 text-indigo-700 flex items-center justify-center rounded-none">
+                                                            <FileText size={14} />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <a href={att.dataUrl} download={att.name} className="text-sm font-bold text-slate-800 truncate block hover:text-indigo-600">{att.name}</a>
+                                                            <p className="text-[10px] text-slate-400">{(att.size / 1024).toFixed(1)} KB · {formatDistanceToNow(new Date(att.uploadedAt))} ago</p>
+                                                        </div>
+                                                        <button onClick={() => removeAttachment(task.id, att.id)} className="h-7 w-7 flex items-center justify-center text-slate-300 hover:text-rose-600 rounded-none">
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
                                 </TabsContent>
 
                                 <TabsContent value="history" className="mt-0 focus-visible:ring-0">
@@ -1066,9 +1354,11 @@ export default function TaskDetailDrawer({
                                                 </div>
                                             </SelectTrigger>
                                             <SelectContent className="font-outfit">
+                                                <SelectItem value="LOWEST">Lowest</SelectItem>
                                                 <SelectItem value="LOW">Low</SelectItem>
                                                 <SelectItem value="MEDIUM">Medium</SelectItem>
                                                 <SelectItem value="HIGH">High</SelectItem>
+                                                <SelectItem value="HIGHEST">Highest</SelectItem>
                                                 <SelectItem value="URGENT">Urgent</SelectItem>
                                             </SelectContent>
                                         </Select>

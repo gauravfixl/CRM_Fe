@@ -61,7 +61,10 @@ export default function CampaignGovernancePage() {
 
             {/* TOP METRICS */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <SmallCard className="bg-gradient-to-br from-blue-600 to-blue-700 border-none rounded-none shadow-lg text-white">
+                <SmallCard
+                    onClick={() => router.push(`/${params.orgName}/modules/settings/entitlements/campaigns/limits`)}
+                    className="bg-gradient-to-br from-blue-600 to-blue-700 border-none rounded-none shadow-lg text-white cursor-pointer hover:shadow-xl transition-all"
+                >
                     <SmallCardHeader className="pb-1 text-left px-4 pt-4 flex flex-row justify-between items-center">
                         <p className="text-[10px] font-bold text-blue-100 tracking-wide">Active runs</p>
                         <Activity className="w-4 h-4 text-blue-200" />
@@ -72,7 +75,10 @@ export default function CampaignGovernancePage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-slate-200 rounded-none shadow-md">
+                <SmallCard
+                    onClick={() => router.push(`/${params.orgName}/modules/settings/entitlements/campaigns/roi`)}
+                    className="bg-white border-slate-200 rounded-none shadow-md cursor-pointer hover:shadow-lg transition-all"
+                >
                     <SmallCardHeader className="pb-1 text-left px-4 pt-4 flex flex-row justify-between items-center">
                         <p className="text-[10px] font-bold text-slate-400 tracking-wide">Global reach</p>
                         <Globe className="w-4 h-4 text-blue-500" />
@@ -83,7 +89,10 @@ export default function CampaignGovernancePage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-slate-200 rounded-none shadow-md">
+                <SmallCard
+                    onClick={() => router.push(`/${params.orgName}/modules/settings/entitlements/campaigns/attribution`)}
+                    className="bg-white border-slate-200 rounded-none shadow-md cursor-pointer hover:shadow-lg transition-all"
+                >
                     <SmallCardHeader className="pb-1 text-left px-4 pt-4 flex flex-row justify-between items-center">
                         <p className="text-[10px] font-bold text-slate-400 tracking-wide">Avg. attribution</p>
                         <PieChart className="w-4 h-4 text-blue-500" />
@@ -94,7 +103,10 @@ export default function CampaignGovernancePage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-slate-200 rounded-none shadow-md">
+                <SmallCard
+                    onClick={() => router.push(`/${params.orgName}/modules/settings/entitlements/campaigns/spam`)}
+                    className="bg-white border-slate-200 rounded-none shadow-md cursor-pointer hover:shadow-lg transition-all"
+                >
                     <SmallCardHeader className="pb-1 text-left px-4 pt-4 flex flex-row justify-between items-center">
                         <p className="text-[10px] font-bold text-slate-400 tracking-wide">Spam health</p>
                         <ShieldCheck className="w-4 h-4 text-rose-500" />

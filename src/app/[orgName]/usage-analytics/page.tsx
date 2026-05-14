@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { useRouter, useParams } from "next/navigation";
 import {
     Search,
     Filter,
@@ -65,6 +66,10 @@ function TrendIndicator({ trend }: { trend: "up" | "stable" | "down" }) {
 }
 
 export default function UsageAnalytics() {
+    const router = useRouter();
+    const params = useParams();
+    const orgName = (params?.orgName as string) || "";
+
     const [search, setSearch] = useState("");
     const [trendIndex, setTrendIndex] = useState(0);
 
@@ -105,40 +110,56 @@ export default function UsageAnalytics() {
             {/* Stats Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Total Users - gradient primary */}
-                <div className="rounded-none bg-gradient-to-br from-primary to-primary/80 text-white p-5">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/modules/users`)}
+                    className="rounded-none bg-gradient-to-br from-primary to-primary/80 text-white p-5 text-left cursor-pointer transition-all hover:shadow-lg"
+                >
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-white text-xs opacity-80">Total Users</span>
                         <Users className="h-5 w-5 text-white/70" />
                     </div>
                     <p className="text-white text-xl font-semibold mt-1">2,847</p>
-                </div>
+                </button>
 
                 {/* Daily Active Users - white, green */}
-                <div className="rounded-none border bg-white p-5">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/activity-logs`)}
+                    className="rounded-none border bg-white p-5 text-left cursor-pointer transition-all hover:shadow-md"
+                >
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-gray-600 text-xs">Daily Active Users</span>
                         <Activity className="h-5 w-5 text-green-500" />
                     </div>
                     <p className="text-xl font-semibold text-gray-900 mt-1">1,245</p>
-                </div>
+                </button>
 
                 {/* Most Used Module - white */}
-                <div className="rounded-none border bg-white p-5">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/modules/settings/modules`)}
+                    className="rounded-none border bg-white p-5 text-left cursor-pointer transition-all hover:shadow-md"
+                >
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-gray-600 text-xs">Most Used Module</span>
                         <BarChart3 className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <p className="text-xl font-semibold text-gray-900 mt-1">CRM</p>
-                </div>
+                </button>
 
                 {/* Platform Adoption - white, green */}
-                <div className="rounded-none border bg-white p-5">
+                <button
+                    type="button"
+                    onClick={() => router.push(`/${orgName}/modules/organization/overview`)}
+                    className="rounded-none border bg-white p-5 text-left cursor-pointer transition-all hover:shadow-md"
+                >
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-gray-600 text-xs">Platform Adoption</span>
                         <PieChart className="h-5 w-5 text-green-500" />
                     </div>
                     <p className="text-xl font-semibold text-gray-900 mt-1">87.5%</p>
-                </div>
+                </button>
             </div>
 
             {/* Table Section */}
