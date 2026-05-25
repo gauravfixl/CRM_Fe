@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
     CreditCard,
     Plus,
@@ -26,6 +26,8 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
+import { getOrgDetails } from "@/hooks/orgHooks";
+import { axiosInstance } from "@/lib/axios";
 
 interface PaymentCard {
     id: string;
