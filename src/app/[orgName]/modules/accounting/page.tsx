@@ -32,7 +32,8 @@ import {
     ArrowUpCircle,
     ArrowDownCircle,
     Globe,
-    Lock
+    Lock,
+    Clock
 } from "lucide-react"
 import { CustomButton } from "@/components/custom/CustomButton"
 import { CustomInput } from "@/components/custom/CustomInput"
@@ -163,7 +164,7 @@ export default function AccountingPage() {
                         </div>
                     </div>
 
-                    <div className="p-10 space-y-8">
+                    <div className="p-6 space-y-6">
                         <AnimatePresence mode="popLayout">
                             {accounts.map((acc, idx) => (
                                 <motion.div
@@ -173,21 +174,21 @@ export default function AccountingPage() {
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, scale: 0.95 }}
                                     transition={{ delay: idx * 0.05 }}
-                                    className="group flex flex-col xl:flex-row items-center justify-between p-10 bg-zinc-50/50 dark:bg-zinc-800/30 rounded-[56px] border border-zinc-100 dark:border-zinc-800 hover:bg-white dark:hover:bg-zinc-800 hover:shadow-2xl transition-all duration-500 gap-10"
+                                    className="group flex flex-col 2xl:flex-row 2xl:items-center justify-between p-6 bg-zinc-50/50 dark:bg-zinc-800/30 rounded-[40px] border border-zinc-100 dark:border-zinc-800 hover:bg-white dark:hover:bg-zinc-800 hover:shadow-2xl transition-all duration-500 gap-6"
                                 >
-                                    <div className="flex items-center gap-10 w-full xl:w-auto">
-                                        <div className={`h-24 w-24 rounded-[36px] ${acc.bg} ${acc.color} flex items-center justify-center shadow-inner relative overflow-hidden group-hover:scale-105 transition-transform duration-700`}>
+                                    <div className="flex items-center gap-5 min-w-0 w-full 2xl:w-auto">
+                                        <div className={`h-20 w-20 shrink-0 rounded-[28px] ${acc.bg} ${acc.color} flex items-center justify-center shadow-inner relative overflow-hidden group-hover:scale-105 transition-transform duration-700`}>
                                             <span className="text-3xl font-black italic">{acc.name.charAt(0)}</span>
                                         </div>
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-4">
-                                                <Badge className={`px-4 py-1.5 rounded-full font-black text-[9px] tracking-widest border-none ${acc.bg} ${acc.color} uppercase italic`}>{acc.type}</Badge>
+                                        <div className="space-y-2 min-w-0 flex-1">
+                                            <div className="flex items-center gap-3 flex-wrap">
+                                                <Badge className={`px-3 py-1 rounded-full font-black text-[9px] tracking-widest border-none ${acc.bg} ${acc.color} uppercase italic`}>{acc.type}</Badge>
                                                 <span className="text-[10px] font-black uppercase text-zinc-400 italic flex items-center gap-2">
                                                     <Globe size={12} className="text-indigo-400" /> LAST SYNC: {acc.lastCheck}
                                                 </span>
                                             </div>
-                                            <h4 className="text-2xl font-black uppercase tracking-tighter italic leading-none group-hover:text-indigo-600 transition-colors uppercase italic truncate max-w-[500px]">{acc.name}</h4>
-                                            <div className="flex items-center gap-4 text-xs font-black text-zinc-400 uppercase italic opacity-60">
+                                            <h4 className="text-lg lg:text-xl font-black uppercase tracking-tighter italic leading-tight group-hover:text-indigo-600 transition-colors truncate">{acc.name}</h4>
+                                            <div className="flex items-center gap-3 text-[11px] font-black text-zinc-400 uppercase italic opacity-60">
                                                 <span>{acc.id}</span>
                                                 <span className="h-1 w-1 bg-zinc-300 rounded-full" />
                                                 <span>INTEGRITY: MAXIMUM</span>
@@ -195,28 +196,28 @@ export default function AccountingPage() {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-12 flex-1 w-full xl:w-auto px-10 border-x border-zinc-100 dark:border-zinc-800 border-dashed">
-                                        <div className="flex flex-col items-center justify-center text-center space-y-2">
+                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 flex-1 min-w-0 w-full 2xl:w-auto 2xl:px-6 2xl:border-x border-zinc-100 dark:border-zinc-800 border-dashed">
+                                        <div className="flex flex-col items-center justify-center text-center gap-1.5 min-w-0">
                                             <span className="text-[10px] font-black uppercase italic text-zinc-400 tracking-widest">Net Balance</span>
-                                            <span className="text-2xl font-black italic text-zinc-900 dark:text-white uppercase">{acc.balance}</span>
+                                            <span className="text-base lg:text-lg font-black italic text-zinc-900 dark:text-white uppercase truncate max-w-full">{acc.balance}</span>
                                         </div>
-                                        <div className="flex flex-col items-center justify-center text-center space-y-2">
+                                        <div className="flex flex-col items-center justify-center text-center gap-1.5">
                                             <span className="text-[10px] font-black uppercase italic text-zinc-400 tracking-widest">Flow Vector</span>
                                             <div className="flex items-center gap-2">
-                                                {acc.type === 'Asset' ? <ArrowUpCircle className="text-emerald-500 h-6 w-6" /> : <ArrowDownCircle className="text-rose-500 h-6 w-6" />}
-                                                <span className={`text-xl font-black italic ${acc.type === 'Asset' ? 'text-emerald-600' : 'text-rose-600'}`}>0.24%</span>
+                                                {acc.type === 'Asset' ? <ArrowUpCircle className="text-emerald-500 h-5 w-5" /> : <ArrowDownCircle className="text-rose-500 h-5 w-5" />}
+                                                <span className={`text-base font-black italic ${acc.type === 'Asset' ? 'text-emerald-600' : 'text-rose-600'}`}>0.24%</span>
                                             </div>
                                         </div>
-                                        <div className="flex flex-col items-center justify-center text-center space-y-2">
+                                        <div className="flex flex-col items-center justify-center text-center gap-1.5">
                                             <span className="text-[10px] font-black uppercase italic text-zinc-400 tracking-widest">Node Status</span>
-                                            <Badge className={`px-4 py-1.5 rounded-full font-black text-[9px] tracking-widest border-none ${acc.status === 'Synced' ? 'bg-emerald-100 text-emerald-700' :
+                                            <Badge className={`px-3 py-1 rounded-full font-black text-[9px] tracking-widest border-none ${acc.status === 'Synced' ? 'bg-emerald-100 text-emerald-700' :
                                                     acc.status === 'Locked' ? 'bg-zinc-100 text-zinc-700' : 'bg-amber-100 text-amber-700'
                                                 } uppercase italic`}>{acc.status}</Badge>
                                         </div>
-                                        <div className="flex flex-col items-center justify-center text-center space-y-2">
+                                        <div className="flex flex-col items-center justify-center text-center gap-1.5">
                                             <span className="text-[10px] font-black uppercase italic text-zinc-400 tracking-widest">Liquidity Score</span>
                                             <div className="flex items-center gap-2">
-                                                <div className="h-1.5 w-12 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                                                <div className="h-1.5 w-10 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                                                     <div className="h-full bg-indigo-500 w-[94%] transition-all" />
                                                 </div>
                                                 <span className="text-xs font-black text-indigo-600">94%</span>
@@ -224,14 +225,14 @@ export default function AccountingPage() {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-6 shrink-0">
-                                        <CustomButton variant="ghost" className="h-16 w-16 p-0 rounded-[28px] bg-zinc-50 border border-zinc-100 group-hover:bg-indigo-600 group-hover:text-white group-hover:shadow-3xl transition-all duration-700">
-                                            <PieChart size={24} />
+                                    <div className="flex items-center gap-3 shrink-0 self-end 2xl:self-center">
+                                        <CustomButton variant="ghost" className="h-12 w-12 p-0 rounded-[20px] bg-zinc-50 border border-zinc-100 group-hover:bg-indigo-600 group-hover:text-white group-hover:shadow-3xl transition-all duration-700">
+                                            <PieChart size={20} />
                                         </CustomButton>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <CustomButton variant="ghost" className="h-16 w-16 p-0 rounded-[28px] border border-zinc-100 hover:shadow-xl transition-all">
-                                                    <MoreVertical size={24} className="text-zinc-400" />
+                                                <CustomButton variant="ghost" className="h-12 w-12 p-0 rounded-[20px] border border-zinc-100 hover:shadow-xl transition-all">
+                                                    <MoreVertical size={20} className="text-zinc-400" />
                                                 </CustomButton>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="rounded-[32px] w-64 p-2 shadow-3xl bg-white dark:bg-zinc-900 border-zinc-100">
