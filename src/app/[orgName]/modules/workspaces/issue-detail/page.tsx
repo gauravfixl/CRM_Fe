@@ -93,6 +93,7 @@ export default function IssueDetailPage() {
 
     const issue = taskId ? getIssueById(taskId) : undefined
     const subTasks = taskId ? getSubTasks(taskId) : []
+    const selectedProjectId = issue?.projectId ?? ""
     const projectSprints = getSprintsByProject(selectedProjectId)
     const projectEpics = getEpicsByProject(selectedProjectId)
     const issueComments = taskId ? getCommentsByTask(taskId) : []
