@@ -303,17 +303,17 @@ export default function GuestUsersPage() {
                             placeholder="Search by name or email..."
                         />
                     </div>
-                    <CustomSelect value={filterAccess} onValueChange={setFilterAccess}>
-                        <CustomSelectTrigger className="w-[160px] rounded-none">
-                            <CustomSelectValue placeholder="Filter access" />
-                        </CustomSelectTrigger>
-                        <CustomSelectContent className="rounded-none">
-                            <CustomSelectItem value="all">All levels</CustomSelectItem>
-                            <CustomSelectItem value="viewer">Viewer</CustomSelectItem>
-                            <CustomSelectItem value="editor">Editor</CustomSelectItem>
-                            <CustomSelectItem value="admin">Admin</CustomSelectItem>
-                        </CustomSelectContent>
-                    </CustomSelect>
+                    <Select value={filterAccess} onValueChange={setFilterAccess}>
+                        <SelectTrigger className="w-[160px] rounded-none">
+                            <SelectValue placeholder="Filter access" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-none">
+                            <SelectItem value="all">All levels</SelectItem>
+                            <SelectItem value="viewer">Viewer</SelectItem>
+                            <SelectItem value="editor">Editor</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
 
                 {/* Table */}
