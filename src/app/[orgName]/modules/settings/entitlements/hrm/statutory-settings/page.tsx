@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Shield, Save, Landmark, FileText, IndianRupee } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
@@ -8,6 +8,7 @@ import { Switch } from "@/shared/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
 import { showSuccess } from "@/utils/toast"
+import { statutorySettingsApi } from "@/shared/api/settings-api"
 
 export default function StatutorySettingsPage() {
     const [isSaving, setIsSaving] = useState(false)
