@@ -1,7 +1,7 @@
 ﻿"use client"
 
 import React, { useState } from "react"
-import { motion, AnimatePresence } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import {
     FileStack,
     Plus,
