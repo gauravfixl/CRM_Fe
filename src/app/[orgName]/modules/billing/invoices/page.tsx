@@ -227,10 +227,6 @@ export default function InvoicesPage() {
     fetchInvoices();
   }, []);
 
-  useEffect(() => {
-    fetchInvoices();
-  }, [fetchInvoices]);
-
   const cycleStatusFilter = () => {
     const currentIndex = statusFilters.indexOf(statusFilter as (typeof statusFilters)[number]);
     const nextIndex = (currentIndex + 1) % statusFilters.length;
